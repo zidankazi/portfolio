@@ -76,12 +76,23 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   useEffect(() => {
+    console.log('[PlayerProvider] Init effect running', {
+      hasInitialized: hasInitializedRef.current,
+      tracksCount: DAFT_PUNK_TRACKS.length
+    });
     if (hasInitializedRef.current) return;
     if (DAFT_PUNK_TRACKS.length > 0) {
       hasInitializedRef.current = true;
       const nextQueue = getQueueFromTracks();
       const randomIndex = Math.floor(Math.random() * nextQueue.length);
+      console.log('[PlayerProvider] Calling initialize with', {
+        tracksCount: DAFT_PUNK_TRACKS.length,
+        queueLength: nextQueue.length,
+        randomIndex,
+        firstTrackId: nextQueue[randomIndex]
+      });
       usePlayerStore.getState().initialize(DAFT_PUNK_TRACKS, nextQueue, randomIndex);
+      console.log('[PlayerProvider] After initialize, currentTrack:', usePlayerStore.getState().currentTrack);
     }
   }, []);
 
