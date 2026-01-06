@@ -149,7 +149,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
     loadTrack(shouldAutoplay);
     hasBootedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTrackSrc, isPlaying]);
+  }, [currentTrackSrc]);
 
   const controls = useMemo<PlayerControls>(
     () => ({
