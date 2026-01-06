@@ -34,18 +34,16 @@ const getQueueFromTracks = () => shuffle(DAFT_PUNK_TRACKS.map((track) => track.i
 export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hasBootedRef = useRef(false);
+  const hasInitializedRef = useRef(false);
   if (!audioRef.current && typeof window !== 'undefined') {
     audioRef.current = new Audio();
   }
 
   const {
     tracks,
-    queue,
-    index,
     currentTrack,
     isPlaying,
     volume,
-    initialize,
     setIsPlaying,
     setCurrentTime,
     setDuration,
@@ -78,12 +76,14 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   useEffect(() => {
-    if (tracks.length === 0 && DAFT_PUNK_TRACKS.length > 0) {
+    if (hasInitializedRef.current) return;
+    if (DAFT_PUNK_TRACKS.length > 0) {
+      hasInitializedRef.current = true;
       const nextQueue = getQueueFromTracks();
       const randomIndex = Math.floor(Math.random() * nextQueue.length);
-      initialize(DAFT_PUNK_TRACKS, nextQueue, randomIndex);
+      usePlayerStore.getState().initialize(DAFT_PUNK_TRACKS, nextQueue, randomIndex);
     }
-  }, [initialize, tracks.length]);
+  }, []);
 
   useEffect(() => {
     if (!audioRef.current) return;
