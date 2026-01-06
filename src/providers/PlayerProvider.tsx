@@ -120,7 +120,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
     const handleTime = () => setCurrentTime(audio.currentTime || 0);
     const handleDuration = () => setDuration(audio.duration || 0);
     const handleEnded = () => {
-      next();
+      usePlayerStore.getState().next();
     };
     const handleError = () => setError('audio error');
 
