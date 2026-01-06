@@ -45,9 +45,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
     currentTrack,
     isPlaying,
     volume,
-    setTracks,
-    setQueue,
-    setIndex,
+    initialize,
     setIsPlaying,
     setCurrentTime,
     setDuration,
@@ -82,17 +80,12 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (!audioRef.current) return;
 
-    if (tracks.length === 0) {
-      setTracks(DAFT_PUNK_TRACKS);
-    }
-
-    if (queue.length === 0 && DAFT_PUNK_TRACKS.length > 0) {
+    if (tracks.length === 0 && DAFT_PUNK_TRACKS.length > 0) {
       const nextQueue = getQueueFromTracks();
       const randomIndex = Math.floor(Math.random() * nextQueue.length);
-      setQueue(nextQueue);
-      setIndex(randomIndex);
+      initialize(DAFT_PUNK_TRACKS, nextQueue, randomIndex);
     }
-  }, [queue.length, setIndex, setQueue, setTracks, tracks.length]);
+  }, [initialize, tracks.length]);
 
   useEffect(() => {
     if (!audioRef.current) return;

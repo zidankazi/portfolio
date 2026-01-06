@@ -16,6 +16,7 @@ export type PlayerState = {
   duration: number;
   volume: number;
   error?: string;
+  initialize: (tracks: Track[], queue: string[], index: number) => void;
   setTracks: (tracks: Track[]) => void;
   setQueue: (queue: string[]) => void;
   setIndex: (index: number) => void;
@@ -44,6 +45,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   duration: 0,
   volume: 0.6,
   error: undefined,
+  initialize: (tracks, queue, index) =>
+    set({
+      tracks,
+      queue,
+      index,
+      currentTrack: findTrackById(tracks, queue[index])
+    }),
   setTracks: (tracks) =>
     set((state) => {
       const currentId = state.queue[state.index];
@@ -55,10 +63,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setQueue: (queue) =>
     set((state) => {
       const index = getWrappedIndex(state.index, queue.length);
+      const tracksToSearch = state.tracks.length > 0 ? state.tracks : [];
       return {
         queue,
         index,
-        currentTrack: findTrackById(state.tracks, queue[index])
+        currentTrack: findTrackById(tracksToSearch, queue[index])
       };
     }),
   setIndex: (index) =>
