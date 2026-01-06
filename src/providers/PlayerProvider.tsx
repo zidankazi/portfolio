@@ -135,7 +135,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
     };
-  }, [next, setCurrentTime, setDuration, setError]);
+  }, [setCurrentTime, setDuration, setError]);
 
   useEffect(() => {
     if (!audioRef.current) return;
