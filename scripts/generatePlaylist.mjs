@@ -100,8 +100,25 @@ const writeOutput = async (tracks) => {
   await fs.writeFile(OUTPUT_PATH, lines.join('\n'), 'utf8');
 };
 
+const shouldSkipWrite = async (tracks) => {
+  if (tracks.length > 0) {
+    return false;
+  }
+
+  try {
+    await fs.access(OUTPUT_PATH);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const run = async () => {
   const tracks = await buildTracks();
+  if (await shouldSkipWrite(tracks)) {
+    console.log('No local audio files found; keeping existing generated playlist.');
+    return;
+  }
   await writeOutput(tracks);
 };
 

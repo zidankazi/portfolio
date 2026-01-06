@@ -35,12 +35,12 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hasBootedRef = useRef(false);
   const hasInitializedRef = useRef(false);
+  const skipLoadRef = useRef<string | null>(null);
   if (!audioRef.current && typeof window !== 'undefined') {
     audioRef.current = new Audio();
   }
 
   const {
-    tracks,
     currentTrack,
     isPlaying,
     volume,
@@ -48,31 +48,47 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
     setCurrentTime,
     setDuration,
     setVolume,
-    setError,
-    next,
-    previous
+    setError
   } = usePlayerStore();
+
+  const applyTrack = useCallback((track: typeof currentTrack) => {
+    const audio = audioRef.current;
+    if (!audio || !track) return;
+    audio.src = track.src;
+    audio.load();
+    if (typeof track.coverSrc === 'string') {
+      audio.setAttribute('data-cover', track.coverSrc);
+    }
+  }, []);
+
+  const attemptPlay = useCallback(async (errorLabel = 'playback blocked') => {
+    const audio = audioRef.current;
+    if (!audio) return false;
+    try {
+      await audio.play();
+      setIsPlaying(true);
+      setError(undefined);
+      return true;
+    } catch (error) {
+      setIsPlaying(false);
+      setError(errorLabel);
+      return false;
+    }
+  }, [setError, setIsPlaying]);
 
   const loadTrack = useCallback(
     async (shouldAutoplay: boolean) => {
-      const audio = audioRef.current;
-      if (!audio || !currentTrack) return;
-      audio.src = currentTrack.src;
-      audio.load();
-      if (typeof currentTrack.coverSrc === 'string') {
-        audio.setAttribute('data-cover', currentTrack.coverSrc);
+      if (!currentTrack) return;
+      if (skipLoadRef.current === currentTrack.id) {
+        skipLoadRef.current = null;
+        return;
       }
+      applyTrack(currentTrack);
       if (shouldAutoplay) {
-        try {
-          await audio.play();
-          setIsPlaying(true);
-        } catch (error) {
-          setIsPlaying(false);
-          setError('autoplay blocked');
-        }
+        await attemptPlay('autoplay blocked');
       }
     },
-    [currentTrack, setError, setIsPlaying]
+    [applyTrack, attemptPlay, currentTrack]
   );
 
   useEffect(() => {
@@ -129,25 +145,16 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
   const currentTrackSrc = currentTrack?.src;
   useEffect(() => {
     if (!audioRef.current || !currentTrackSrc) return;
-    const shouldAutoplay = hasBootedRef.current;
+    const shouldAutoplay = hasBootedRef.current && isPlaying;
     loadTrack(shouldAutoplay);
     hasBootedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTrackSrc]);
+  }, [currentTrackSrc, isPlaying]);
 
   const controls = useMemo<PlayerControls>(
     () => ({
       play: async () => {
-        const audio = audioRef.current;
-        if (!audio) return;
-        try {
-          await audio.play();
-          setIsPlaying(true);
-          setError(undefined);
-        } catch (error) {
-          setIsPlaying(false);
-          setError('playback blocked');
-        }
+        await attemptPlay();
       },
       pause: () => {
         const audio = audioRef.current;
@@ -162,23 +169,36 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
           audio.pause();
           setIsPlaying(false);
         } else {
-          const audio = audioRef.current;
-          if (!audio) return;
-          try {
-            await audio.play();
-            setIsPlaying(true);
-            setError(undefined);
-          } catch (error) {
-            setIsPlaying(false);
-            setError('playback blocked');
-          }
+          await attemptPlay();
         }
       },
       next: () => {
-        next();
+        const state = usePlayerStore.getState();
+        if (state.queue.length === 0 || state.tracks.length === 0) return;
+        const nextIndex = (state.index + 1) % state.queue.length;
+        const nextTrack = state.tracks.find((track) => track.id === state.queue[nextIndex]);
+        usePlayerStore.getState().setIndex(nextIndex);
+        if (nextTrack) {
+          skipLoadRef.current = nextTrack.id;
+          applyTrack(nextTrack);
+          if (state.isPlaying) {
+            void attemptPlay();
+          }
+        }
       },
       previous: () => {
-        previous();
+        const state = usePlayerStore.getState();
+        if (state.queue.length === 0 || state.tracks.length === 0) return;
+        const prevIndex = (state.index - 1 + state.queue.length) % state.queue.length;
+        const prevTrack = state.tracks.find((track) => track.id === state.queue[prevIndex]);
+        usePlayerStore.getState().setIndex(prevIndex);
+        if (prevTrack) {
+          skipLoadRef.current = prevTrack.id;
+          applyTrack(prevTrack);
+          if (state.isPlaying) {
+            void attemptPlay();
+          }
+        }
       },
       seek: (time) => {
         const audio = audioRef.current;
@@ -194,7 +214,7 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
     }),
-    [next, previous, setCurrentTime, setError, setIsPlaying, setVolume]
+    [applyTrack, attemptPlay, setCurrentTime, setIsPlaying, setVolume]
   );
 
   return (
