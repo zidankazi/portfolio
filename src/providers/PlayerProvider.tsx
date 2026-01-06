@@ -78,8 +78,6 @@ export const PlayerProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   useEffect(() => {
-    if (!audioRef.current) return;
-
     if (tracks.length === 0 && DAFT_PUNK_TRACKS.length > 0) {
       const nextQueue = getQueueFromTracks();
       const randomIndex = Math.floor(Math.random() * nextQueue.length);
