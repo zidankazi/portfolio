@@ -3,6 +3,5 @@ export const profile = {
   email: 'zidankazi01@outlook.com',
   twitter: 'https://x.com/zidaaaaaaaannnn',
   github: 'https://github.com/zidank6',
-  linkedin: 'http://linkedin.com/in/zidankazi',
-  resumeUrl: '/resume.pdf'
+  linkedin: 'http://linkedin.com/in/zidankazi'
 };
