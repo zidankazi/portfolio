@@ -14,30 +14,28 @@ export type Project = {
 export const projects: Project[] = [
   {
     title: 'zilean',
-    description: 'precision scheduling and alerting for distributed teams',
-    tags: ['next.js', 'edge', 'observability', 'postgres'],
+    description: 'focus assistant that detects distraction and enforces guardrails.',
+    tags: ['next.js', 'electron', 'typescript', 'sqlite'],
     links: [
-      { label: 'github', href: 'https://github.com/placeholder/zilean' },
-      { label: 'demo', href: 'https://example.com/zilean' }
+      { label: 'github', href: 'https://github.com/Zilean-Core/zilean' },
     ],
     bullets: [
-      'latency-aware job orchestration with per-region fallbacks',
-      'timeline ui with audit trails and instant rollback',
-      'alert routing tuned for on-call signal over noise'
+      'menu-bar macOS app that tracks apps, window titles, and browser tabs to classify focus in real time',
+      'deterministic-first pipeline with rules, history reuse, and LLM fallback aligned to user-defined goals',
+      'default-to-distracting behavior with auditable decisions and clear guardrails'
     ]
   },
   {
     title: 'beatrix',
-    description: 'design review platform for high-velocity product teams',
+    description: 'AI-powered business development intelligence for government contractors',
     tags: ['react', 'collaboration', 'design systems'],
     links: [
-      { label: 'github', href: 'https://github.com/placeholder/beatrix' },
-      { label: 'demo', href: 'https://example.com/beatrix' }
+      { label: 'github', href: 'https://github.com/zidank6/beatrix/' },
     ],
     bullets: [
-      'comment threading with visual diff overlays',
-      'role-based approvals and structured feedback capture',
-      'lightweight snapshots for async stakeholder review'
+      'ranks federal contract opportunities with explainable go/no-go recommendations',
+      'OpenAI embeddings for semantic similarity and past-performance alignment scoring',
+      'PostgreSQL + pgvector pipeline cutting BD triage from 10+ hours to under 3 hours weekly'
     ]
   },
   {
@@ -45,13 +43,11 @@ export const projects: Project[] = [
     description: 'sports analytics engine for outcome and form forecasting',
     tags: ['typescript', 'ml ops', 'data viz'],
     links: [
-      { label: 'github', href: 'https://github.com/placeholder/henley-predictor' },
-      { label: 'demo', href: 'https://example.com/henley' }
+      { label: 'github', href: 'https://github.com/zidank6/henley-regatta-predictor' },
     ],
     bullets: [
-      'ensemble scoring across historical form and matchup data',
-      'interactive confidence curves and season overlays',
-      'auto-refresh pipeline for matchweek updates'
+      'scikit-learn model predicting Henley Royal Regatta race outcomes',
+      'trained on historical performance data from the single-elimination tournament'
     ]
   }
 ];
