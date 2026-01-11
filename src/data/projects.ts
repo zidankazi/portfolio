@@ -9,6 +9,7 @@ export type Project = {
   tags: string[];
   links: ProjectLink[];
   bullets: string[];
+  notice?: string;
 };
 
 export const projects: Project[] = [
@@ -19,6 +20,7 @@ export const projects: Project[] = [
     links: [
       { label: 'github', href: 'https://github.com/Zilean-Core/zilean' },
     ],
+    notice: 'github repo is private',
     bullets: [
       'menu-bar macOS app that tracks apps, window titles, and browser tabs to classify focus in real time',
       'deterministic-first pipeline with rules, history reuse, and LLM fallback aligned to user-defined goals',

@@ -15,6 +15,11 @@ export const ProjectCard = ({ project }: { project: Project }) => {
         <div>
           <h3 className="font-heading text-xl text-ink-100">{project.title}</h3>
           <p className="mt-2 text-sm text-chrome-400">{project.description}</p>
+          {project.notice ? (
+            <p className="mt-2 text-xs uppercase tracking-[0.2em] text-amber-300">
+              {project.notice}
+            </p>
+          ) : null}
         </div>
         <div className="flex gap-2 text-xs tracking-[0.2em]">
           {project.links.map((link) => (
