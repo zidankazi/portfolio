@@ -30,7 +30,7 @@ export const projects: Project[] = [
   {
     title: 'beatrix',
     description: 'AI-powered business development intelligence for government contractors',
-    tags: ['react', 'collaboration', 'design systems'],
+    tags: ['next.js', 'typescript', 'postgresql', 'openai api'],
     links: [
       { label: 'github', href: 'https://github.com/zidank6/beatrix/' },
     ],
