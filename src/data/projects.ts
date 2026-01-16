@@ -35,6 +35,7 @@ export const projects: Project[] = [
     links: [
       { label: 'github', href: 'https://github.com/zidank6/beatrix/' },
     ],
+    notice: 'github repo is private',
     bullets: [
       'ranks federal contract opportunities with explainable go/no-go recommendations',
       'OpenAI embeddings for semantic similarity and past-performance alignment scoring',
