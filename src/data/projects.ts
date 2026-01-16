@@ -19,6 +19,7 @@ export const projects: Project[] = [
     tags: ['next.js', 'electron', 'typescript', 'sqlite'],
     links: [
       { label: 'github', href: 'https://github.com/Zilean-Core/zilean' },
+      { label: 'site', href: 'https://zilean-site.vercel.app/' },
     ],
     notice: 'github repo is private',
     bullets: [
