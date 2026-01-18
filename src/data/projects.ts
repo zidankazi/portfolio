@@ -15,7 +15,7 @@ export type Project = {
 export const projects: Project[] = [
   {
     title: 'zilean',
-    description: 'focus assistant that detects distraction and enforces guardrails.',
+    description: 'AI-powered productivity & time-tracking app for macOS.',
     tags: ['next.js', 'electron', 'typescript', 'sqlite'],
     links: [
       { label: 'github', href: 'https://github.com/Zilean-Core/zilean' },
