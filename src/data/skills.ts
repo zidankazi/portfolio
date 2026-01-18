@@ -54,10 +54,13 @@ export const skillCategories: SkillCategory[] = [
             { name: 'TypeScript', icon: 'typescript' },
             { name: 'JavaScript', icon: 'javascript' },
             { name: 'Java', icon: 'java' },
-            { name: 'Swift', icon: 'swift' },
+            { name: 'C++', icon: 'cplusplus' },
             { name: 'C', icon: 'c' },
+            { name: 'Swift', icon: 'swift' },
+            { name: 'Objective-C', icon: 'objectivec' },
             { name: 'SQL', icon: 'mysql' },
             { name: 'Bash', icon: 'gnubash' },
+            { name: 'ARM64', icon: 'arm' },
         ],
     },
     {
@@ -114,7 +117,6 @@ export const skillCategories: SkillCategory[] = [
             { name: 'xAI / Grok', icon: 'x' },
             { name: 'LangChain', icon: 'langchain' },
             { name: 'Hugging Face', icon: 'huggingface' },
-            { name: 'PyTorch', icon: 'pytorch' },
         ],
     },
     {
