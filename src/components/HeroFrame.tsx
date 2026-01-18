@@ -3,6 +3,7 @@
 import { motion, useMotionValue, useReducedMotion, useSpring } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { profile } from '@/data/profile';
+import { SkillsTicker } from '@/components/SkillsTicker';
 
 const heroCandidates = ['/hero/hero.gif', '/hero/hero.png', '/hero/01.png', '/hero/1.png', '/hero/cover.png'];
 
@@ -118,8 +119,8 @@ export const HeroFrame = () => {
         </div>
       </div>
 
-      <div className="px-8 pb-10">
-        <div className="min-h-[260px] bg-transparent md:min-h-[320px]" />
+      <div className="px-8 pb-8">
+        <SkillsTicker />
       </div>
     </motion.section>
   );
