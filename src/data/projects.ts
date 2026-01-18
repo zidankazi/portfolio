@@ -36,7 +36,6 @@ export const projects: Project[] = [
       { label: 'github', href: 'https://github.com/zidank6/sage' },
       { label: 'demo', href: 'https://x.com/zidaaaaaaaannnn/status/2012721935369515508' },
     ],
-    notice: 'github repo is private',
     bullets: [
       'iMessage extension with real-time AI responses via xAI\'s Grok API',
       'live search integration for up-to-date answers from web, news, and X',
