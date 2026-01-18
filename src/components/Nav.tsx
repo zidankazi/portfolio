@@ -13,6 +13,9 @@ export const Nav = () => {
         <Link href="/projects" className="transition hover:text-ink-100">
           projects
         </Link>
+        <Link href="/skills" className="transition hover:text-ink-100">
+          skills
+        </Link>
         <Link href="/contact" className="transition hover:text-ink-100">
           contact
         </Link>
