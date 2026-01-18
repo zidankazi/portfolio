@@ -20,6 +20,7 @@ const getIconUrl = (icon: string): string => {
         // OpenAI and Claude icons from jsdelivr npm (confirmed working)
         openai: 'https://cdn.jsdelivr.net/npm/simple-icons@14.2.0/icons/openai.svg',
         anthropic: 'https://cdn.jsdelivr.net/npm/simple-icons@14.2.0/icons/claude.svg',
+        gemini: `${SIMPLE_ICONS}/googlegemini/white`,
         react: `${SIMPLE_ICONS}/react/white`,
         nextjs: `${SIMPLE_ICONS}/nextdotjs/white`,
         nodejs: `${SIMPLE_ICONS}/nodedotjs/white`,
