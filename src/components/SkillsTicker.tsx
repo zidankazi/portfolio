@@ -113,7 +113,7 @@ const TickerRow = ({
                         ? `ticker-${direction} var(--ticker-duration) linear infinite`
                         : 'none',
                     ['--ticker-distance' as string]: `-${setWidth}px`,
-                    ['--ticker-duration' as string]: isMobile ? '12s' : '20s',
+                    ['--ticker-duration' as string]: isMobile ? '18s' : '20s',
                 } as React.CSSProperties}
             >
                 {/* First set */}
