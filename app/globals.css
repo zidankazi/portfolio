@@ -50,3 +50,8 @@ a {
     transform: translateX(0);
   }
 }
+
+/* Pause animation on hover */
+.ticker-row:hover>div {
+  animation-play-state: paused !important;
+}
