@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useRef, useState, useEffect } from 'react';
 import { skillsRow1, skillsRow2, type Skill } from '@/data/skills';
 
 // Simple Icons CDN with white color for dark theme
@@ -51,19 +52,19 @@ const SkillPill = ({ skill }: { skill: Skill }) => {
     const needsInvert = iconUrl.includes('jsdelivr.net/npm/simple-icons') || iconUrl.includes('devicons'); // These SVGs need inversion for dark theme
 
     return (
-        <div className="flex flex-shrink-0 items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06]">
+        <div className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06] sm:gap-2.5 sm:px-4 sm:py-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
                 src={iconUrl}
                 alt={skill.name}
-                className={`h-5 w-5 flex-shrink-0 object-contain opacity-80 ${needsInvert ? 'brightness-0 invert' : ''}`}
+                className={`h-3.5 w-3.5 flex-shrink-0 object-contain opacity-80 sm:h-5 sm:w-5 ${needsInvert ? 'brightness-0 invert' : ''}`}
                 loading="lazy"
                 onError={(e) => {
                     // Hide broken images gracefully
                     (e.target as HTMLImageElement).style.display = 'none';
                 }}
             />
-            <span className="text-xs tracking-wider text-chrome-400 whitespace-nowrap">
+            <span className="text-[10px] tracking-wider text-chrome-400 whitespace-nowrap sm:text-xs">
                 {skill.name}
             </span>
         </div>
@@ -77,8 +78,26 @@ const TickerRow = ({
     skills: Skill[];
     direction?: 'left' | 'right';
 }) => {
-    // Duplicate skills for seamless loop
-    const duplicatedSkills = [...skills, ...skills, ...skills];
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [setWidth, setSetWidth] = useState(0);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const measure = () => {
+            if (containerRef.current) {
+                const firstSet = containerRef.current.querySelector('[data-set="first"]');
+                if (firstSet) {
+                    // Add width of gap spacer (8px mobile, 12px desktop)
+                    const gapWidth = window.innerWidth < 640 ? 8 : 12;
+                    setSetWidth(firstSet.scrollWidth + gapWidth);
+                }
+            }
+            setIsMobile(window.innerWidth < 640);
+        };
+        measure();
+        window.addEventListener('resize', measure);
+        return () => window.removeEventListener('resize', measure);
+    }, [skills]);
 
     return (
         <div className="ticker-row group relative overflow-hidden">
@@ -87,12 +106,32 @@ const TickerRow = ({
             <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-16 bg-gradient-to-l from-ink-800 to-transparent" />
 
             <div
-                className={`flex gap-3 ${direction === 'left' ? 'animate-scroll-left' : 'animate-scroll-right'
-                    } group-hover:[animation-play-state:paused]`}
+                ref={containerRef}
+                className="flex group-hover:[animation-play-state:paused]"
+                style={{
+                    animation: setWidth > 0
+                        ? `ticker-${direction} var(--ticker-duration) linear infinite`
+                        : 'none',
+                    ['--ticker-distance' as string]: `-${setWidth}px`,
+                    ['--ticker-duration' as string]: isMobile ? '12s' : '20s',
+                } as React.CSSProperties}
             >
-                {duplicatedSkills.map((skill, index) => (
-                    <SkillPill key={`${skill.name}-${index}`} skill={skill} />
-                ))}
+                {/* First set */}
+                <div data-set="first" className="flex shrink-0 gap-2 sm:gap-3">
+                    {skills.map((skill, index) => (
+                        <SkillPill key={`a-${skill.name}-${index}`} skill={skill} />
+                    ))}
+                </div>
+                {/* Gap between sets */}
+                <div className="w-2 shrink-0 sm:w-3" />
+                {/* Second set (duplicate for seamless loop) */}
+                <div data-set="second" className="flex shrink-0 gap-2 sm:gap-3">
+                    {skills.map((skill, index) => (
+                        <SkillPill key={`b-${skill.name}-${index}`} skill={skill} />
+                    ))}
+                </div>
+                {/* Gap after second set */}
+                <div className="w-2 shrink-0 sm:w-3" />
             </div>
         </div>
     );
@@ -106,3 +145,4 @@ export const SkillsTicker = () => {
         </div>
     );
 };
+
