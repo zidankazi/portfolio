@@ -21,6 +21,7 @@ export const skillsRow1: Skill[] = [
     { name: 'SQL', icon: 'mysql' },
     { name: 'Claude', icon: 'anthropic' },
     { name: 'OpenAI', icon: 'openai' },
+    { name: 'Gemini', icon: 'gemini' },
     { name: 'xAI', icon: 'x' },
 ];
 
@@ -109,6 +110,7 @@ export const skillCategories: SkillCategory[] = [
         skills: [
             { name: 'Claude', icon: 'anthropic' },
             { name: 'OpenAI', icon: 'openai' },
+            { name: 'Gemini', icon: 'gemini' },
             { name: 'xAI / Grok', icon: 'x' },
             { name: 'LangChain', icon: 'langchain' },
             { name: 'Hugging Face', icon: 'huggingface' },
