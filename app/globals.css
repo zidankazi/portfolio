@@ -30,29 +30,23 @@ a {
   text-decoration: none;
 }
 
-/* Skills ticker animations */
-@keyframes scroll-left {
+/* Skills ticker animations - using CSS variables for precise pixel-based animation */
+@keyframes ticker-left {
   0% {
     transform: translateX(0);
   }
+
   100% {
-    transform: translateX(-33.333%);
+    transform: translateX(var(--ticker-distance));
   }
 }
 
-@keyframes scroll-right {
+@keyframes ticker-right {
   0% {
-    transform: translateX(-33.333%);
+    transform: translateX(var(--ticker-distance));
   }
+
   100% {
     transform: translateX(0);
   }
-}
-
-.animate-scroll-left {
-  animation: scroll-left 40s linear infinite;
-}
-
-.animate-scroll-right {
-  animation: scroll-right 40s linear infinite;
 }

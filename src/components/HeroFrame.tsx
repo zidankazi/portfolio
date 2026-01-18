@@ -69,9 +69,9 @@ export const HeroFrame = () => {
     >
 
       <div className="relative z-10">
-        <div className="flex gap-6 p-8">
+        <div className="flex flex-col gap-4 p-4 sm:flex-row sm:gap-6 sm:p-8">
           <motion.div
-            className="relative h-[200px] w-[200px] flex-shrink-0 overflow-hidden rounded-lg border border-white/10 bg-ink-800 shadow-lift"
+            className="relative mx-auto h-[140px] w-[140px] flex-shrink-0 overflow-hidden rounded-lg border border-white/10 bg-ink-800 shadow-lift sm:mx-0 sm:h-[200px] sm:w-[200px]"
             style={{
               translateX: springX,
               translateY: springY
@@ -90,9 +90,9 @@ export const HeroFrame = () => {
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-ink-950/40 via-transparent to-ink-950/40" />
           </motion.div>
 
-          <div className="flex flex-col justify-center gap-3">
+          <div className="flex flex-col items-center gap-3 text-center sm:items-start sm:justify-center sm:text-left">
             <motion.h1
-              className="font-heading text-3xl text-ink-100 md:text-4xl"
+              className="font-heading text-2xl text-ink-100 sm:text-3xl md:text-4xl"
               initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: prefersReducedMotion ? 0 : 0.1 }}
@@ -119,7 +119,7 @@ export const HeroFrame = () => {
         </div>
       </div>
 
-      <div className="px-8 pb-8">
+      <div className="px-4 pb-4 sm:px-8 sm:pb-8">
         <SkillsTicker />
       </div>
     </motion.section>

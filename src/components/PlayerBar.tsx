@@ -19,9 +19,10 @@ export const PlayerBar = () => {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-30 border-t border-white/5 bg-ink-900/90 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-4 px-6 py-4">
-        <div className="flex min-w-[220px] flex-1 items-center gap-4">
-          <div className="h-12 w-12 overflow-hidden rounded-xl border border-white/10 bg-ink-800">
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-2 px-3 py-2 sm:gap-4 sm:px-6 sm:py-4">
+        {/* Track info */}
+        <div className="flex flex-1 items-center gap-2 sm:min-w-[220px] sm:gap-4">
+          <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg border border-white/10 bg-ink-800 sm:h-12 sm:w-12 sm:rounded-xl">
             {currentTrack?.coverSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -33,43 +34,45 @@ export const PlayerBar = () => {
               <div className="h-full w-full bg-gradient-to-br from-white/10 via-transparent to-white/5" />
             )}
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold text-ink-100">{currentTrack?.title ?? 'no track loaded'}</span>
-            <span className="text-xs text-chrome-400">
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-xs font-semibold text-ink-100 sm:text-sm">{currentTrack?.title ?? 'no track loaded'}</span>
+            <span className="truncate text-[10px] text-chrome-400 sm:text-xs">
               {currentTrack ? `${currentTrack.artist} · ${currentTrack.album}` : 'daft punk shuffle'}
             </span>
             {error ? <span className="text-[10px] text-chrome-500">{error}</span> : null}
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Controls */}
+        <div className="flex items-center gap-1.5 sm:gap-3">
           <button
             type="button"
-            className="rounded-full border border-white/10 bg-ink-800 px-3 py-2 text-ink-100 transition hover:-translate-y-0.5 hover:border-white/20"
+            className="rounded-full border border-white/10 bg-ink-800 p-1.5 text-ink-100 transition hover:-translate-y-0.5 hover:border-white/20 sm:px-3 sm:py-2"
             onClick={controls.previous}
             aria-label="previous track"
           >
-            <SkipBack size={16} />
+            <SkipBack size={14} className="sm:h-4 sm:w-4" />
           </button>
           <button
             type="button"
-            className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-ink-100 transition hover:-translate-y-0.5 hover:border-white/30"
+            className="rounded-full border border-white/15 bg-white/10 p-2 text-ink-100 transition hover:-translate-y-0.5 hover:border-white/30 sm:px-4 sm:py-2"
             onClick={controls.toggle}
             aria-label={isPlaying ? 'pause' : 'play'}
           >
-            {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+            {isPlaying ? <Pause size={14} className="sm:h-4 sm:w-4" /> : <Play size={14} className="sm:h-4 sm:w-4" />}
           </button>
           <button
             type="button"
-            className="rounded-full border border-white/10 bg-ink-800 px-3 py-2 text-ink-100 transition hover:-translate-y-0.5 hover:border-white/20"
+            className="rounded-full border border-white/10 bg-ink-800 p-1.5 text-ink-100 transition hover:-translate-y-0.5 hover:border-white/20 sm:px-3 sm:py-2"
             onClick={controls.next}
             aria-label="next track"
           >
-            <SkipForward size={16} />
+            <SkipForward size={14} className="sm:h-4 sm:w-4" />
           </button>
         </div>
 
-        <div className="flex flex-1 items-center gap-4 min-w-[240px]">
+        {/* Progress bar - simplified on mobile */}
+        <div className="hidden flex-1 items-center gap-4 sm:flex sm:min-w-[240px]">
           <div className="flex flex-1 items-center gap-3">
             <span className="text-[11px] text-chrome-400">{formatTime(currentTime)}</span>
             <input
@@ -98,7 +101,8 @@ export const PlayerBar = () => {
           </div>
         </div>
 
-        <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] tracking-[0.2em] text-chrome-400">
+        {/* Shuffle badge - hidden on mobile */}
+        <div className="hidden rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] tracking-[0.2em] text-chrome-400 sm:block">
           daft punk shuffle
         </div>
       </div>
@@ -111,3 +115,4 @@ export const PlayerBar = () => {
     </div>
   );
 };
+
