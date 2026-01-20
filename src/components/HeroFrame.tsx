@@ -100,12 +100,12 @@ export const HeroFrame = () => {
               {profile.name}
             </motion.h1>
             <motion.p
-              className="max-w-xl text-sm text-chrome-300"
+              className="max-w-xl text-balance text-sm text-chrome-300"
               initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: prefersReducedMotion ? 0 : 0.2 }}
             >
-              cs @ stevens, interested in mechanistic interpretability & building value-aligned ai systems
+              cs @ stevens, interested in mechanistic interpretability & software that amplifies human agency
             </motion.p>
             <div className="flex flex-wrap gap-2 text-[11px] tracking-[0.3em] text-chrome-400">
               <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
