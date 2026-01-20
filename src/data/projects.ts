@@ -15,17 +15,17 @@ export type Project = {
 export const projects: Project[] = [
   {
     title: 'zilean',
-    description: 'AI-powered productivity & time-tracking app for macOS.',
-    tags: ['next.js', 'electron', 'typescript', 'sqlite'],
+    description: 'autonomous macos productivity engine that passively tracks context to classify focus and block distractions.',
+    tags: ['typescript', 'electron', 'next.js', 'ai agents'],
     links: [
       { label: 'github', href: 'https://github.com/Zilean-Core/zilean' },
       { label: 'site', href: 'https://zilean-site.vercel.app/' },
     ],
     notice: 'github repo is private',
     bullets: [
-      'menu-bar macOS app that tracks apps, window titles, and browser tabs to classify focus in real time',
-      'deterministic-first pipeline with rules, history reuse, and LLM fallback aligned to user-defined goals',
-      'default-to-distracting behavior with auditable decisions and clear guardrails'
+      'background telemetry engine that captures precise app/browser context to reconstruct digital activity without data leaving the device',
+      'hybrid classification pipeline optimized for local-first speed, falling back to LLM agents for semantic understanding of complex workflows',
+      "enforces a 'guilty-until-proven-productive' philosophy with sophisticated distraction blocking and granular session auditing"
     ]
   },
   {
