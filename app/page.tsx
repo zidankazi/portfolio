@@ -8,6 +8,23 @@ import { projects } from '@/data/projects';
 
 export default function HomePage() {
   const prefersReducedMotion = useReducedMotion();
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.3,
+      },
+    },
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 50, damping: 20 } },
+  };
+
   return (
     <motion.main
       className="flex flex-col gap-12 pb-20"
@@ -19,7 +36,15 @@ export default function HomePage() {
 
       <section className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
-          <h2 className="font-heading text-2xl text-ink-100">projects</h2>
+          <motion.h2
+            className="font-heading text-2xl text-ink-100"
+            initial={{ opacity: 0, x: -10 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ duration: 0.5 }}
+          >
+            projects
+          </motion.h2>
           <Link
             href="/projects"
             className="text-xs tracking-[0.3em] text-chrome-400 transition hover:text-ink-100"
@@ -27,11 +52,19 @@ export default function HomePage() {
             view all
           </Link>
         </div>
-        <div className="grid gap-6 lg:grid-cols-2">
+        <motion.div
+          className="grid gap-6 lg:grid-cols-2"
+          variants={!prefersReducedMotion ? container : undefined}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-50px' }}
+        >
           {projects.map((project) => (
-            <ProjectCard key={project.title} project={project} />
+            <motion.div key={project.title} variants={item}>
+              <ProjectCard project={project} />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </section>
     </motion.main>
   );

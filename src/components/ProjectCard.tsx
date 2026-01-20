@@ -1,19 +1,48 @@
 'use client';
 
-import { useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { AnimatePresence, motion, useReducedMotion, useMotionTemplate, useMotionValue } from 'framer-motion';
 import type { Project } from '@/data/projects';
 
 export const ProjectCard = ({ project }: { project: Project }) => {
   const prefersReducedMotion = useReducedMotion();
   const [clickedLink, setClickedLink] = useState<string | null>(null);
+
+  // Spotlight effect
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  const handleMouseMove = useCallback(
+    ({ clientX, clientY, currentTarget }: React.MouseEvent) => {
+      const { left, top } = currentTarget.getBoundingClientRect();
+      mouseX.set(clientX - left);
+      mouseY.set(clientY - top);
+    },
+    [mouseX, mouseY]
+  );
+
   return (
     <motion.article
-      whileHover={prefersReducedMotion ? undefined : { y: -4 }}
-      transition={{ duration: prefersReducedMotion ? 0 : 0.25 }}
-      className="rounded-2xl border border-white/10 bg-ink-900/70 p-6 shadow-frame"
+      whileHover={prefersReducedMotion ? undefined : { y: -8 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+      onMouseMove={handleMouseMove}
+      className="group relative rounded-2xl border border-white/10 bg-ink-900/70 p-6 shadow-frame overflow-hidden"
     >
-      <div className="flex items-start justify-between gap-4">
+      {/* Spotlight Gradient */}
+      <motion.div
+        className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 transition duration-300 group-hover:opacity-100"
+        style={{
+          background: useMotionTemplate`
+            radial-gradient(
+              650px circle at ${mouseX}px ${mouseY}px,
+              rgba(255, 255, 255, 0.1),
+              transparent 80%
+            )
+          `,
+        }}
+      />
+
+      <div className="relative z-10 flex items-start justify-between gap-4">
         <div>
           <h3 className="font-heading text-xl text-ink-100">{project.title}</h3>
           <p className="mt-2 text-sm text-chrome-400">{project.description}</p>

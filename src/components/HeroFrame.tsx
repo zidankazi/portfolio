@@ -1,7 +1,7 @@
 'use client';
 
-import { motion, useMotionValue, useReducedMotion, useSpring } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
 import { profile } from '@/data/profile';
 import { SkillsTicker } from '@/components/SkillsTicker';
 
@@ -10,10 +10,19 @@ const heroCandidates = ['/hero/hero.gif', '/hero/hero.png', '/hero/01.png', '/he
 export const HeroFrame = () => {
   const prefersReducedMotion = useReducedMotion();
   const [heroSrc, setHeroSrc] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Mouse tilt
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const springX = useSpring(x, { stiffness: 120, damping: 16, mass: 0.2 });
   const springY = useSpring(y, { stiffness: 120, damping: 16, mass: 0.2 });
+
+  // Scroll parallax
+  const { scrollY } = useScroll();
+  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
+  const heroBlur = useTransform(scrollY, [0, 400], ['blur(0px)', 'blur(12px)']);
+  const heroY = useTransform(scrollY, [0, 400], [0, 100]); // Parallax shift
 
   useEffect(() => {
     let mounted = true;
@@ -60,12 +69,18 @@ export const HeroFrame = () => {
 
   return (
     <motion.section
+      ref={containerRef}
       className="relative overflow-hidden rounded-[28px] border border-white/10 bg-transparent shadow-frame"
       initial={prefersReducedMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: prefersReducedMotion ? 0 : 0.6, ease: 'easeOut' }}
       onMouseMove={handleMove}
       onMouseLeave={handleLeave}
+      style={{
+        opacity: heroOpacity,
+        filter: heroBlur,
+        y: heroY,
+      }}
     >
 
       <div className="relative z-10">
@@ -73,8 +88,8 @@ export const HeroFrame = () => {
           <motion.div
             className="relative mx-auto h-[140px] w-[140px] flex-shrink-0 overflow-hidden rounded-lg border border-white/10 bg-ink-800 shadow-lift sm:mx-0 sm:h-[200px] sm:w-[200px]"
             style={{
-              translateX: springX,
-              translateY: springY
+              x: springX,
+              y: springY,
             }}
           >
             {heroSrc ? (
