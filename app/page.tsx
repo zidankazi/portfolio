@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import { HeroFrame } from '@/components/HeroFrame';
-import { ProjectCard } from '@/components/ProjectCard';
+import { FeaturedProject } from '@/components/FeaturedProject';
 import { projects } from '@/data/projects';
 
 export default function HomePage() {
@@ -52,19 +52,11 @@ export default function HomePage() {
             view all
           </Link>
         </div>
-        <motion.div
-          className="grid gap-6 lg:grid-cols-2"
-          variants={!prefersReducedMotion ? container : undefined}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-50px' }}
-        >
-          {projects.slice(0, 2).map((project) => (
-            <motion.div key={project.title} variants={item}>
-              <ProjectCard project={project} />
-            </motion.div>
+        <div className="flex flex-col gap-24 lg:gap-32">
+          {projects.slice(0, 2).map((project, index) => (
+            <FeaturedProject key={project.title} project={project} index={index} />
           ))}
-        </motion.div>
+        </div>
       </section>
     </motion.main>
   );

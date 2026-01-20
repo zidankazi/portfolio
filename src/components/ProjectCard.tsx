@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { AnimatePresence, motion, useReducedMotion, useMotionTemplate, useMotionValue } from 'framer-motion';
 import type { Project } from '@/data/projects';
@@ -28,6 +29,8 @@ export const ProjectCard = ({ project }: { project: Project }) => {
       onMouseMove={handleMouseMove}
       className="group relative rounded-2xl border border-white/10 bg-ink-900/70 p-6 shadow-frame overflow-hidden"
     >
+
+
       {/* Spotlight Gradient */}
       <motion.div
         className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 transition duration-300 group-hover:opacity-100"
@@ -42,7 +45,7 @@ export const ProjectCard = ({ project }: { project: Project }) => {
         }}
       />
 
-      <div className="relative z-10 flex items-start justify-between gap-4">
+      <div className="relative z-20 flex items-start justify-between gap-4">
         <div>
           <h3 className="font-heading text-xl text-ink-100">{project.title}</h3>
           <p className="mt-2 text-sm text-chrome-400">{project.description}</p>
@@ -86,17 +89,17 @@ export const ProjectCard = ({ project }: { project: Project }) => {
           ))}
         </div>
       </div>
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="relative z-20 mt-4 flex flex-wrap gap-2">
         {project.tags.map((tag) => (
           <span
             key={tag}
-            className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] tracking-[0.3em] text-chrome-400"
+            className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] tracking-[0.3em] text-chrome-400 backdrop-blur-sm"
           >
             {tag}
           </span>
         ))}
       </div>
-      <ul className="mt-4 space-y-2 text-sm text-ink-200">
+      <ul className="relative z-20 mt-4 space-y-2 text-sm text-ink-200">
         {project.bullets.map((bullet) => (
           <li key={bullet} className="flex items-start gap-2">
             <span className="mt-1 h-1.5 w-1.5 rounded-full bg-white/50" />

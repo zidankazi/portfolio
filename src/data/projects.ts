@@ -10,6 +10,8 @@ export type Project = {
   links: ProjectLink[];
   bullets: string[];
   notice?: string;
+  image?: string;
+  orientation?: 'landscape' | 'portrait';
 };
 
 export const projects: Project[] = [
@@ -22,6 +24,8 @@ export const projects: Project[] = [
       { label: 'site', href: 'https://zilean-site.vercel.app/' },
     ],
     notice: 'github repo is private',
+    image: '/projects/zilean_desktop.png',
+    orientation: 'landscape',
     bullets: [
       'tracks active windows and browser DOM to quantify productivity vs. distraction in real-time',
       'hybrid engine uses cached rules for instant (<10ms) classification, falling back to local LLMs only for ambiguity',
@@ -36,6 +40,8 @@ export const projects: Project[] = [
       { label: 'github', href: 'https://github.com/zidank6/sage' },
       { label: 'demo', href: 'https://x.com/zidaaaaaaaannnn/status/2012721935369515508' },
     ],
+    image: '/projects/sage.png',
+    orientation: 'portrait',
     bullets: [
       'native iMessage extension that streams real-time AI responses via xAI\'s Grok API',
       'enabled live web search for up-to-the-minute answers on news and crypto within message threads',
