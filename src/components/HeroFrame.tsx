@@ -20,9 +20,9 @@ export const HeroFrame = () => {
 
   // Scroll parallax
   const { scrollY } = useScroll();
-  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
-  const heroBlur = useTransform(scrollY, [0, 400], ['blur(0px)', 'blur(12px)']);
-  const heroY = useTransform(scrollY, [0, 400], [0, 100]); // Parallax shift
+  const heroOpacity = useTransform(scrollY, [100, 600], [1, 0]);
+  const heroBlur = useTransform(scrollY, [100, 600], ['blur(0px)', 'blur(16px)']);
+  const heroY = useTransform(scrollY, [0, 600], [0, 150]); // Parallax shift
 
   useEffect(() => {
     let mounted = true;
