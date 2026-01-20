@@ -67,5 +67,18 @@ export const projects: Project[] = [
       'trained a scikit-learn model on decades of historical race data to forecast winners',
       'visualized form and outcome probabilities to identify upsets before they happened'
     ]
+  },
+  {
+    title: 'portfolio',
+    description: 'minimalist, fast, and interactive.',
+    tags: ['next.js', 'react', 'tailwind', 'framer motion'],
+    links: [
+      { label: 'github', href: 'https://github.com/zidank6/portfolio' },
+      { label: 'site', href: 'https://zidankazi.com' },
+    ],
+    bullets: [
+      'designed a magnetic, high-performance interface with custom animations (Framer Motion) and refined typography',
+      'engineered a global music player streaming high-fidelity audio via Cloudflare R2 for instant, latency-free playback'
+    ]
   }
 ];
