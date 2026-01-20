@@ -1,10 +1,12 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { Project } from '@/data/projects';
 
 export const ProjectCard = ({ project }: { project: Project }) => {
   const prefersReducedMotion = useReducedMotion();
+  const [clickedLink, setClickedLink] = useState<string | null>(null);
   return (
     <motion.article
       whileHover={prefersReducedMotion ? undefined : { y: -4 }}
@@ -23,15 +25,35 @@ export const ProjectCard = ({ project }: { project: Project }) => {
         </div>
         <div className="flex gap-2 text-xs tracking-[0.2em]">
           {project.links.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-chrome-400 transition hover:text-ink-100"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {link.label}
-            </a>
+            <div key={link.label} className="relative">
+              <a
+                href={link.href}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-chrome-400 transition hover:text-ink-100"
+                target={link.label === 'site' && project.title === 'portfolio' ? '_self' : '_blank'}
+                rel="noreferrer"
+                onClick={(e) => {
+                  if (link.label === 'site' && project.title === 'portfolio') {
+                    e.preventDefault();
+                    setClickedLink(link.label);
+                    setTimeout(() => setClickedLink(null), 2000);
+                  }
+                }}
+              >
+                {link.label}
+              </a>
+              <AnimatePresence>
+                {clickedLink === link.label && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute bottom-full left-1/2 mb-2 w-max -translate-x-1/2 rounded border border-amber-300/20 bg-ink-900 px-2 py-1 text-[10px] text-amber-300 shadow-xl"
+                  >
+                    you&apos;re already there :]
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           ))}
         </div>
       </div>
