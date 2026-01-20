@@ -43,7 +43,7 @@ export default function HomePage() {
             viewport={{ once: true, margin: '-50px' }}
             transition={{ duration: 0.5 }}
           >
-            projects
+            featured projects
           </motion.h2>
           <Link
             href="/projects"
@@ -59,7 +59,7 @@ export default function HomePage() {
           whileInView="show"
           viewport={{ once: true, margin: '-50px' }}
         >
-          {projects.map((project) => (
+          {projects.slice(0, 2).map((project) => (
             <motion.div key={project.title} variants={item}>
               <ProjectCard project={project} />
             </motion.div>
