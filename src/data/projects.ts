@@ -15,57 +15,57 @@ export type Project = {
 export const projects: Project[] = [
   {
     title: 'zilean',
-    description: 'autonomous macos productivity engine that passively tracks context to classify focus and block distractions.',
-    tags: ['typescript', 'electron', 'next.js', 'ai agents'],
+    description: 'privacy-first productivity agent that tracks your digital context to measure focus without sending data to the cloud.',
+    tags: ['typescript', 'electron', 'sqlite', 'local llms'],
     links: [
       { label: 'github', href: 'https://github.com/Zilean-Core/zilean' },
       { label: 'site', href: 'https://zilean-site.vercel.app/' },
     ],
     notice: 'github repo is private',
     bullets: [
-      'background telemetry engine that captures precise app/browser context to reconstruct digital activity without data leaving the device',
-      'hybrid classification pipeline optimized for local-first speed, falling back to LLM agents for semantic understanding of complex workflows',
-      "enforces a 'guilty-until-proven-productive' philosophy with sophisticated distraction blocking and granular session auditing"
+      'tracks active windows and browser DOM to quantify productivity vs. distraction in real-time',
+      'hybrid engine uses cached rules for instant (<10ms) classification, falling back to local LLMs only for ambiguity',
+      'optimized SQLite event loop logs continuous telemetry with <1% CPU usage to prevent battery drain'
     ]
   },
   {
     title: 'sage',
-    description: '@grok but for iMessage, powered by xAI.',
+    description: 'iMessage supercharged with xAI\'s Grok, bringing live internet access to your group chats.',
     tags: ['swift', 'swiftui', 'xai api', 'ios'],
     links: [
       { label: 'github', href: 'https://github.com/zidank6/sage' },
       { label: 'demo', href: 'https://x.com/zidaaaaaaaannnn/status/2012721935369515508' },
     ],
     bullets: [
-      'iMessage extension with real-time AI responses via xAI\'s Grok API',
-      'live search integration for up-to-date answers from web, news, and X',
-      'streaming responses with native SwiftUI interface and conversation history'
+      'native iMessage extension that streams real-time AI responses via xAI\'s Grok API',
+      'enabled live web search for up-to-the-minute answers on news and crypto within message threads',
+      'built with SwiftUI for a seamless, Apple-native feel that matches the iOS design system'
     ]
   },
   {
     title: 'beatrix',
-    description: 'AI-powered business development intelligence for government contractors',
-    tags: ['next.js', 'typescript', 'postgresql', 'openai api'],
+    description: 'govcon bid analyzer that scans 100+ page contracts to find winning opportunities.',
+    tags: ['next.js', 'typescript', 'postgresql', 'openai'],
     links: [
       { label: 'github', href: 'https://github.com/zidank6/beatrix/' },
     ],
     notice: 'github repo is private',
     bullets: [
-      'ranks federal contract opportunities with explainable go/no-go recommendations',
-      'OpenAI embeddings for semantic similarity and past-performance alignment scoring',
-      'PostgreSQL + pgvector pipeline cutting BD triage from 10+ hours to under 3 hours weekly'
+      'scans 100+ page government RFPs and ranks them against company past performance',
+      'reduced weekly triage time by 70% (10 hrs → 3 hrs) using automated vector search',
+      'interactive dashboard shows exact text citations to build trust with non-technical teams'
     ]
   },
   {
     title: 'henley predictor',
-    description: 'sports analytics engine for outcome and form forecasting',
-    tags: ['typescript', 'ml ops', 'data viz'],
+    description: 'sports analytics engine predicting race outcomes at the henley royal regatta.',
+    tags: ['python', 'scikit-learn', 'data viz'],
     links: [
       { label: 'github', href: 'https://github.com/zidank6/henley-regatta-predictor' },
     ],
     bullets: [
-      'scikit-learn model predicting Henley Royal Regatta race outcomes',
-      'trained on historical performance data from the single-elimination tournament'
+      'trained a scikit-learn model on decades of historical race data to forecast winners',
+      'visualized form and outcome probabilities to identify upsets before they happened'
     ]
   }
 ];
