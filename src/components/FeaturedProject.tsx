@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
+import { motion, useScroll, useTransform, useMotionValue, useSpring, MotionValue } from 'framer-motion';
 import { useRef } from 'react';
 import Image from 'next/image';
 import type { Project } from '@/data/projects';
@@ -9,71 +9,25 @@ export const FeaturedProject = ({ project, index }: { project: Project; index: n
     const containerRef = useRef<HTMLDivElement>(null);
     const isEven = index % 2 === 0;
 
-    // Reduced motion overhead - no heavy blurs/filters on scroll
-    // The 'Read Flow' is driven by viewport entry (whileInView)
-
-    const containerVariants = {
-        hidden: { opacity: 0.2 },
-        visible: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.2, // Time between Title -> Desc -> Bullets
-                delayChildren: 0.2
-            }
-        }
-    };
-
-    const titleVariants = {
-        hidden: { opacity: 0, x: -20 },
-        visible: {
-            opacity: 1,
-            x: 0,
-            transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
-        }
-    };
-
-    const textVariants = {
-        hidden: { opacity: 0, color: '#525252' }, // chrome-600
-        visible: {
-            opacity: 1,
-            color: '#f5f5f5', // ink-100
-            transition: { duration: 0.8 }
-        }
-    };
-
-    const bulletVariants = {
-        hidden: { opacity: 0, x: -10 },
-        visible: {
-            opacity: 1,
-            x: 0,
-            transition: { duration: 0.5 }
-        }
-    };
-
     return (
-        <motion.div
+        <div
             ref={containerRef}
-            className={`relative flex flex-col gap-12 rounded-[40px] px-4 py-8 lg:flex-row lg:items-center lg:gap-24 lg:p-16 ${isEven ? '' : 'lg:flex-row-reverse'
+            className={`relative flex flex-col gap-8 rounded-[40px] px-4 py-8 lg:flex-row lg:items-center lg:gap-24 lg:p-16 ${isEven ? '' : 'lg:flex-row-reverse'
                 }`}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: false, margin: '-20%' }} // Re-triggers when scrolling back up/down
-            variants={containerVariants}
         >
             {/* Content Side */}
             <div className="flex flex-1 flex-col gap-8">
-                <motion.div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-6">
                     <div className="flex items-center gap-4">
-                        {/* Title with Gradient Flow */}
-                        <motion.h3
-                            variants={titleVariants}
+                        {/* Title - Stays Gradient */}
+                        <h3
                             className={`font-heading text-5xl font-bold lg:text-7xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r ${project.colors || 'from-white to-gray-400'}`}
-                            style={{ paddingBottom: '0.1em' }} // Fix descenders getting clipped
+                            style={{ paddingBottom: '0.1em' }}
                         >
                             {project.title}
-                        </motion.h3>
+                        </h3>
 
-                        <motion.div variants={titleVariants} className="flex gap-2">
+                        <div className="flex gap-2">
                             {project.links.map((link) => (
                                 <a
                                     key={link.label}
@@ -85,65 +39,108 @@ export const FeaturedProject = ({ project, index }: { project: Project; index: n
                                     {link.label}
                                 </a>
                             ))}
-                        </motion.div>
+                        </div>
                     </div>
 
-                    <motion.p
-                        variants={textVariants}
-                        className="text-xl leading-relaxed lg:text-2xl"
-                    >
-                        {project.description}
-                    </motion.p>
-                </motion.div>
+                    {/* Main Description */}
+                    <ReadingText
+                        text={project.description}
+                        highlightColor={project.highlightColor || '#ffffff'}
+                    />
+                </div>
 
-                <motion.ul className="space-y-3">
+                <ul className="space-y-3">
                     {project.bullets.map((bullet, i) => (
-                        <motion.li
-                            key={bullet}
-                            variants={bulletVariants}
-                            className="flex items-start gap-3 text-base font-light text-chrome-200 lg:text-lg"
-                        >
+                        <li key={bullet} className="flex items-start gap-3 text-base font-light text-chrome-200 lg:text-lg">
                             <span className={`mt-2.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-gradient-to-r ${project.colors} opacity-80`} />
-                            <span className="leading-relaxed">{bullet}</span>
-                        </motion.li>
+                            {/* Bullets finish even faster */}
+                            <ReadingText
+                                text={bullet}
+                                highlightColor={project.highlightColor || '#ffffff'}
+                                offset={0} // Removed offset delay so they read immediately
+                            />
+                        </li>
                     ))}
-                </motion.ul>
+                </ul>
 
-                <motion.div
-                    variants={bulletVariants}
-                    className="flex flex-wrap gap-3 pt-2"
-                >
+                <div className="flex flex-wrap gap-3 pt-2">
                     {project.tags.map((tag) => (
                         <span key={tag} className="text-xs font-bold uppercase tracking-[0.2em] text-chrome-400/60">
                             {tag}
                         </span>
                     ))}
-                </motion.div>
+                </div>
             </div>
 
-            {/* Image Side - Simple Scale Entrance, preserved Tilt */}
-            <motion.div
-                className={`relative flex flow-row justify-center flex-1 ${project.orientation === 'portrait' ? 'lg:justify-center' : ''}`}
-                style={{ perspective: 1000 }}
-                variants={{
-                    hidden: { opacity: 0, scale: 0.95, filter: 'blur(10px)' },
-                    visible: {
-                        opacity: 1,
-                        scale: 1,
-                        filter: 'blur(0px)',
-                        transition: { duration: 0.8, delay: 0.2 }
-                    }
-                }}
-            >
+            {/* Image Side - 3D Tilt */}
+            <div className={`relative flex flow-row justify-center flex-1 ${project.orientation === 'portrait' ? 'lg:justify-center' : ''}`} style={{ perspective: 1000 }}>
                 {project.image && (
                     <ProjectImage project={project} />
                 )}
-            </motion.div>
-        </motion.div>
+            </div>
+        </div>
     );
 };
 
-/* Separated Image Component for Clean State Management */
+/* 
+  ReadingText Component - "The Snake" 🐍 (Ultra-Fast)
+  - Animation Range: 0.5 (Ends halfway through viewport)
+  - Offset: ['start 1'] (Starts immediately upon entering viewport)
+*/
+const ReadingText = ({ text, highlightColor, offset = 0 }: { text: string, highlightColor: string, offset?: number }) => {
+    const elementRef = useRef<HTMLParagraphElement>(null);
+    const { scrollYProgress } = useScroll({
+        target: elementRef,
+        offset: ['start 1', 'start 0.5'], // Start when entering bottom, 100% done by center
+    });
+
+    const smoothProgress = useSpring(scrollYProgress, { damping: 20, stiffness: 100 });
+
+    const words = text.split(' ');
+
+    return (
+        <p ref={elementRef} className="text-xl leading-relaxed lg:text-2xl flex flex-wrap gap-x-[0.25em]">
+            {words.map((word, i) => {
+                return (
+                    <span key={i} className="whitespace-nowrap">
+                        {word.split('').map((char, charIndex) => {
+                            const globalIndex = i + (charIndex / word.length);
+                            // Compress spread to 0.5. 
+                            // This creates a huge buffer: even if scroll is at 0.6, 0.7, 0.8... text is fully white.
+                            const start = (globalIndex / words.length) * 0.5;
+                            const end = start + 0.2;
+
+                            return (
+                                <Char
+                                    key={charIndex}
+                                    char={char}
+                                    range={[start, end]}
+                                    progress={smoothProgress}
+                                    highlightColor={highlightColor}
+                                />
+                            );
+                        })}
+                    </span>
+                );
+            })}
+        </p>
+    );
+};
+
+const Char = ({ char, range, progress, highlightColor }: { char: string, range: [number, number], progress: MotionValue<number>, highlightColor: string }) => {
+    const opacity = useTransform(progress, [range[0], range[1]], [0.2, 1]);
+    const color = useTransform(progress,
+        [range[0], range[0] + 0.05, range[0] + 0.15, range[1]],
+        ['#525252', highlightColor, highlightColor, '#ffffff']
+    );
+
+    return (
+        <motion.span style={{ opacity, color }}>
+            {char}
+        </motion.span>
+    );
+};
+
 const ProjectImage = ({ project }: { project: Project }) => {
     const x = useMotionValue(0);
     const mY = useMotionValue(0);

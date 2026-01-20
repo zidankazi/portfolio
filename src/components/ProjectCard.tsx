@@ -27,7 +27,7 @@ export const ProjectCard = ({ project }: { project: Project }) => {
       whileHover={prefersReducedMotion ? undefined : { y: -8 }}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       onMouseMove={handleMouseMove}
-      className="group relative rounded-2xl border border-white/10 bg-ink-900/70 p-6 shadow-frame overflow-hidden"
+      className="group relative rounded-2xl border border-white/10 bg-ink-900/70 p-6 shadow-frame"
     >
 
 
