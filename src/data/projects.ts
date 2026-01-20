@@ -12,6 +12,7 @@ export type Project = {
   notice?: string;
   image?: string;
   orientation?: 'landscape' | 'portrait';
+  colors?: string;
 };
 
 export const projects: Project[] = [
@@ -26,6 +27,7 @@ export const projects: Project[] = [
     notice: 'github repo is private',
     image: '/projects/zilean_desktop.png',
     orientation: 'landscape',
+    colors: 'from-[#FF4D4D] to-[#F9CB28]',
     bullets: [
       'tracks active windows and browser DOM to quantify productivity vs. distraction in real-time',
       'hybrid engine uses cached rules for instant (<10ms) classification, falling back to local LLMs only for ambiguity',
@@ -42,6 +44,7 @@ export const projects: Project[] = [
     ],
     image: '/projects/sage.png',
     orientation: 'portrait',
+    colors: 'from-[#FF0080] to-[#7928CA]',
     bullets: [
       'native iMessage extension that streams real-time AI responses via xAI\'s Grok API',
       'enabled live web search for up-to-the-minute answers on news and crypto within message threads',

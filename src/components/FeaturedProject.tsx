@@ -7,91 +7,136 @@ import type { Project } from '@/data/projects';
 
 export const FeaturedProject = ({ project, index }: { project: Project; index: number }) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const { scrollYProgress } = useScroll({
-        target: containerRef,
-        offset: ['start end', 'end start'],
-    });
-
-    const y = useTransform(scrollYProgress, [0, 1], [50, -50]);
-    const opacity = useTransform(scrollYProgress, [0, 0.2, 0.9, 1], [0, 1, 1, 0]);
     const isEven = index % 2 === 0;
 
-    const contentVariants = {
-        hidden: { opacity: 0 },
+    // Reduced motion overhead - no heavy blurs/filters on scroll
+    // The 'Read Flow' is driven by viewport entry (whileInView)
+
+    const containerVariants = {
+        hidden: { opacity: 0.2 },
         visible: {
             opacity: 1,
-            transition: { staggerChildren: 0.1, delayChildren: 0.1 },
-        },
+            transition: {
+                staggerChildren: 0.2, // Time between Title -> Desc -> Bullets
+                delayChildren: 0.2
+            }
+        }
     };
 
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 60, damping: 20 } },
+    const titleVariants = {
+        hidden: { opacity: 0, x: -20 },
+        visible: {
+            opacity: 1,
+            x: 0,
+            transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+        }
+    };
+
+    const textVariants = {
+        hidden: { opacity: 0, color: '#525252' }, // chrome-600
+        visible: {
+            opacity: 1,
+            color: '#f5f5f5', // ink-100
+            transition: { duration: 0.8 }
+        }
+    };
+
+    const bulletVariants = {
+        hidden: { opacity: 0, x: -10 },
+        visible: {
+            opacity: 1,
+            x: 0,
+            transition: { duration: 0.5 }
+        }
     };
 
     return (
         <motion.div
             ref={containerRef}
-            style={{ opacity }}
-            className={`flex flex-col gap-12 lg:flex-row lg:items-center lg:gap-24 ${isEven ? '' : 'lg:flex-row-reverse'
+            className={`relative flex flex-col gap-12 rounded-[40px] px-4 py-8 lg:flex-row lg:items-center lg:gap-24 lg:p-16 ${isEven ? '' : 'lg:flex-row-reverse'
                 }`}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: false, margin: '-20%' }} // Re-triggers when scrolling back up/down
+            variants={containerVariants}
         >
             {/* Content Side */}
-            <motion.div
-                className="flex flex-1 flex-col gap-6 lg:py-12"
-                variants={contentVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: '-10%' }}
-            >
-                <motion.div className="flex flex-col gap-2" variants={itemVariants}>
-                    <div className="flex items-center gap-3">
-                        <h3 className="font-heading text-4xl text-ink-100 lg:text-5xl">{project.title}</h3>
-                        {project.links.map((link) => (
-                            <a
-                                key={link.label}
-                                href={link.href}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs uppercase tracking-widest text-chrome-400 transition hover:bg-white/10 hover:text-ink-100"
-                            >
-                                {link.label}
-                            </a>
-                        ))}
+            <div className="flex flex-1 flex-col gap-8">
+                <motion.div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-4">
+                        {/* Title with Gradient Flow */}
+                        <motion.h3
+                            variants={titleVariants}
+                            className={`font-heading text-5xl font-bold lg:text-7xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r ${project.colors || 'from-white to-gray-400'}`}
+                            style={{ paddingBottom: '0.1em' }} // Fix descenders getting clipped
+                        >
+                            {project.title}
+                        </motion.h3>
+
+                        <motion.div variants={titleVariants} className="flex gap-2">
+                            {project.links.map((link) => (
+                                <a
+                                    key={link.label}
+                                    href={link.href}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="rounded-full border border-white/10 bg-white/5 px-4 py-1 text-xs font-medium uppercase tracking-widest text-chrome-400 transition hover:bg-white/10 hover:text-white"
+                                >
+                                    {link.label}
+                                </a>
+                            ))}
+                        </motion.div>
                     </div>
-                    <p className="text-xl text-chrome-300">{project.description}</p>
-                    {project.notice && (
-                        <p className="text-xs uppercase tracking-[0.2em] text-amber-300/80">
-                            {project.notice}
-                        </p>
-                    )}
+
+                    <motion.p
+                        variants={textVariants}
+                        className="text-xl leading-relaxed lg:text-2xl"
+                    >
+                        {project.description}
+                    </motion.p>
                 </motion.div>
 
-                <motion.ul className="space-y-4" variants={itemVariants}>
-                    {project.bullets.map((bullet) => (
-                        <li key={bullet} className="flex items-start gap-4 text-base text-ink-200">
-                            <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-indigo-500/80 shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
+                <motion.ul className="space-y-3">
+                    {project.bullets.map((bullet, i) => (
+                        <motion.li
+                            key={bullet}
+                            variants={bulletVariants}
+                            className="flex items-start gap-3 text-base font-light text-chrome-200 lg:text-lg"
+                        >
+                            <span className={`mt-2.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-gradient-to-r ${project.colors} opacity-80`} />
                             <span className="leading-relaxed">{bullet}</span>
-                        </li>
+                        </motion.li>
                     ))}
                 </motion.ul>
 
-                <motion.div className="flex flex-wrap gap-2 text-xs tracking-widest text-chrome-500 opacity-60" variants={itemVariants}>
+                <motion.div
+                    variants={bulletVariants}
+                    className="flex flex-wrap gap-3 pt-2"
+                >
                     {project.tags.map((tag) => (
-                        <span key={tag} className="border-r border-white/10 pr-2 last:border-0 last:pr-0">
+                        <span key={tag} className="text-xs font-bold uppercase tracking-[0.2em] text-chrome-400/60">
                             {tag}
                         </span>
                     ))}
                 </motion.div>
-            </motion.div>
+            </div>
 
-            {/* Image Side */}
+            {/* Image Side - Simple Scale Entrance, preserved Tilt */}
             <motion.div
                 className={`relative flex flow-row justify-center flex-1 ${project.orientation === 'portrait' ? 'lg:justify-center' : ''}`}
                 style={{ perspective: 1000 }}
+                variants={{
+                    hidden: { opacity: 0, scale: 0.95, filter: 'blur(10px)' },
+                    visible: {
+                        opacity: 1,
+                        scale: 1,
+                        filter: 'blur(0px)',
+                        transition: { duration: 0.8, delay: 0.2 }
+                    }
+                }}
             >
                 {project.image && (
-                    <ProjectImage project={project} y={y} />
+                    <ProjectImage project={project} />
                 )}
             </motion.div>
         </motion.div>
@@ -99,12 +144,12 @@ export const FeaturedProject = ({ project, index }: { project: Project; index: n
 };
 
 /* Separated Image Component for Clean State Management */
-const ProjectImage = ({ project, y }: { project: Project; y: any }) => {
+const ProjectImage = ({ project }: { project: Project }) => {
     const x = useMotionValue(0);
     const mY = useMotionValue(0);
 
-    const rotateX = useSpring(useTransform(mY, [-0.5, 0.5], [7, -7]), { bounce: 0, damping: 20, stiffness: 100 });
-    const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-7, 7]), { bounce: 0, damping: 20, stiffness: 100 });
+    const rotateX = useSpring(useTransform(mY, [-0.5, 0.5], [5, -5]), { bounce: 0, damping: 20, stiffness: 100 });
+    const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-5, 5]), { bounce: 0, damping: 20, stiffness: 100 });
 
     function onMove(e: React.MouseEvent<HTMLDivElement>) {
         const bounds = e.currentTarget.getBoundingClientRect();
@@ -123,13 +168,10 @@ const ProjectImage = ({ project, y }: { project: Project; y: any }) => {
         <motion.div
             onMouseMove={onMove}
             onMouseLeave={onLeave}
-            style={{ y, rotateX, rotateY, transformStyle: 'preserve-3d' }}
-            className={`relative w-full rounded-2xl border border-white/10 bg-ink-950 shadow-2xl transition-shadow duration-500 hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] ${project.orientation === 'portrait' ? 'max-w-[320px] mx-auto' : ''
+            style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
+            className={`relative w-full rounded-2xl border border-white/10 bg-ink-950/50 shadow-2xl transition-all duration-500 hover:shadow-[0_0_50px_rgba(255,255,255,0.1)] ${project.orientation === 'portrait' ? 'max-w-[360px] mx-auto' : ''
                 }`}
         >
-            {/* Ambient Glow */}
-            <div className="absolute -inset-4 -z-10 rounded-[32px] bg-indigo-500/20 blur-3xl opacity-20" />
-
             <Image
                 src={project.image!}
                 alt={project.title}
@@ -141,12 +183,7 @@ const ProjectImage = ({ project, y }: { project: Project; y: any }) => {
 
             {/* Gloss Overlay */}
             <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/10 pointer-events-none" />
-
-            {/* Dynamic Sheen */}
-            <motion.div
-                className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                style={{ mixBlendMode: 'overlay' }}
-            />
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-2xl mix-blend-overlay" />
         </motion.div>
     );
 };
