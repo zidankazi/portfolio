@@ -10,37 +10,60 @@ export default function SkillsPage() {
     return (
         <motion.main
             className="flex flex-col gap-16 pb-20"
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: prefersReducedMotion ? 0 : 0.5 }}
+            // Parent Orchestrator
+            initial="hidden"
+            animate="visible"
+            variants={{
+                visible: {
+                    transition: {
+                        staggerChildren: 0.1, // Stagger categories
+                    }
+                }
+            }}
         >
-            <div className="flex flex-col gap-2">
+            <motion.div
+                className="flex flex-col gap-2"
+                variants={{
+                    hidden: { opacity: 0, y: -20 },
+                    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+                }}
+            >
                 <h1 className="font-heading text-3xl text-ink-100">skills</h1>
                 <p className="text-sm text-chrome-400">
                     technologies and tools I work with
                 </p>
-            </div>
+            </motion.div>
 
             <div className="flex flex-col gap-12">
                 {skillCategories.map((category, categoryIndex) => (
                     <motion.div
                         key={category.title}
                         className="flex flex-col gap-6"
-                        initial={prefersReducedMotion ? false : { opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                            duration: prefersReducedMotion ? 0 : 0.4,
-                            delay: prefersReducedMotion ? 0 : categoryIndex * 0.08,
+                        variants={{
+                            hidden: { opacity: 0 },
+                            visible: {
+                                opacity: 1,
+                                transition: {
+                                    staggerChildren: 0.05, // Rapid fire stagger for skills within category
+                                    delayChildren: 0.1     // Slight pause before unleashing skills
+                                }
+                            }
                         }}
                     >
-                        <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-chrome-500">
+                        <motion.h2
+                            className="text-xs font-medium uppercase tracking-[0.2em] text-chrome-500"
+                            variants={{
+                                hidden: { opacity: 0, x: -10 },
+                                visible: { opacity: 1, x: 0 }
+                            }}
+                        >
                             {category.title}
-                        </h2>
+                        </motion.h2>
 
                         {/* Grid Layout for Spotlight Skills */}
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                            {category.skills.map((skill) => (
-                                <SpotlightSkill key={skill.name} skill={skill} />
+                            {category.skills.map((skill, index) => (
+                                <SpotlightSkill key={skill.name} skill={skill} index={index} />
                             ))}
                         </div>
                     </motion.div>
