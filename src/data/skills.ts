@@ -15,9 +15,7 @@ export const skillsRow1: Skill[] = [
     { name: 'JavaScript', icon: 'javascript' },
     { name: 'Java', icon: 'java' },
     { name: 'Swift', icon: 'swift' },
-    { name: 'C', icon: 'c' },
-    { name: 'HTML', icon: 'html5' },
-    { name: 'CSS', icon: 'css3' },
+    { name: 'C++', icon: 'cplusplus' },
     { name: 'SQL', icon: 'mysql' },
     { name: 'Claude', icon: 'anthropic' },
     { name: 'OpenAI', icon: 'openai' },
@@ -37,7 +35,6 @@ export const skillsRow2: Skill[] = [
     { name: 'FastAPI', icon: 'fastapi' },
     { name: 'PostgreSQL', icon: 'postgresql' },
     { name: 'Prisma', icon: 'prisma' },
-    { name: 'Git', icon: 'git' },
     { name: 'Docker', icon: 'docker' },
     { name: 'AWS', icon: 'amazonwebservices' },
     { name: 'Vercel', icon: 'vercel' },
@@ -55,12 +52,8 @@ export const skillCategories: SkillCategory[] = [
             { name: 'JavaScript', icon: 'javascript' },
             { name: 'Java', icon: 'java' },
             { name: 'C++', icon: 'cplusplus' },
-            { name: 'C', icon: 'c' },
             { name: 'Swift', icon: 'swift' },
-            { name: 'Objective-C', icon: 'objectivec' },
             { name: 'SQL', icon: 'mysql' },
-            { name: 'Bash', icon: 'gnubash' },
-            { name: 'ARM64', icon: 'arm' },
         ],
     },
     {
@@ -68,10 +61,7 @@ export const skillCategories: SkillCategory[] = [
         skills: [
             { name: 'React', icon: 'react' },
             { name: 'Next.js', icon: 'nextjs' },
-            { name: 'HTML', icon: 'html5' },
-            { name: 'CSS', icon: 'css3' },
             { name: 'Tailwind', icon: 'tailwindcss' },
-            { name: 'Redux', icon: 'redux' },
             { name: 'Framer Motion', icon: 'framer' },
         ],
     },
@@ -83,7 +73,6 @@ export const skillCategories: SkillCategory[] = [
             { name: 'Flask', icon: 'flask' },
             { name: 'FastAPI', icon: 'fastapi' },
             { name: 'Prisma', icon: 'prisma' },
-            { name: 'GraphQL', icon: 'graphql' },
         ],
     },
     {
@@ -91,7 +80,6 @@ export const skillCategories: SkillCategory[] = [
         skills: [
             { name: 'SwiftUI', icon: 'swift' },
             { name: 'iOS', icon: 'apple' },
-            { name: 'macOS', icon: 'macos' },
             { name: 'Electron', icon: 'electron' },
             { name: 'React Native', icon: 'react' },
         ],
@@ -100,9 +88,6 @@ export const skillCategories: SkillCategory[] = [
         title: 'Databases',
         skills: [
             { name: 'PostgreSQL', icon: 'postgresql' },
-            { name: 'SQLite', icon: 'sqlite' },
-            { name: 'MySQL', icon: 'mysql' },
-            { name: 'MongoDB', icon: 'mongodb' },
             { name: 'Redis', icon: 'redis' },
             { name: 'Supabase', icon: 'supabase' },
             { name: 'Firebase', icon: 'firebase' },
@@ -122,14 +107,10 @@ export const skillCategories: SkillCategory[] = [
     {
         title: 'DevOps & Cloud',
         skills: [
-            { name: 'Git', icon: 'git' },
-            { name: 'GitHub', icon: 'github' },
             { name: 'GitHub Actions', icon: 'githubactions' },
             { name: 'Docker', icon: 'docker' },
             { name: 'AWS', icon: 'amazonwebservices' },
-            { name: 'Azure', icon: 'azure' },
             { name: 'Vercel', icon: 'vercel' },
-            { name: 'Netlify', icon: 'netlify' },
         ],
     },
     {
