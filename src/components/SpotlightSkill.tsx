@@ -100,7 +100,7 @@ const getIconUrl = (icon: string): string => {
     return iconMap[icon] || `${SIMPLE_ICONS}/${icon}`;
 };
 
-export const SpotlightSkill = ({ skill }: { skill: Skill }) => {
+export const SpotlightSkill = ({ skill, index }: { skill: Skill, index: number }) => {
     // Spotlight State
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
@@ -117,17 +117,13 @@ export const SpotlightSkill = ({ skill }: { skill: Skill }) => {
 
     useEffect(() => {
         setFloatDuration(Math.random() * 3 + 4);
-        setFloatDelay(Math.random() * 2);
+        setFloatDelay(Math.random() * 2 + 1.5);
     }, []);
 
     const handleMouseMove = ({ currentTarget, clientX, clientY }: MouseEvent) => {
         const { left, top, width, height } = currentTarget.getBoundingClientRect();
-
-        // Spotlight position
         mouseX.set(clientX - left);
         mouseY.set(clientY - top);
-
-        // Tilt Normalized Coords (-0.5 to 0.5 range for ease)
         x.set((clientX - left) / width - 0.5);
         y.set((clientY - top) / height - 0.5);
     };
@@ -140,70 +136,122 @@ export const SpotlightSkill = ({ skill }: { skill: Skill }) => {
     const brandColor = getBrandColor(skill.icon);
     const iconUrl = getIconUrl(skill.icon);
 
+    // Structure:
+    // 1. Entrance Wrapper (Controlled by Parent Stagger)
+    // 2. Float Wrapper (Continuous Bobbing)
+    // 3. Card Shell (Tilt, Border, Background, Content)
+
     return (
         <motion.div
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-            // Continuous Float
-            animate={{
-                y: [0, -10, 0],
+            // 1. Entrance Wrapper
+            variants={{
+                hidden: {
+                    opacity: 0,
+                    scale: 0.8,
+                    filter: 'blur(10px)',
+                    y: 20,
+                    rotateX: 0,
+                    rotateY: 0
+                },
+                visible: {
+                    opacity: 1,
+                    scale: 1,
+                    filter: 'blur(0px)',
+                    y: 0,
+                    rotateX: 0,
+                    rotateY: 0,
+                    transition: {
+                        type: 'spring',
+                        bounce: 0.4,
+                        duration: 0.8
+                    }
+                }
             }}
-            transition={{
-                duration: floatDuration,
-                repeat: Infinity,
-                delay: floatDelay,
-                ease: "easeInOut",
-            }}
-            style={{
-                perspective: 1000,
-                rotateX,
-                rotateY,
-            }}
-            className="group relative flex h-32 flex-col items-center justify-center gap-4 overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] transition-colors hover:border-white/20"
+            className="relative h-32 w-full"
         >
-            {/* Spotlight (Mouse Tracking) */}
             <motion.div
-                className="pointer-events-none absolute -inset-px rounded-xl opacity-0 transition duration-300 group-hover:opacity-100"
-                style={{
-                    background: useMotionTemplate`
-                        radial-gradient(
-                            250px circle at ${mouseX}px ${mouseY}px,
-                            ${brandColor}20,
-                            transparent 80%
-                        )
-                    `,
+                // 2. Float Wrapper
+                animate={{ y: [0, -10, 0] }}
+                transition={{
+                    duration: floatDuration,
+                    repeat: Infinity,
+                    delay: floatDelay,
+                    ease: "easeInOut",
                 }}
-            />
+                className="h-full w-full"
+            >
+                <motion.div
+                    // 3. Card Shell (Tilt + Content)
+                    onMouseMove={handleMouseMove}
+                    onMouseLeave={handleMouseLeave}
+                    style={{
+                        perspective: 1000,
+                        rotateX,
+                        rotateY,
+                    }}
+                    className="group relative flex h-full w-full flex-col items-center justify-center gap-4 overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] transition-colors hover:border-white/20"
+                >
+                    {/* Ambient "Breathing" Background (Center Gradient) */}
+                    <motion.div
+                        className="absolute inset-0 opacity-0"
+                        animate={{ opacity: [0, 0.4, 0] }}
+                        transition={{
+                            duration: 4,
+                            repeat: Infinity,
+                            delay: floatDelay,
+                            ease: "easeInOut"
+                        }}
+                        style={{
+                            background: `radial-gradient(circle at center, ${brandColor}40 0%, transparent 70%)`
+                        }}
+                    />
 
-            {/* Border Spotlight */}
-            <motion.div
-                className="pointer-events-none absolute -inset-px rounded-xl opacity-0 transition duration-300 group-hover:opacity-100"
-                style={{
-                    background: useMotionTemplate`
-                        radial-gradient(
-                            200px circle at ${mouseX}px ${mouseY}px,
-                            ${brandColor}50,
-                            transparent 80%
-                        )
-                    `,
-                    maskImage: `radial-gradient(200px circle at ${mouseX}px ${mouseY}px, black, black)`,
-                    WebkitMaskImage: `radial-gradient(200px circle at ${mouseX}px ${mouseY}px, black, black)`,
-                }}
-            />
+                    {/* Spotlight (Mouse Tracking) */}
+                    <motion.div
+                        className="pointer-events-none absolute -inset-px rounded-xl opacity-0 transition duration-300 group-hover:opacity-100"
+                        style={{
+                            background: useMotionTemplate`
+                                radial-gradient(
+                                    250px circle at ${mouseX}px ${mouseY}px,
+                                    ${brandColor}20,
+                                    transparent 80%
+                                )
+                            `,
+                        }}
+                    />
 
-            {/* Icon */}
-            <div className="relative z-10 h-10 w-10 transition-transform duration-500 group-hover:scale-110" style={{ transformStyle: 'preserve-3d', transform: 'translateZ(20px)' }}> {/* Added Z-depth for icon pop */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                    src={iconUrl}
-                    alt={skill.name}
-                    className="h-full w-full object-contain transition-all duration-300 group-hover:filter-none opacity-70 brightness-0 invert group-hover:opacity-100"
-                />
-            </div>
+                    {/* Border Spotlight */}
+                    <motion.div
+                        className="pointer-events-none absolute -inset-px rounded-xl opacity-0 transition duration-300 group-hover:opacity-100"
+                        style={{
+                            background: useMotionTemplate`
+                                radial-gradient(
+                                    200px circle at ${mouseX}px ${mouseY}px,
+                                    ${brandColor}50,
+                                    transparent 80%
+                                )
+                            `,
+                            maskImage: `radial-gradient(200px circle at ${mouseX}px ${mouseY}px, black, black)`,
+                            WebkitMaskImage: `radial-gradient(200px circle at ${mouseX}px ${mouseY}px, black, black)`,
+                        }}
+                    />
 
-            <span className="relative z-10 text-xs font-medium tracking-wider text-chrome-400 transition-colors group-hover:text-ink-100" style={{ transform: 'translateZ(10px)' }}>
-                {skill.name}
-            </span>
+                    {/* Icon */}
+                    <div className="relative z-10 h-10 w-10 transition-transform duration-500 group-hover:scale-110" style={{ transformStyle: 'preserve-3d', transform: 'translateZ(20px)' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            src={iconUrl}
+                            alt={skill.name}
+                            className="h-full w-full object-contain transition-all duration-300 group-hover:filter-none opacity-70 brightness-0 invert group-hover:opacity-100"
+                        />
+                    </div>
+
+                    <span className="relative z-10 text-xs font-medium tracking-wider text-chrome-400 transition-colors group-hover:text-ink-100" style={{ transform: 'translateZ(10px)' }}>
+                        {skill.name}
+                    </span>
+
+                </motion.div>
+            </motion.div>
         </motion.div>
     );
 };
