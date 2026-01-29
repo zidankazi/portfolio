@@ -23,7 +23,7 @@ export const projects: Project[] = [
     tags: ['typescript', 'electron', 'sqlite', 'local llms'],
     links: [
       { label: 'github', href: 'https://github.com/Zilean-Core/zilean' },
-      { label: 'site', href: 'https://zilean-site.vercel.app/' },
+      { label: 'site', href: 'https://zilean.app' },
     ],
     notice: 'github repo is private',
     image: '/projects/zilean_desktop.png',
