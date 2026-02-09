@@ -22,7 +22,6 @@ export const projects: Project[] = [
     description: 'privacy-first productivity agent that tracks your digital context to measure focus without sending data to the cloud.',
     tags: ['typescript', 'electron', 'sqlite', 'local llms'],
     links: [
-      { label: 'github', href: 'https://github.com/Zilean-Core/zilean' },
       { label: 'site', href: 'https://zilean.app' },
     ],
     notice: 'github repo is private',
@@ -58,14 +57,25 @@ export const projects: Project[] = [
     title: 'beatrix',
     description: 'govcon bid analyzer that scans 100+ page contracts to find winning opportunities.',
     tags: ['next.js', 'typescript', 'postgresql', 'openai'],
-    links: [
-      { label: 'github', href: 'https://github.com/zidank6/beatrix/' },
-    ],
+    links: [],
     notice: 'github repo is private',
     bullets: [
       'scans 100+ page government RFPs and ranks them against company past performance',
       'reduced weekly triage time by 70% (10 hrs → 3 hrs) using automated vector search',
       'interactive dashboard shows exact text citations to build trust with non-technical teams'
+    ]
+  },
+  {
+    title: 'mnist 3d visualizer',
+    description: 'neural network from scratch with an interactive 3D web visualizer.',
+    tags: ['python', 'numpy', 'javascript', 'three.js'],
+    links: [
+      { label: 'github', href: 'https://github.com/zidank6/neural-net/' },
+      { label: 'site', href: 'https://neural-net.vercel.app/' },
+    ],
+    bullets: [
+      'built a neural network from scratch in pure Python/NumPy — implementing backpropagation, ReLU, Softmax, and Cross-Entropy loss without any ML frameworks',
+      'built an interactive 3D web visualizer with Three.js that runs inference client-side, letting users draw digits and watch real-time activations flow through the network'
     ]
   },
   {
