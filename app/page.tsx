@@ -1,63 +1,49 @@
-'use client';
-
-import Link from 'next/link';
-import { motion, useReducedMotion } from 'framer-motion';
-import { HeroFrame } from '@/components/HeroFrame';
-import { FeaturedProject } from '@/components/FeaturedProject';
 import { projects } from '@/data/projects';
+import { ChatBubble } from '@/components/chat/ChatBubble';
+import { MapWidget } from '@/components/chat/MapWidget';
+import { ProjectsSection } from '@/components/chat/ProjectsSection';
+import { Pill } from '@/components/chat/Pill';
+import { SpotifyCard } from '@/components/chat/SpotifyCard';
+import { Github, Twitter, Mail } from 'lucide-react';
 
 export default function HomePage() {
-  const prefersReducedMotion = useReducedMotion();
-
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.3,
-      },
-    },
-  };
-
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 50, damping: 20 } },
-  };
-
   return (
-    <motion.main
-      className="flex flex-col gap-12 pb-20"
-      initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: prefersReducedMotion ? 0 : 0.5 }}
-    >
-      <HeroFrame />
+    <main className="w-full flex justify-center pb-6 font-body mt-2">
+      <div className="flex flex-col gap-5 w-full">
 
-      <section className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <motion.h2
-            className="font-heading text-2xl text-ink-100"
-            initial={{ opacity: 0, x: -10 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: '-50px' }}
-            transition={{ duration: 0.5 }}
-          >
-            featured projects
-          </motion.h2>
-          <Link
-            href="/projects"
-            className="text-xs tracking-[0.3em] text-chrome-400 transition hover:text-ink-100"
-          >
-            view all
-          </Link>
+        {/* Intro */}
+        <ChatBubble>
+          <p>
+            I'm <i className="font-heading text-white">Zidan</i>, a sophomore at Stevens Institute of Technology studying Computer Science. I'm a builder exploring distributed systems, local AI, and heavily engineered interfaces. It's nice to meet you.
+          </p>
+        </ChatBubble>
+
+        {/* Now playing */}
+        <SpotifyCard />
+
+        {/* Projects */}
+        <ProjectsSection projects={projects} />
+
+        {/* Map */}
+        <MapWidget />
+
+        {/* Links */}
+        <div className="flex flex-col gap-2 ml-11">
+          <Pill isPrefix href="#">
+            Find me online:
+          </Pill>
+          <Pill href="https://github.com/zidankazi" icon={<Github className="w-3.5 h-3.5" />}>
+            I'm @zidankazi on GitHub
+          </Pill>
+          <Pill href="https://twitter.com/zidaaaaaaaannnn" icon={<Twitter className="w-3.5 h-3.5" />}>
+            I'm @zidaaaaaaaannnn on Twitter/X
+          </Pill>
+          <Pill href="mailto:zidankazi01@outlook.com" icon={<Mail className="w-3.5 h-3.5" />}>
+            Shoot me an email — zidankazi01 [at] outlook.com
+          </Pill>
         </div>
-        <div className="flex flex-col gap-24 lg:gap-32">
-          {projects.slice(0, 2).map((project, index) => (
-            <FeaturedProject key={project.title} project={project} index={index} />
-          ))}
-        </div>
-      </section>
-    </motion.main>
+
+      </div>
+    </main>
   );
 }

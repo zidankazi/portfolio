@@ -1,0 +1,82 @@
+
+> portfolio@0.1.0 build
+> npm run gen:playlist && next build
+
+
+> portfolio@0.1.0 gen:playlist
+> node scripts/generatePlaylist.mjs
+
+  ▲ Next.js 14.2.5
+
+   Creating an optimized production build ...
+Failed to compile.
+
+./app/globals.css.webpack[javascript/auto]!=!./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[12].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[12].use[3]!./app/globals.css
+TypeError: plugin.withOptions is not a function
+    at /Users/zidan/Documents/Cloud/portfolio/node_modules/@tailwindcss/typography/src/index.js:65:25
+    at evalModule (/Users/zidan/Documents/Cloud/portfolio/node_modules/jiti/dist/jiti.js:1:251913)
+    at jiti (/Users/zidan/Documents/Cloud/portfolio/node_modules/jiti/dist/jiti.js:1:249841)
+    at /Users/zidan/Documents/Cloud/portfolio/tailwind.config.js:40:5
+    at evalModule (/Users/zidan/Documents/Cloud/portfolio/node_modules/jiti/dist/jiti.js:1:251913)
+    at jiti (/Users/zidan/Documents/Cloud/portfolio/node_modules/jiti/dist/jiti.js:1:249841)
+    at /Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/lib/load-config.js:53:30
+    at loadConfig (/Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/lib/load-config.js:55:6)
+    at getTailwindConfig (/Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/lib/setupTrackingContext.js:74:116)
+    at /Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/lib/setupTrackingContext.js:103:92
+
+Import trace for requested module:
+./app/globals.css.webpack[javascript/auto]!=!./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[12].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[12].use[3]!./app/globals.css
+./app/globals.css
+
+./app/globals.css
+TypeError: jiti is not a function
+    at jiti (/Users/zidan/Documents/Cloud/portfolio/node_modules/jiti/lib/index.js:14:10)
+    at lazyJiti (/Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/lib/load-config.js:31:79)
+    at /Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/lib/load-config.js:53:20
+    at loadConfig (/Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/lib/load-config.js:55:6)
+    at getTailwindConfig (/Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/lib/setupTrackingContext.js:74:116)
+    at /Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/lib/setupTrackingContext.js:103:92
+    at /Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/processTailwindFeatures.js:46:11
+    at plugins (/Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/plugin.js:38:69)
+    at LazyResult.runOnRoot (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/node_modules/postcss/lib/lazy-result.js:329:16)
+    at LazyResult.runAsync (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/node_modules/postcss/lib/lazy-result.js:258:26)
+    at tryRunOrWebpackError (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/webpack/bundle5.js:28:312989)
+    at __webpack_require_module__ (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/webpack/bundle5.js:28:131165)
+    at __nested_webpack_require_153728__ (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/webpack/bundle5.js:28:130607)
+    at /Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/webpack/bundle5.js:28:131454
+    at symbolIterator (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/neo-async/async.js:1:14444)
+    at done (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/neo-async/async.js:1:14824)
+    at Hook.eval [as callAsync] (eval at create (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/webpack/bundle5.js:13:28858), <anonymous>:15:1)
+    at Hook.CALL_ASYNC_DELEGATE [as _callAsync] (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/webpack/bundle5.js:13:26012)
+    at /Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/webpack/bundle5.js:28:130328
+    at symbolIterator (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/neo-async/async.js:1:14402)
+-- inner error --
+TypeError: jiti is not a function
+    at jiti (/Users/zidan/Documents/Cloud/portfolio/node_modules/jiti/lib/index.js:14:10)
+    at lazyJiti (/Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/lib/load-config.js:31:79)
+    at /Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/lib/load-config.js:53:20
+    at loadConfig (/Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/lib/load-config.js:55:6)
+    at getTailwindConfig (/Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/lib/setupTrackingContext.js:74:116)
+    at /Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/lib/setupTrackingContext.js:103:92
+    at /Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/processTailwindFeatures.js:46:11
+    at plugins (/Users/zidan/Documents/Cloud/portfolio/node_modules/tailwindcss/lib/plugin.js:38:69)
+    at LazyResult.runOnRoot (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/node_modules/postcss/lib/lazy-result.js:329:16)
+    at LazyResult.runAsync (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/node_modules/postcss/lib/lazy-result.js:258:26)
+    at Object.<anonymous> (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[12].use[2]!/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[12].use[3]!/Users/zidan/Documents/Cloud/portfolio/app/globals.css:1:7)
+    at /Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/webpack/bundle5.js:28:922493
+    at Hook.eval [as call] (eval at create (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/webpack/bundle5.js:13:28636), <anonymous>:7:1)
+    at Hook.CALL_DELEGATE [as _call] (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/webpack/bundle5.js:13:25906)
+    at /Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/webpack/bundle5.js:28:131198
+    at tryRunOrWebpackError (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/webpack/bundle5.js:28:312943)
+    at __webpack_require_module__ (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/webpack/bundle5.js:28:131165)
+    at __nested_webpack_require_153728__ (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/webpack/bundle5.js:28:130607)
+    at /Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/webpack/bundle5.js:28:131454
+    at symbolIterator (/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/compiled/neo-async/async.js:1:14444)
+
+Generated code for /Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[12].use[2]!/Users/zidan/Documents/Cloud/portfolio/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[12].use[3]!/Users/zidan/Documents/Cloud/portfolio/app/globals.css
+
+Import trace for requested module:
+./app/globals.css
+
+
+> Build failed because of webpack errors

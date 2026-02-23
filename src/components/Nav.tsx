@@ -1,47 +1,22 @@
 'use client';
 
 import Link from 'next/link';
-import { profile } from '@/data/profile';
 
 export const Nav = () => {
   return (
-    <nav className="flex flex-col items-center gap-3 py-4 sm:flex-row sm:items-center sm:justify-between sm:py-6">
-      <Link href="/" className="text-sm font-semibold tracking-[0.4em] text-ink-100">
-        {profile.name}
+    <nav className="flex items-center justify-between pb-12 pt-4">
+      <Link href="/" className="font-heading italic text-xl font-medium tracking-tight text-anthropic-text hover:text-anthropic-text/70 transition-colors">
+        zidan kazi
       </Link>
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10px] tracking-[0.2em] text-chrome-400 sm:text-xs sm:tracking-[0.25em]">
-        <Link href="/projects" className="transition hover:text-ink-100">
-          projects
+      <div className="flex items-center gap-6 text-sm text-anthropic-text/60">
+        <Link href="/" className="transition-colors hover:text-anthropic-text">
+          work
         </Link>
-        <Link href="/skills" className="transition hover:text-ink-100">
-          skills
+        <Link href="/notes" className="transition-colors hover:text-anthropic-text">
+          notes
         </Link>
-        <Link href="/blog" className="transition hover:text-ink-100">
-          blog
-        </Link>
-        <a
-          href={profile.github}
-          className="transition hover:text-ink-100"
-          target="_blank"
-          rel="noreferrer"
-        >
+        <a href="https://github.com/zidank6" className="transition-colors hover:text-anthropic-text" target="_blank" rel="noreferrer">
           github
-        </a>
-        <a
-          href={profile.linkedin}
-          className="transition hover:text-ink-100"
-          target="_blank"
-          rel="noreferrer"
-        >
-          linkedin
-        </a>
-        <a
-          href={profile.twitter}
-          className="transition hover:text-ink-100"
-          target="_blank"
-          rel="noreferrer"
-        >
-          twitter
         </a>
       </div>
     </nav>

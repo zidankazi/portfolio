@@ -7,6 +7,13 @@ const config = {
   theme: {
     extend: {
       colors: {
+        anthropic: {
+          bg: '#FCFBF9',
+          text: '#333333',
+          border: '#E5E5E5',
+          sage: '#A3B19B',
+          sand: '#E3D9C6'
+        },
         ink: {
           950: '#070707',
           900: '#0b0b0c',
@@ -23,17 +30,10 @@ const config = {
           400: '#b2b5bd'
         }
       },
-      boxShadow: {
-        frame: '0 0 0 1px rgba(255,255,255,0.08), inset 0 0 30px rgba(255,255,255,0.03)',
-        lift: '0 16px 40px rgba(0,0,0,0.45)'
-      },
-      backgroundImage: {
-        grain: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.12) 1px, transparent 0)',
-        frameGlow: 'linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0))'
-      },
       fontFamily: {
-        heading: ['var(--font-heading)', 'sans-serif'],
-        body: ['var(--font-body)', 'sans-serif']
+        heading: ['var(--font-heading)', 'serif'],
+        body: ['var(--font-body)', 'sans-serif'],
+        mono: ['var(--font-mono)', 'monospace']
       }
     }
   },

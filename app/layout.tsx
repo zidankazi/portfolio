@@ -1,26 +1,29 @@
 import type { Metadata } from 'next';
-import { Manrope, Syne } from 'next/font/google';
+import { Inter, Newsreader, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
-import { Nav } from '@/components/Nav';
-import { PlayerBar } from '@/components/PlayerBar';
-import { ShootingStarsCanvas } from '@/components/ShootingStarsCanvas';
-import { PlayerProvider } from '@/providers/PlayerProvider';
 
-const headingFont = Syne({
-  subsets: ['latin'],
-  variable: '--font-heading',
-  weight: ['400', '600', '700']
-});
-
-const bodyFont = Manrope({
+const bodyFont = Inter({
   subsets: ['latin'],
   variable: '--font-body',
   weight: ['300', '400', '500', '600']
 });
 
+const headingFont = Newsreader({
+  subsets: ['latin'],
+  variable: '--font-heading',
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic']
+});
+
+const monoFont = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  weight: ['400', '500'],
+});
+
 export const metadata: Metadata = {
   title: 'zidan kazi',
-  description: 'personal portfolio of zidan kazi',
+  description: 'builder portfolio of zidan kazi',
   icons: {
     icon: [
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
@@ -36,19 +39,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${headingFont.variable} ${bodyFont.variable}`}>
-      <body className="bg-ink-950 font-body text-ink-100">
-        <PlayerProvider>
-          <ShootingStarsCanvas />
-          <div className="grain-overlay" />
-          <div className="relative z-10 min-h-screen px-6 pb-32">
-            <div className="mx-auto w-full max-w-6xl">
-              <Nav />
-              {children}
-            </div>
-          </div>
-          <PlayerBar />
-        </PlayerProvider>
+    <html lang="en" className={`${bodyFont.variable} ${headingFont.variable} ${monoFont.variable} h-full bg-[#0a0a0a]`}>
+      <body className="bg-[#0a0a0a] font-body text-zinc-300 selection:bg-zinc-800 selection:text-white min-h-full antialiased flex flex-col items-center pt-10 pb-10 px-5 sm:px-10">
+        <div className="w-full max-w-[520px] flex flex-col">
+          {children}
+        </div>
       </body>
     </html>
   );

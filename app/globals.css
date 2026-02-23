@@ -8,50 +8,23 @@
 
 body {
   min-height: 100vh;
-  background-color: #070707;
-}
-
-.grain-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.08) 1px, transparent 0);
-  background-size: 3px 3px;
-  opacity: 0.2;
-  mix-blend-mode: soft-light;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 a {
   text-decoration: none;
 }
 
-/* Skills ticker animations - using CSS variables for precise pixel-based animation */
-@keyframes ticker-left {
-  0% {
-    transform: translateX(0);
-  }
-
-  100% {
-    transform: translateX(var(--ticker-distance));
-  }
-}
-
-@keyframes ticker-right {
-  0% {
-    transform: translateX(var(--ticker-distance));
-  }
-
-  100% {
-    transform: translateX(0);
-  }
-}
-
-/* Pause animation on hover */
-.ticker-row:hover>div {
-  animation-play-state: paused !important;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  letter-spacing: -0.02em;
 }
