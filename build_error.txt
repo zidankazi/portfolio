@@ -1,0 +1,37 @@
+
+> portfolio@0.1.0 build
+> npm run gen:playlist && next build
+
+
+> portfolio@0.1.0 gen:playlist
+> node scripts/generatePlaylist.mjs
+
+  ▲ Next.js 14.2.5
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/7) ...
+   Generating static pages (1/7) 
+   Generating static pages (3/7) 
+   Generating static pages (5/7) 
+ ✓ Generating static pages (7/7)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    5.42 kB         140 kB
+├ ○ /_not-found                          871 B          87.9 kB
+├ ○ /projects                            2.89 kB         132 kB
+├ ƒ /projects/[slug]                     184 B          99.1 kB
+└ ○ /skills                              1.25 kB         124 kB
++ First Load JS shared by all            87.1 kB
+  ├ chunks/23-c3fafa2ddc0f30eb.js        31.5 kB
+  ├ chunks/fd9d1056-4a917af64af6b262.js  53.6 kB
+  └ other shared chunks (total)          1.89 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

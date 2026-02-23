@@ -6,3 +6,5 @@ node_modules
 
 # keep audio local only
 public/audio/daft-punk
+
+certificates
