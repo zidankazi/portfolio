@@ -11,9 +11,27 @@ interface TrackData {
 
 async function getTrackData(): Promise<TrackData> {
     try {
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
-        const res = await fetch(`${baseUrl}/api/spotify`, { next: { revalidate: 30 } });
-        return res.json();
+        const apiKey = process.env.LASTFM_API_KEY;
+        if (!apiKey) return { isPlaying: false, title: null };
+
+        const res = await fetch(
+            `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=zidank6&api_key=${apiKey}&format=json&limit=1`,
+            { next: { revalidate: 30 } }
+        );
+        const data = await res.json();
+        const track = data.recenttracks?.track?.[0];
+        if (!track) return { isPlaying: false, title: null };
+
+        const isPlaying = track['@attr']?.nowplaying === 'true';
+        const albumArt = track.image?.find((img: { size: string }) => img.size === 'large')?.['#text'] ?? null;
+
+        return {
+            isPlaying,
+            title: track.name,
+            artist: track.artist['#text'],
+            albumArt: albumArt || null,
+            url: track.url,
+        };
     } catch {
         return { isPlaying: false, title: null };
     }
