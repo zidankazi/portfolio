@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 
 interface TrackData {
@@ -46,10 +46,30 @@ function desaturate(r: number, g: number, b: number, amount = 0.5): [number, num
     ];
 }
 
-export function SpotifyTrackCard({ data }: { data: TrackData }) {
+export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
+    const [data, setData] = useState<TrackData>(initialData);
     const [rgb, setRgb] = useState<[number, number, number] | null>(null);
     const imgRef = useRef<HTMLImageElement | null>(null);
 
+    // Poll the API every 30 seconds
+    const fetchTrack = useCallback(async () => {
+        try {
+            const res = await fetch('/api/spotify/now-playing');
+            const json = await res.json();
+            if (json.title) {
+                setData(json);
+            }
+        } catch {
+            // silently fail — keep showing last known track
+        }
+    }, []);
+
+    useEffect(() => {
+        const interval = setInterval(fetchTrack, 30_000);
+        return () => clearInterval(interval);
+    }, [fetchTrack]);
+
+    // Extract dominant color from album art
     useEffect(() => {
         if (!data.albumArt) return;
         let cancelled = false;
@@ -118,7 +138,7 @@ export function SpotifyTrackCard({ data }: { data: TrackData }) {
                     }}
                 />
 
-                {/* Album art — tighter radius, no glow */}
+                {/* Album art */}
                 <div className="relative shrink-0">
                     {data.albumArt ? (
                         <div className="relative w-12 h-12 rounded-lg overflow-hidden ring-1 ring-white/[0.06]">
@@ -139,7 +159,7 @@ export function SpotifyTrackCard({ data }: { data: TrackData }) {
                     )}
                 </div>
 
-                {/* Track info — flat, confident typography */}
+                {/* Track info */}
                 <div className="min-w-0 flex-1 z-20">
                     <p className="text-zinc-100 font-medium text-[13px] tracking-[-0.01em] truncate group-hover:text-white transition-colors">
                         {data.title}
@@ -156,3 +176,4 @@ export function SpotifyTrackCard({ data }: { data: TrackData }) {
         </div>
     );
 }
+
