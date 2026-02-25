@@ -28,6 +28,7 @@ async function getTrackData(): Promise<TrackData> {
                 grant_type: 'refresh_token',
                 refresh_token: refreshToken,
             }),
+            cache: 'no-store',
         });
         const { access_token } = await tokenRes.json();
         if (!access_token) return { isPlaying: false, title: null };
@@ -37,7 +38,7 @@ async function getTrackData(): Promise<TrackData> {
         // Currently playing
         const nowRes = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
             headers,
-            next: { revalidate: 30 },
+            cache: 'no-store',
         });
 
         if (nowRes.status === 200) {
@@ -57,7 +58,7 @@ async function getTrackData(): Promise<TrackData> {
         // Recently played fallback
         const recentRes = await fetch(
             'https://api.spotify.com/v1/me/player/recently-played?limit=1',
-            { headers, next: { revalidate: 30 } }
+            { headers, cache: 'no-store' }
         );
 
         if (recentRes.status === 200) {
@@ -94,7 +95,7 @@ export async function SpotifyCard() {
     return (
         <ChatBubble>
             <SpotifyTrackCard
-                data={{
+                initialData={{
                     isPlaying: data.isPlaying,
                     title: data.title,
                     artist: data.artist,
