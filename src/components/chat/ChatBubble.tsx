@@ -6,9 +6,10 @@ import { ReactNode } from 'react';
 interface ChatBubbleProps {
     children: ReactNode;
     showAvatar?: boolean;
+    compact?: boolean;
 }
 
-export function ChatBubble({ children, showAvatar = true }: ChatBubbleProps) {
+export function ChatBubble({ children, showAvatar = true, compact = false }: ChatBubbleProps) {
     return (
         <div className="flex gap-3 items-end sm:items-start group w-full">
             {/* Avatar */}
@@ -29,7 +30,7 @@ export function ChatBubble({ children, showAvatar = true }: ChatBubbleProps) {
             </div>
 
             {/* Bubble */}
-            <div className="bg-[#161618] text-[#d4d4d4] rounded-[20px] rounded-tl-sm px-4 py-3 text-[14px] leading-[1.6] w-full border border-white/5 shadow-sm">
+            <div className={`bg-[#161618] text-[#d4d4d4] rounded-[20px] rounded-tl-sm px-4 py-3 text-[14px] leading-[1.6] border border-white/5 shadow-sm ${compact ? 'w-fit' : 'w-full'}`}>
                 {children}
             </div>
         </div>

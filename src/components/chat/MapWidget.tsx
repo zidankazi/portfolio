@@ -41,7 +41,7 @@ export function MapWidget() {
             </div>
 
             {/* Location bubble */}
-            <ChatBubble>
+            <ChatBubble compact>
                 <span>
                     I'm currently in{' '}
                     <a

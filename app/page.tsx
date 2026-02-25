@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { projects } from '@/data/projects';
 import { ChatBubble } from '@/components/chat/ChatBubble';
 import { MapWidget } from '@/components/chat/MapWidget';
@@ -14,7 +15,7 @@ export default function HomePage() {
         {/* Intro */}
         <ChatBubble>
           <p>
-            I'm <i className="font-heading text-white">Zidan</i>, a sophomore at Stevens Institute of Technology studying Computer Science. I'm a builder exploring distributed systems, local AI, and heavily engineered interfaces. It's nice to meet you.
+            I'm <i className="font-heading text-white">Zidan</i>, a sophomore at <a href="https://www.stevens.edu/" target="_blank" rel="noreferrer" className="underline underline-offset-4 decoration-white/30 hover:decoration-white/70 transition-colors">Stevens Institute of Technology</a> studying Computer Science. I'm a builder exploring distributed systems, local AI, and heavily engineered interfaces. It's nice to meet you.
           </p>
         </ChatBubble>
 
@@ -38,6 +39,19 @@ export default function HomePage() {
           <Pill href="https://twitter.com/zidaaaaaaaannnn" icon={<Twitter className="w-3.5 h-3.5" />}>
             I'm @zidaaaaaaaannnn on Twitter/X
           </Pill>
+        </div>
+
+        {/* Email row with avatar */}
+        <div className="flex items-end gap-3">
+          <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0">
+            <Image
+              src="/avatar.jpeg"
+              alt="Zidan Kazi"
+              fill
+              className="object-cover"
+              sizes="32px"
+            />
+          </div>
           <Pill href="mailto:zidankazi01@outlook.com" icon={<Mail className="w-3.5 h-3.5" />}>
             Shoot me an email — zidankazi01 [at] outlook.com
           </Pill>
