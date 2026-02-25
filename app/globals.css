@@ -28,3 +28,23 @@ h5,
 h6 {
   letter-spacing: -0.02em;
 }
+
+@keyframes equalizer {
+
+  0%,
+  100% {
+    height: 20%;
+  }
+
+  25% {
+    height: 80%;
+  }
+
+  50% {
+    height: 40%;
+  }
+
+  75% {
+    height: 100%;
+  }
+}
