@@ -48,7 +48,7 @@ function desaturate(r: number, g: number, b: number, amount = 0.5): [number, num
 
 export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
     const [data, setData] = useState<TrackData>(initialData);
-    const [rgb, setRgb] = useState<[number, number, number] | null>(null);
+    const [colors, setColors] = useState<{ primary: [number, number, number]; secondary: [number, number, number] } | null>(null);
     const imgRef = useRef<HTMLImageElement | null>(null);
 
     // Poll the API every 30 seconds
@@ -69,22 +69,28 @@ export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
         return () => clearInterval(interval);
     }, [fetchTrack]);
 
-    // Extract dominant color from album art
+    // Extract top 2 dominant colors from album art
     useEffect(() => {
         if (!data.albumArt) return;
         let cancelled = false;
 
-        import('fast-average-color').then(({ FastAverageColor }) => {
+        import('colorthief').then((mod) => {
             if (cancelled) return;
-            const fac = new FastAverageColor();
+            const ColorThief = mod.default;
+            const colorThief = new ColorThief();
             const img = new window.Image();
             img.crossOrigin = 'anonymous';
             img.src = data.albumArt!;
             img.onload = () => {
                 if (cancelled) return;
                 try {
-                    const color = fac.getColor(img, { algorithm: 'dominant' });
-                    setRgb([color.value[0], color.value[1], color.value[2]]);
+                    const palette = colorThief.getPalette(img, 3);
+                    if (palette && palette.length >= 2) {
+                        setColors({
+                            primary: palette[0] as [number, number, number],
+                            secondary: palette[1] as [number, number, number],
+                        });
+                    }
                 } catch { /* card stays dark */ }
             };
             imgRef.current = img;
@@ -92,6 +98,9 @@ export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
 
         return () => { cancelled = true; };
     }, [data.albumArt]);
+
+    const c1 = colors?.primary;
+    const c2 = colors?.secondary;
 
     return (
         <div>
@@ -114,15 +123,15 @@ export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
                     border: '1px solid rgba(255,255,255,0.07)',
                 }}
             >
-                {/* Color blobs — true to album color, no artificial hue shifts */}
-                {rgb && (
+                {/* Color blobs — primary + secondary from album palette */}
+                {c1 && c2 && (
                     <div
                         className="pointer-events-none absolute -inset-[80%] z-0"
                         style={{
                             background: [
-                                `radial-gradient(ellipse at 20% 30%, rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.55), transparent 50%)`,
-                                `radial-gradient(ellipse at 75% 50%, rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.35), transparent 45%)`,
-                                `radial-gradient(ellipse at 40% 85%, rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.25), transparent 50%)`,
+                                `radial-gradient(ellipse at 20% 30%, rgba(${c1[0]}, ${c1[1]}, ${c1[2]}, 0.55), transparent 50%)`,
+                                `radial-gradient(ellipse at 75% 50%, rgba(${c2[0]}, ${c2[1]}, ${c2[2]}, 0.4), transparent 45%)`,
+                                `radial-gradient(ellipse at 40% 85%, rgba(${c1[0]}, ${c1[1]}, ${c1[2]}, 0.2), transparent 50%)`,
                             ].join(', '),
                             filter: 'blur(50px)',
                         }}
