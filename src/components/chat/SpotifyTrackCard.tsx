@@ -99,7 +99,7 @@ export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
                 I listen to a lot of music
                 {data.isPlaying
                     ? <>, and <span className="text-white/60">right now</span> I&apos;m listening to:</>
-                    : <>, and I last listened to:</>
+                    : <>, and I <span className="text-white/60">last</span> listened to:</>
                 }
             </p>
 
