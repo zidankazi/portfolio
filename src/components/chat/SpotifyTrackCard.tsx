@@ -83,7 +83,7 @@ export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
             img.onload = () => {
                 if (cancelled) return;
                 try {
-                    const color = fac.getColor(img);
+                    const color = fac.getColor(img, { algorithm: 'dominant' });
                     setRgb([color.value[0], color.value[1], color.value[2]]);
                 } catch { /* card stays dark */ }
             };
