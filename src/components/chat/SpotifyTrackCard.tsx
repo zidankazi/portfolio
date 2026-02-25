@@ -84,7 +84,7 @@ export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
                 if (cancelled) return;
                 try {
                     const color = fac.getColor(img);
-                    setRgb(desaturate(color.value[0], color.value[1], color.value[2], 0.25));
+                    setRgb([color.value[0], color.value[1], color.value[2]]);
                 } catch { /* card stays dark */ }
             };
             imgRef.current = img;
@@ -114,15 +114,15 @@ export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
                     border: '1px solid rgba(255,255,255,0.07)',
                 }}
             >
-                {/* Color blobs — oversized, blurred, vivid */}
+                {/* Color blobs — true to album color, no artificial hue shifts */}
                 {rgb && (
                     <div
                         className="pointer-events-none absolute -inset-[80%] z-0"
                         style={{
                             background: [
-                                `radial-gradient(ellipse at 20% 20%, rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.6), transparent 50%)`,
-                                `radial-gradient(ellipse at 80% 60%, rgba(${Math.min(rgb[0] + 50, 255)}, ${Math.max(rgb[1] - 30, 0)}, ${Math.min(rgb[2] + 60, 255)}, 0.45), transparent 45%)`,
-                                `radial-gradient(ellipse at 50% 90%, rgba(${Math.max(rgb[0] - 30, 0)}, ${Math.min(rgb[1] + 40, 255)}, ${rgb[2]}, 0.3), transparent 50%)`,
+                                `radial-gradient(ellipse at 20% 30%, rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.55), transparent 50%)`,
+                                `radial-gradient(ellipse at 75% 50%, rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.35), transparent 45%)`,
+                                `radial-gradient(ellipse at 40% 85%, rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.25), transparent 50%)`,
                             ].join(', '),
                             filter: 'blur(50px)',
                         }}
