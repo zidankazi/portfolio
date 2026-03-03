@@ -35,7 +35,7 @@ export const projects: Project[] = [
   },
   {
     title: 'beatrix',
-    description: 'govcon bid analyzer that scans 30,000 contracts to surface winning opportunities.',
+    description: 'govcon bid analyzer that scans 30,000+ contracts to surface winning opportunities.',
     links: [],
   },
   {
