@@ -11,6 +11,15 @@ export type Project = {
 
 export const projects: Project[] = [
   {
+    title: 'sponge',
+    description: 'gamified ai-assisted coding interview practice. built in 24 hours at quackhacks \'26.',
+    links: [
+      { label: 'github', href: 'https://github.com/zidankazi/sponge' },
+      { label: 'site', href: 'https://sponge-alpha.vercel.app' },
+      { label: 'demo', href: 'https://youtu.be/vZ8cEIYBHMU' },
+    ],
+  },
+  {
     title: 'orbital',
     description: 'real-time satellite tracker for the terminal. renders earth as a 3d ascii globe and tracks satellites utilizing live sgp4 mechanics.',
     links: [
@@ -26,7 +35,7 @@ export const projects: Project[] = [
   },
   {
     title: 'beatrix',
-    description: 'govcon bid analyzer that scans 100+ page contracts to find winning opportunities.',
+    description: 'govcon bid analyzer that scans 30,000 contracts to surface winning opportunities.',
     links: [],
   },
   {
