@@ -20,6 +20,13 @@ export const projects: Project[] = [
     ],
   },
   {
+    title: 'rust-options',
+    description: 'a blazing fast equity derivatives pricing engine in rust. sub-microsecond black-scholes, parallel monte carlo, svi calibration, and a transformer vol surface predictor via onnx.',
+    links: [
+      { label: 'github', href: 'https://github.com/zidankazi/rust-options' },
+    ],
+  },
+  {
     title: 'orbital',
     description: 'real-time satellite tracker for the terminal. renders earth as a 3d ascii globe and tracks satellites utilizing live sgp4 mechanics.',
     links: [
@@ -32,11 +39,6 @@ export const projects: Project[] = [
     links: [
       { label: 'site', href: 'https://zilean.app' },
     ],
-  },
-  {
-    title: 'beatrix',
-    description: 'govcon bid analyzer that scans 30,000+ contracts to surface winning opportunities.',
-    links: [],
   },
   {
     title: 'sage',
