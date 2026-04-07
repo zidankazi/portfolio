@@ -69,7 +69,7 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
                 {/* List — no padding, rows own their own px-4 */}
                 <div className="relative pt-1 pb-1">
                     <motion.div
-                        animate={{ height: isOpen ? 'auto' : 96 }}
+                        animate={{ height: isOpen ? 'auto' : 140 }}
                         transition={{ duration: 0.3, ease: [0, 0, 0.2, 1] }}
                         className="overflow-hidden"
                     >
@@ -82,7 +82,7 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
                     <motion.div
                         animate={{ opacity: isOpen ? 0 : 1 }}
                         transition={{ duration: 0.15 }}
-                        className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#161618] via-[#161618]/80 to-transparent"
+                        className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#161618] via-[#161618]/80 to-transparent"
                     />
                 </div>
             </div>
