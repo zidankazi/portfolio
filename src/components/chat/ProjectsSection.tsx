@@ -61,7 +61,7 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
                 {/* Header — padded */}
                 <div className="px-4 pt-3 pb-3 border-b border-white/10">
                     <p>
-                        I build things every now and then, often exploring new architectures or scratching my own itch.{' '}
+                        A few things I&apos;ve made.{' '}
                         <span className="text-zinc-500">Hover your mouse here to see the list.</span>
                     </p>
                 </div>
