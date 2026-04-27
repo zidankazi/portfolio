@@ -60,7 +60,7 @@ export function IntroBubble() {
             animate={{ opacity: 1, filter: 'blur(0px)' }}
             transition={{ duration: 0.8, ease: EASE, delay: 1.0 }}
           >
-            studying Computer Science. I&apos;m a builder exploring distributed systems, local AI, and heavily engineered interfaces. It&apos;s nice to meet you.
+            studying Computer Science &amp; Math.
           </motion.span>
         </p>
       </motion.div>
