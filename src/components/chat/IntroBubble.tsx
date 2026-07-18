@@ -43,7 +43,7 @@ export function IntroBubble() {
             delay={0.6}
             wave
           />
-          , a sophomore at{' '}
+          , a junior at{' '}
           <motion.a
             href="https://www.stevens.edu/"
             target="_blank"
