@@ -43,7 +43,7 @@ export function MapWidget() {
             {/* Location bubble */}
             <ChatBubble compact>
                 <span>
-                    I'm currently in{' '}
+                    I&apos;m currently in{' '}
                     <a
                         href={APPLE_MAPS_URL}
                         target="_blank"
