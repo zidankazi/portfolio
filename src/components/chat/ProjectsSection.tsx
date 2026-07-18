@@ -5,6 +5,29 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { Project } from '@/data/projects';
 
+// Links a phrase inside the description, leaving the rest as plain text
+function Description({ project }: { project: Project }) {
+    const { description, descriptionLink } = project;
+    const start = descriptionLink ? description.indexOf(descriptionLink.text) : -1;
+
+    if (!descriptionLink || start === -1) return <>{description}</>;
+
+    return (
+        <>
+            {description.slice(0, start)}
+            <a
+                href={descriptionLink.href}
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-4 decoration-white/30 hover:decoration-white/70 transition-colors"
+            >
+                {descriptionLink.text}
+            </a>
+            {description.slice(start + descriptionLink.text.length)}
+        </>
+    );
+}
+
 // Row fills the full bubble width — no negative margins needed
 function ProjectRow({ project }: { project: Project }) {
     return (
@@ -30,7 +53,7 @@ function ProjectRow({ project }: { project: Project }) {
                 )}
             </div>
             <p className="text-zinc-300 text-[14px] mt-1 leading-snug">
-                {project.description}
+                <Description project={project} />
             </p>
         </div>
     );

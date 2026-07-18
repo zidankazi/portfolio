@@ -6,6 +6,8 @@ export type ProjectLink = {
 export type Project = {
   title: string;
   description: string;
+  /** Turns the first occurrence of `text` inside `description` into a link. */
+  descriptionLink?: { text: string; href: string };
   links: ProjectLink[];
 };
 
@@ -26,8 +28,12 @@ export const projects: Project[] = [
     ],
   },
   {
-    title: 'hide-and-seek',
-    description: 'multi-agent hide and seek trained with self-play ppo, reproducing the emergent tool use from openai\'s 2019 paper.',
+    title: 'multi-agent hide and seek',
+    description: 'trained with self-play ppo, reproducing the emergent tool use from openai\'s 2019 paper.',
+    descriptionLink: {
+      text: 'openai\'s 2019 paper',
+      href: 'https://arxiv.org/abs/1909.07528',
+    },
     links: [
       { label: 'github', href: 'https://github.com/zidankazi/hide-and-seek' },
     ],
