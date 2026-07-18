@@ -11,26 +11,34 @@ export type Project = {
 
 export const projects: Project[] = [
   {
+    title: 'relic',
+    description: 'the source of truth for ai-native companies. memory that builds itself from your team\'s stack and answers agent queries over mcp, with a source behind every fact.',
+    links: [
+      { label: 'site', href: 'https://tryrelic.io' },
+    ],
+  },
+  {
+    title: 'roster',
+    description: 'terminal multiplexer for claude code agents. run several in real panes and see which one is blocked, working, or done — plus the exact prompt each one is waiting on.',
+    links: [
+      { label: 'github', href: 'https://github.com/zidankazi/roster' },
+      { label: 'site', href: 'https://roster-dev.vercel.app' },
+    ],
+  },
+  {
+    title: 'hide-and-seek',
+    description: 'multi-agent hide and seek trained with self-play ppo, reproducing the emergent tool use from openai\'s 2019 paper.',
+    links: [
+      { label: 'github', href: 'https://github.com/zidankazi/hide-and-seek' },
+    ],
+  },
+  {
     title: 'sponge',
     description: 'gamified ai-assisted coding interview practice. built in 24 hours at quackhacks \'26.',
     links: [
       { label: 'github', href: 'https://github.com/zidankazi/sponge' },
       { label: 'site', href: 'https://sponge-alpha.vercel.app' },
       { label: 'demo', href: 'https://youtu.be/vZ8cEIYBHMU' },
-    ],
-  },
-  {
-    title: 'rust-options',
-    description: 'a blazing fast equity derivatives pricing engine in rust. sub-microsecond black-scholes, parallel monte carlo, svi calibration, and a transformer vol surface predictor via onnx.',
-    links: [
-      { label: 'github', href: 'https://github.com/zidankazi/rust-options' },
-    ],
-  },
-  {
-    title: 'orbital',
-    description: 'real-time satellite tracker for the terminal. renders earth as a 3d ascii globe and tracks satellites utilizing live sgp4 mechanics.',
-    links: [
-      { label: 'github', href: 'https://github.com/zidankazi/orbital' },
     ],
   },
   {
@@ -49,11 +57,10 @@ export const projects: Project[] = [
     ],
   },
   {
-    title: 'mnist 3d visualizer',
-    description: 'neural network from scratch with an interactive 3D web visualizer.',
+    title: 'orbital',
+    description: 'real-time satellite tracker for the terminal. renders earth as a 3d ascii globe and tracks satellites utilizing live sgp4 mechanics.',
     links: [
-      { label: 'github', href: 'https://github.com/zidankazi/neural-net/' },
-      { label: 'site', href: 'https://neural-net.vercel.app/' },
+      { label: 'github', href: 'https://github.com/zidankazi/orbital' },
     ],
   },
 ];
