@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { projects } from '@/data/projects';
 import { IntroBubble } from '@/components/chat/IntroBubble';
+import { NameHeader } from '@/components/chat/NameHeader';
 import { MapWidget } from '@/components/chat/MapWidget';
 import { ProjectsSection } from '@/components/chat/ProjectsSection';
 import { Pill } from '@/components/chat/Pill';
@@ -12,6 +13,9 @@ export default function HomePage() {
   return (
     <main className="w-full flex justify-center pb-6 font-body mt-2">
       <div className="flex flex-col gap-5 w-full">
+
+        {/* Name masthead — set in Gossip, sits above the chat */}
+        <NameHeader />
 
         {/* Intro — self-animated with enlarged name */}
         <IntroBubble />

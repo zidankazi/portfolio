@@ -1,6 +1,15 @@
 import type { Metadata } from 'next';
 import { Inter, Newsreader, JetBrains_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import './globals.css';
+
+// Gossip by Deborah Khodanovich (https://dvorit.ca) — SIL OFL 1.1, see ./fonts/Gossip-LICENSE.txt
+const displayFont = localFont({
+  src: './fonts/Gossip-HighCrossSmall.woff2',
+  variable: '--font-display',
+  weight: '200',
+  display: 'swap'
+});
 
 const bodyFont = Inter({
   subsets: ['latin'],
@@ -39,8 +48,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${bodyFont.variable} ${headingFont.variable} ${monoFont.variable} h-full bg-[#0a0a0a]`}>
-      <body className="bg-[#0a0a0a] font-body text-zinc-300 selection:bg-zinc-800 selection:text-white min-h-full antialiased flex flex-col items-center pt-10 pb-24 px-5 sm:px-10">
+    <html lang="en" className={`${bodyFont.variable} ${headingFont.variable} ${monoFont.variable} ${displayFont.variable} h-full bg-[#0a0a0a]`}>
+      <body className="bg-[#0a0a0a] font-body text-zinc-300 selection:bg-zinc-800 selection:text-white min-h-full antialiased flex flex-col items-center pt-14 sm:pt-20 pb-24 px-5 sm:px-10">
         <div className="w-full max-w-[520px] flex flex-col">
           {children}
         </div>

@@ -9,7 +9,8 @@ const config = {
       fontFamily: {
         heading: ['var(--font-heading)', 'serif'],
         body: ['var(--font-body)', 'sans-serif'],
-        mono: ['var(--font-mono)', 'monospace']
+        mono: ['var(--font-mono)', 'monospace'],
+        display: ['var(--font-display)', 'serif']
       }
     }
   },
