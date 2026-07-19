@@ -19,7 +19,7 @@ function Description({ project }: { project: Project }) {
                 href={descriptionLink.href}
                 target="_blank"
                 rel="noreferrer"
-                className="underline underline-offset-4 decoration-white/30 hover:decoration-white/70 transition-colors"
+                className="cursor-pointer underline underline-offset-4 decoration-white/30 hover:decoration-white/70 transition-colors"
             >
                 {descriptionLink.text}
             </a>
@@ -44,7 +44,7 @@ function ProjectRow({ project }: { project: Project }) {
                                 href={link.href}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-[13px] text-zinc-400 underline underline-offset-2 hover:text-zinc-200 transition-colors"
+                                className="cursor-pointer text-[13px] text-zinc-400 underline underline-offset-2 hover:text-zinc-200 hover:decoration-zinc-200 transition-colors"
                             >
                                 {link.label}
                             </a>
@@ -89,12 +89,12 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
                     </p>
                 </div>
 
-                {/* List — no padding, rows own their own px-4 */}
-                <div className="relative pt-1 pb-1">
+                {/* List — no padding, so row hover states sit flush against the divider */}
+                <div className="relative">
                     <motion.div
                         animate={{ height: isOpen ? 'auto' : 140 }}
                         transition={{ duration: 0.3, ease: [0, 0, 0.2, 1] }}
-                        className="overflow-hidden"
+                        className="overflow-hidden select-none"
                     >
                         {projects.map((project) => (
                             <ProjectRow key={project.title} project={project} />
