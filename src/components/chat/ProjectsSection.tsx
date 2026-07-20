@@ -77,7 +77,7 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
     const [canHover, setCanHover] = useState(true);
 
     useEffect(() => {
-        const mq = window.matchMedia('(hover: hover) and (pointer: fine)');
+        const mq = window.matchMedia('(hover: hover)');
         const update = () => setCanHover(mq.matches);
         update();
         mq.addEventListener('change', update);
@@ -115,21 +115,19 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
                 >
                     <span>
                         A few things I&apos;ve made.{' '}
-                        <span className="text-zinc-500">
-                            {canHover ? 'Hover your mouse here to see the list.' : 'Tap to see the list.'}
-                        </span>
+                        {/* Both rendered; CSS shows one by hover capability — no hydration flash */}
+                        <span className="hint-hover text-zinc-500">Hover your mouse here to see the list.</span>
+                        <span className="hint-tap text-zinc-500">Tap to see the list.</span>
                     </span>
-                    {/* Tap affordance — only where there's no hover to reveal it */}
-                    {!canHover && (
-                        <motion.span
-                            aria-hidden="true"
-                            animate={{ rotate: isOpen ? 180 : 0 }}
-                            transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
-                            className="flex shrink-0 text-zinc-500"
-                        >
-                            <ChevronDown className="w-4 h-4" />
-                        </motion.span>
-                    )}
+                    {/* Tap affordance — CSS reveals it only where there's no hover */}
+                    <motion.span
+                        aria-hidden="true"
+                        animate={{ rotate: isOpen ? 180 : 0 }}
+                        transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
+                        className="tap-chevron shrink-0 text-zinc-500"
+                    >
+                        <ChevronDown className="w-4 h-4" />
+                    </motion.span>
                 </button>
 
                 {/* List — no padding, so row hover states sit flush against the divider */}

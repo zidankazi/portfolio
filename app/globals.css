@@ -60,3 +60,25 @@ h6 {
     height: 100%;
   }
 }
+
+/* Projects header affordance — resolved by the device's hover capability at
+   first paint, so the hint copy and chevron never flash on hydration. Default
+   is the hover treatment; touch devices swap to the tap treatment. */
+.hint-tap,
+.tap-chevron {
+  display: none;
+}
+
+@media (hover: none) {
+  .hint-hover {
+    display: none;
+  }
+
+  .hint-tap {
+    display: inline;
+  }
+
+  .tap-chevron {
+    display: flex;
+  }
+}
