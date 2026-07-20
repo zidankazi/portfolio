@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { ChevronDown } from 'lucide-react';
 import { Project } from '@/data/projects';
 
 // Links a phrase inside the description, leaving the rest as plain text
@@ -64,13 +65,36 @@ interface ProjectsSectionProps {
 }
 
 export function ProjectsSection({ projects }: ProjectsSectionProps) {
-    const [isOpen, setIsOpen] = useState(false);
+    const listId = useId();
+
+    // Open when: tapped/clicked open (pinned), or — on real hover devices —
+    // hovered or keyboard-focused. Gating hover/focus behind canHover keeps a
+    // touch tap (which can synthesize a mouseenter/focus) from fighting the
+    // pinned toggle, so tap-to-open / tap-to-close stays clean.
+    const [pinned, setPinned] = useState(false);
+    const [hovered, setHovered] = useState(false);
+    const [focused, setFocused] = useState(false);
+    const [canHover, setCanHover] = useState(true);
+
+    useEffect(() => {
+        const mq = window.matchMedia('(hover: hover) and (pointer: fine)');
+        const update = () => setCanHover(mq.matches);
+        update();
+        mq.addEventListener('change', update);
+        return () => mq.removeEventListener('change', update);
+    }, []);
+
+    const isOpen = pinned || (canHover && (hovered || focused));
 
     return (
         <div
             className="flex gap-3 items-end sm:items-start w-full"
-            onMouseEnter={() => setIsOpen(true)}
-            onMouseLeave={() => setIsOpen(false)}
+            onMouseEnter={canHover ? () => setHovered(true) : undefined}
+            onMouseLeave={canHover ? () => setHovered(false) : undefined}
+            onFocusCapture={() => setFocused(true)}
+            onBlurCapture={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) setFocused(false);
+            }}
         >
             {/* Avatar */}
             <div className="shrink-0 w-8 flex justify-center">
@@ -81,16 +105,35 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
 
             {/* Bubble — overflow-hidden here gives rounded corners, rows fill naturally */}
             <div className="bg-[#161618] text-[#d4d4d4] rounded-[20px] rounded-tl-sm text-[14px] leading-[1.6] w-full border border-white/5 shadow-sm overflow-hidden">
-                {/* Header — padded */}
-                <div className="px-4 pt-3 pb-3 border-b border-white/10">
-                    <p>
+                {/* Header — a real button so tap + keyboard work, not just hover */}
+                <button
+                    type="button"
+                    onClick={() => setPinned((p) => !p)}
+                    aria-expanded={isOpen}
+                    aria-controls={listId}
+                    className="w-full text-left px-4 pt-3 pb-3 border-b border-white/10 flex items-center justify-between gap-3"
+                >
+                    <span>
                         A few things I&apos;ve made.{' '}
-                        <span className="text-zinc-500">Hover your mouse here to see the list.</span>
-                    </p>
-                </div>
+                        <span className="text-zinc-500">
+                            {canHover ? 'Hover your mouse here to see the list.' : 'Tap to see the list.'}
+                        </span>
+                    </span>
+                    {/* Tap affordance — only where there's no hover to reveal it */}
+                    {!canHover && (
+                        <motion.span
+                            aria-hidden="true"
+                            animate={{ rotate: isOpen ? 180 : 0 }}
+                            transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
+                            className="flex shrink-0 text-zinc-500"
+                        >
+                            <ChevronDown className="w-4 h-4" />
+                        </motion.span>
+                    )}
+                </button>
 
                 {/* List — no padding, so row hover states sit flush against the divider */}
-                <div className="relative">
+                <div className="relative" id={listId}>
                     <motion.div
                         animate={{ height: isOpen ? 'auto' : 140 }}
                         transition={{ duration: 0.3, ease: [0, 0, 0.2, 1] }}
