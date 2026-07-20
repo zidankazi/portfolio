@@ -40,17 +40,18 @@ export function ScrollCue() {
           onClick={() =>
             window.scrollBy({ top: window.innerHeight * 0.8, behavior: 'smooth' })
           }
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.3, ease: [0.2, 0.65, 0.3, 0.9] }}
-          className="fixed bottom-5 left-1/2 z-50 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border border-white/10 bg-[#161618]/70 text-zinc-400 backdrop-blur-sm transition-colors hover:border-white/20 hover:text-zinc-100"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9] }}
+          className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 p-2 text-white/20 transition-colors hover:text-white/50"
         >
           <motion.span
-            animate={{ y: [0, 3, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+            className="block"
+            animate={{ y: [0, 2, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="h-4 w-4" strokeWidth={1.75} />
           </motion.span>
         </motion.button>
       )}
