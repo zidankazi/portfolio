@@ -9,27 +9,28 @@ const EASE = [0.2, 0.65, 0.3, 0.9];
 const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 /**
- * Reveals its children one at a time as the reader scrolls, with a "…" typing
- * bubble parked at the tail implying the next message is coming. Each section
- * "sends" when the typing bubble scrolls into view — the thread catches up to
- * you as you go.
+ * Unfolds its children one message at a time, with a "…" typing bubble parked
+ * at the tail. The thread advances on its own — quickly once the typing bubble
+ * is on screen, more slowly otherwise — so it always completes whether the
+ * reader scrolls along or just waits. It never stalls waiting for a scroll.
  *
  * Accessibility / SEO: renders every section on the server and on first paint,
- * then (only when motion is welcome) collapses to the typing choreography
- * before the browser paints — no flash. Keyboard focus entering the region, or
+ * then (only when motion is welcome) collapses to the choreography before the
+ * browser paints — no flash. Keyboard focus/Tab into the region, or
  * prefers-reduced-motion, drops straight to the fully-revealed thread.
  */
 export function ConversationTail({
   children,
   typingMs = 650,
+  idleMs = 1400,
 }: {
   children: ReactNode;
   typingMs?: number;
+  idleMs?: number;
 }) {
   const sections = Children.toArray(children);
   const [revealed, setRevealed] = useState(sections.length);
   const [animate, setAnimate] = useState(false);
-  const [hasScrolled, setHasScrolled] = useState(false);
 
   const typingRef = useRef<HTMLDivElement>(null);
   const typingInView = useInView(typingRef, { amount: 'some' });
@@ -43,36 +44,29 @@ export function ConversationTail({
     }
   }, []);
 
-  // First scroll arms the reveal — before that, the bait just teases. Tab means
-  // a keyboard user is navigating and can't reach not-yet-mounted links, so drop
-  // straight to the full thread.
+  // Keyboard users can't reach not-yet-mounted links, so a Tab drops straight
+  // to the full thread.
   useEffect(() => {
-    const onScroll = () => setHasScrolled(true);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Tab') setRevealed(sections.length);
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('keydown', onKey);
-    };
+    return () => window.removeEventListener('keydown', onKey);
   }, [sections.length]);
 
   const done = revealed >= sections.length;
 
+  // Self-advancing: fast once the bubble is visible (you've scrolled to it),
+  // slower when it's below the fold — but always moving, so waiting works too.
+  // The first message waits a beat for the on-load cascade above it to settle.
   useEffect(() => {
-    if (done || !typingInView) return;
-    // Tease until the first scroll — unless the page can't scroll, in which
-    // case advance on its own so the tail is never stranded off-screen.
-    const scrollable =
-      document.documentElement.scrollHeight > window.innerHeight + 4;
-    if (scrollable && !hasScrolled) return;
-    const id = setTimeout(() => setRevealed((n) => n + 1), typingMs);
+    if (done) return;
+    const delay = revealed === 0 ? 1300 : typingInView ? typingMs : idleMs;
+    const id = setTimeout(() => setRevealed((n) => n + 1), delay);
     return () => clearTimeout(id);
-  }, [typingInView, done, hasScrolled, typingMs, revealed]);
+  }, [done, revealed, typingInView, typingMs, idleMs]);
 
-  // Keyboard / assistive tech: surface the whole tail the moment focus enters.
+  // Assistive tech: surface the whole tail the moment focus enters.
   const revealAll = () => setRevealed(sections.length);
 
   return (

@@ -7,6 +7,7 @@ import { ProjectsSection } from '@/components/chat/ProjectsSection';
 import { Pill } from '@/components/chat/Pill';
 import { SpotifyCard } from '@/components/chat/SpotifyCard';
 import { ConversationTail } from '@/components/chat/ConversationTail';
+import { ScrollCue } from '@/components/chat/ScrollCue';
 import { StaggerContainer, StaggerItem } from '@/components/motion/Stagger';
 import { Github, Twitter, Mail } from 'lucide-react';
 
@@ -75,6 +76,9 @@ export default function HomePage() {
         </ConversationTail>
 
       </div>
+
+      {/* "there's more below" nudge — shows while content sits under the fold */}
+      <ScrollCue />
     </main>
   );
 }
