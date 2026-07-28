@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
+import { AnimatePresence, motion } from 'framer-motion';
+import { setAmbientPalette, type RGB } from '@/components/ambient/ambient';
 
 interface TrackData {
     isPlaying: boolean;
@@ -9,6 +11,8 @@ interface TrackData {
     artist?: string;
     albumArt?: string | null;
     url?: string;
+    progressMs?: number | null;
+    durationMs?: number | null;
 }
 
 function SpotifyIcon({ className }: { className?: string }) {
@@ -19,16 +23,17 @@ function SpotifyIcon({ className }: { className?: string }) {
     );
 }
 
-function Equalizer() {
+function Equalizer({ tint }: { tint?: string }) {
     return (
         <div className="flex items-end gap-[2px] h-3">
             {[0, 0.15, 0.3, 0.1].map((delay, i) => (
                 <span
                     key={i}
-                    className="w-[2.5px] rounded-sm bg-white/20 animate-[equalizer_1.2s_ease-in-out_infinite]"
+                    className="w-[2.5px] animate-[equalizer_1.2s_ease-in-out_infinite] transition-colors duration-1000"
                     style={{
                         animationDelay: `${delay}s`,
                         height: '30%',
+                        backgroundColor: tint ?? 'rgba(255,255,255,0.2)',
                     }}
                 />
             ))}
@@ -36,38 +41,82 @@ function Equalizer() {
     );
 }
 
-/** Desaturate a color by mixing it toward gray */
-function desaturate(r: number, g: number, b: number, amount = 0.5): [number, number, number] {
-    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+/** Lift a palette color to a bright, readable accent (for the bar/equalizer) */
+function brighten([r, g, b]: RGB, target = 225): RGB {
+    const max = Math.max(r, g, b, 1);
+    const k = Math.max(target / max, 1);
     return [
-        Math.round(r + (gray - r) * amount),
-        Math.round(g + (gray - g) * amount),
-        Math.round(b + (gray - b) * amount),
+        Math.min(255, Math.round(r * k)),
+        Math.min(255, Math.round(g * k)),
+        Math.min(255, Math.round(b * k)),
     ];
 }
 
 export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
     const [data, setData] = useState<TrackData>(initialData);
-    const [colors, setColors] = useState<{ primary: [number, number, number]; secondary: [number, number, number] } | null>(null);
+    const [colors, setColors] = useState<{ primary: RGB; secondary: RGB } | null>(null);
+    // Both start at 0 so server and client render identical progress (SSR-safe);
+    // the mount-time fetch below swaps in real clocks.
+    const [syncedAt, setSyncedAt] = useState(0);
+    const [now, setNow] = useState(0);
     const imgRef = useRef<HTMLImageElement | null>(null);
+    const endedRef = useRef(false);
 
-    // Poll the API every 30 seconds
     const fetchTrack = useCallback(async () => {
         try {
             const res = await fetch('/api/spotify/now-playing');
             const json = await res.json();
             if (json.title) {
                 setData(json);
+                const t = Date.now();
+                setSyncedAt(t);
+                setNow(t);
             }
         } catch {
             // silently fail — keep showing last known track
         }
     }, []);
 
+    // Resync on mount, poll every 30s, and refresh when the tab regains focus
     useEffect(() => {
+        const kickoff = setTimeout(fetchTrack, 0);
         const interval = setInterval(fetchTrack, 30_000);
-        return () => clearInterval(interval);
+        const onVisible = () => {
+            if (!document.hidden) fetchTrack();
+        };
+        document.addEventListener('visibilitychange', onVisible);
+        return () => {
+            clearTimeout(kickoff);
+            clearInterval(interval);
+            document.removeEventListener('visibilitychange', onVisible);
+        };
     }, [fetchTrack]);
+
+    const hasProgress = data.isPlaying && data.progressMs != null && data.durationMs != null;
+
+    // Tick the progress bar locally between polls
+    useEffect(() => {
+        if (!hasProgress) return;
+        const id = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(id);
+    }, [hasProgress]);
+
+    const elapsed = hasProgress
+        ? Math.min((data.progressMs ?? 0) + Math.max(0, now - syncedAt), data.durationMs ?? 0)
+        : null;
+
+    // When the track runs out, grab the next one (small grace for Spotify's lag)
+    useEffect(() => {
+        if (elapsed != null && data.durationMs != null && elapsed >= data.durationMs) {
+            if (!endedRef.current) {
+                endedRef.current = true;
+                const t = setTimeout(fetchTrack, 2000);
+                return () => clearTimeout(t);
+            }
+        } else {
+            endedRef.current = false;
+        }
+    }, [elapsed, data.durationMs, fetchTrack]);
 
     // Extract top 2 dominant colors from album art
     useEffect(() => {
@@ -86,10 +135,11 @@ export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
                 try {
                     const palette = colorThief.getPalette(img, 3);
                     if (palette && palette.length >= 2) {
-                        setColors({
-                            primary: palette[0] as [number, number, number],
-                            secondary: palette[1] as [number, number, number],
-                        });
+                        const primary = palette[0] as RGB;
+                        const secondary = palette[1] as RGB;
+                        setColors({ primary, secondary });
+                        // Let the color escape the card — tint the whole page
+                        setAmbientPalette({ primary, secondary });
                     }
                 } catch { /* card stays dark */ }
             };
@@ -101,13 +151,33 @@ export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
 
     const c1 = colors?.primary;
     const c2 = colors?.secondary;
+    const accent = c1 ? brighten(c1) : null;
+    const accent2 = c2 ? brighten(c2) : null;
+    // Bar runs primary → secondary, showing off the whole extracted palette
+    const barFill =
+        accent && accent2
+            ? `linear-gradient(90deg, rgba(${accent.join(',')}, 0.9), rgba(${accent2.join(',')}, 0.9))`
+            : 'rgba(255,255,255,0.4)';
+    const eqTint = accent ? `rgba(${accent.join(',')}, 0.55)` : undefined;
+
+    const pct =
+        elapsed != null && data.durationMs
+            ? Math.round((elapsed / data.durationMs) * 10000) / 100
+            : 0;
 
     return (
         <div>
             <p className="mb-3">
                 I listen to a lot of music
                 {data.isPlaying
-                    ? <>, and <span className="text-white/60">right now</span> I&apos;m listening to:</>
+                    ? <>, and{' '}
+                        <span
+                            className="text-white/60 transition-colors duration-1000"
+                            style={accent ? { color: `rgba(${accent.join(',')}, 0.85)` } : undefined}
+                        >
+                            right now
+                        </span>{' '}
+                        I&apos;m listening to:</>
                     : <>, and I <span className="text-white/60">last</span> listened to:</>
                 }
             </p>
@@ -123,20 +193,28 @@ export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
                     border: '1px solid rgba(255,255,255,0.07)',
                 }}
             >
-                {/* Color blobs — primary + secondary from album palette */}
-                {c1 && c2 && (
-                    <div
-                        className="pointer-events-none absolute -inset-[80%] z-0"
-                        style={{
-                            background: [
-                                `radial-gradient(ellipse at 20% 30%, rgba(${c1[0]}, ${c1[1]}, ${c1[2]}, 0.55), transparent 50%)`,
-                                `radial-gradient(ellipse at 75% 50%, rgba(${c2[0]}, ${c2[1]}, ${c2[2]}, 0.4), transparent 45%)`,
-                                `radial-gradient(ellipse at 40% 85%, rgba(${c1[0]}, ${c1[1]}, ${c1[2]}, 0.2), transparent 50%)`,
-                            ].join(', '),
-                            filter: 'blur(50px)',
-                        }}
-                    />
-                )}
+                {/* Color blobs — primary + secondary from album palette; crossfade
+                    on track change, drift slowly while parked */}
+                <AnimatePresence>
+                    {c1 && c2 && (
+                        <motion.div
+                            key={`${c1.join(',')}|${c2.join(',')}`}
+                            className="pointer-events-none absolute -inset-[80%] z-0 blob-drift"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 1.8, ease: 'easeInOut' }}
+                            style={{
+                                background: [
+                                    `radial-gradient(ellipse at 20% 30%, rgba(${c1[0]}, ${c1[1]}, ${c1[2]}, 0.55), transparent 50%)`,
+                                    `radial-gradient(ellipse at 75% 50%, rgba(${c2[0]}, ${c2[1]}, ${c2[2]}, 0.4), transparent 45%)`,
+                                    `radial-gradient(ellipse at 40% 85%, rgba(${c1[0]}, ${c1[1]}, ${c1[2]}, 0.2), transparent 50%)`,
+                                ].join(', '),
+                                filter: 'blur(50px)',
+                            }}
+                        />
+                    )}
+                </AnimatePresence>
 
                 {/* Grain — visible, tactile */}
                 <div
@@ -174,15 +252,25 @@ export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
                         {data.title}
                     </p>
                     <p className="text-zinc-500 text-[12px] tracking-[0.01em] truncate mt-0.5">{data.artist}</p>
+
+                    {/* Live progress — crisp square-edged hairline filling
+                        primary → secondary; only while playing */}
+                    {hasProgress && elapsed != null && data.durationMs != null && (
+                        <div className="relative mt-2.5 h-[2px] bg-white/[0.08] overflow-hidden">
+                            <div
+                                className="absolute inset-y-0 left-0 transition-[width] duration-1000 ease-linear"
+                                style={{ width: `${pct}%`, background: barFill }}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Right — glass icons */}
                 <div className="shrink-0 flex flex-col items-center gap-2.5 z-20">
                     <SpotifyIcon className="w-5 h-5 text-white/25" />
-                    {data.isPlaying && <Equalizer />}
+                    {data.isPlaying && <Equalizer tint={eqTint} />}
                 </div>
             </a>
         </div>
     );
 }
-

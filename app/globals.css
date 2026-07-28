@@ -61,6 +61,54 @@ h6 {
   }
 }
 
+/* Ambient music wash — the page-level layer breathes on a slow loop, the
+   card's blobs wander a touch faster. Both sit out under reduced motion. */
+@keyframes ambient-drift {
+
+  0%,
+  100% {
+    transform: translate3d(-1.5%, -1%, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(1.5%, 1%, 0) scale(1.05);
+  }
+}
+
+.ambient-drift {
+  animation: ambient-drift 60s ease-in-out infinite;
+}
+
+@keyframes blob-drift {
+  0% {
+    transform: translate3d(0%, 0%, 0) rotate(0deg);
+  }
+
+  33% {
+    transform: translate3d(2%, -1.5%, 0) rotate(2deg);
+  }
+
+  66% {
+    transform: translate3d(-1.5%, 1%, 0) rotate(-1.5deg);
+  }
+
+  100% {
+    transform: translate3d(0%, 0%, 0) rotate(0deg);
+  }
+}
+
+.blob-drift {
+  animation: blob-drift 26s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .ambient-drift,
+  .blob-drift {
+    animation: none;
+  }
+}
+
 /* Projects header affordance — resolved by the device's hover capability at
    first paint, so the hint copy and chevron never flash on hydration. Default
    is the hover treatment; touch devices swap to the tap treatment. */
