@@ -102,12 +102,34 @@ h6 {
 }
 
 /* The sigil rails' drift + scroll parallax is driven in SigilRails.tsx, which
-   also sits out under prefers-reduced-motion. */
+   also sits out under prefers-reduced-motion. Their entrance, though, is CSS:
+   the rail opens from the vertical centre outward like the linework is being
+   inked down the page. Runs on first paint, so there's no hydration flash. */
+@keyframes sigil-ink {
+  from {
+    clip-path: inset(50% 0 50% 0);
+    opacity: 0;
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+.sigil-ink {
+  animation: sigil-ink 1.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
 
 @media (prefers-reduced-motion: reduce) {
 
   .ambient-drift,
   .blob-drift {
+    animation: none;
+  }
+
+  /* skip the draw-on, but don't leave the rails clipped shut */
+  .sigil-ink {
     animation: none;
   }
 }
