@@ -22,6 +22,11 @@ function tame([r, g, b]: RGB): RGB {
     return mixed.map((v) => Math.round(Math.min(255, v * k))) as RGB;
 }
 
+function saturationOf([r, g, b]: RGB): number {
+    const max = Math.max(r, g, b);
+    return max === 0 ? 0 : (max - Math.min(r, g, b)) / max;
+}
+
 /**
  * Full-page ambient wash driven by whatever's playing. Sits fixed behind the
  * content; blobs hug the page edges so the reading column stays dark. Track
@@ -38,14 +43,24 @@ export function AmbientBackdrop() {
     let wash: string | null = null;
     let key = '';
     if (palette) {
-        const c1 = tame(palette.primary);
-        const c2 = tame(palette.secondary);
-        key = `${c1.join(',')}|${c2.join(',')}`;
-        wash = [
-            `radial-gradient(ellipse 55% 42% at 14% -6%, rgba(${c1.join(',')}, 0.16), transparent 68%)`,
-            `radial-gradient(ellipse 50% 40% at 104% 24%, rgba(${c2.join(',')}, 0.12), transparent 66%)`,
-            `radial-gradient(ellipse 60% 45% at 42% 112%, rgba(${c1.join(',')}, 0.09), transparent 70%)`,
-        ].join(', ');
+        // tame() lifts every sleeve to the mid band, so a gray or white cover
+        // used to come out as a white glow. Scale the wash with the palette's
+        // saturation instead: colorless art means no wash, not a pale one.
+        const sat = Math.max(
+            saturationOf(palette.primary),
+            saturationOf(palette.secondary)
+        );
+        const s = Math.min(1, Math.max(0, (sat - 0.12) / 0.25));
+        if (s > 0.01) {
+            const c1 = tame(palette.primary);
+            const c2 = tame(palette.secondary);
+            key = `${c1.join(',')}|${c2.join(',')}|${s.toFixed(2)}`;
+            wash = [
+                `radial-gradient(ellipse 55% 42% at 14% -6%, rgba(${c1.join(',')}, ${(0.16 * s).toFixed(3)}), transparent 68%)`,
+                `radial-gradient(ellipse 50% 40% at 104% 24%, rgba(${c2.join(',')}, ${(0.12 * s).toFixed(3)}), transparent 66%)`,
+                `radial-gradient(ellipse 60% 45% at 42% 112%, rgba(${c1.join(',')}, ${(0.09 * s).toFixed(3)}), transparent 70%)`,
+            ].join(', ');
+        }
     }
 
     return (
