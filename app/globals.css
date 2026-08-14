@@ -101,6 +101,9 @@ h6 {
   animation: blob-drift 26s ease-in-out infinite;
 }
 
+/* The sigil rails' drift + scroll parallax is driven in SigilRails.tsx, which
+   also sits out under prefers-reduced-motion. */
+
 @media (prefers-reduced-motion: reduce) {
 
   .ambient-drift,

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Newsreader, JetBrains_Mono } from 'next/font/google';
 import localFont from 'next/font/local';
 import { AmbientBackdrop } from '@/components/ambient/AmbientBackdrop';
+import { SigilRails } from '@/components/ambient/SigilRails';
 import './globals.css';
 
 // Gossip by Deborah Khodanovich (https://dvorit.ca) — SIL OFL 1.1, see ./fonts/Gossip-LICENSE.txt
@@ -50,6 +51,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-body text-zinc-300 selection:bg-zinc-800 selection:text-white min-h-full antialiased flex flex-col items-center pt-14 sm:pt-20 pb-24 px-5 sm:px-10">
         {/* Album-palette wash — tints the page to whatever's playing */}
         <AmbientBackdrop />
+        {/* ASCII sigil linework crawling up the page edges */}
+        <SigilRails />
         <div className="w-full max-w-[520px] flex flex-col">
           {children}
         </div>
