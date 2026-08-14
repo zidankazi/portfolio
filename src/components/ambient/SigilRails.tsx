@@ -57,7 +57,7 @@ function Rail({ text, side }: { text: string; side: 'left' | 'right' }) {
   return (
     <div
       aria-hidden
-      className={`pointer-events-none select-none fixed inset-y-0 -z-10 hidden lg:block overflow-hidden ${
+      className={`sigil-ink pointer-events-none select-none fixed inset-y-0 -z-10 hidden lg:block overflow-hidden ${
         side === 'left' ? 'left-5' : 'right-5'
       }`}
       style={{
