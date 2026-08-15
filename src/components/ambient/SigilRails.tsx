@@ -67,11 +67,26 @@ function Rail({ text, side }: { text: string; side: 'left' | 'right' }) {
           'linear-gradient(to bottom, transparent, black 14%, black 86%, transparent)',
       }}
     >
-      <div ref={shiftRef} style={{ willChange: 'transform' }}>
-        <pre ref={tileRef} className="font-mono text-[6px] leading-none text-zinc-300/[0.28]">
+      {/* Razor-thin backlight column behind the spine. Static while the art
+          crawls through it, so the fine linework has something to read
+          against instead of dissolving into the void. */}
+      <div
+        className="absolute inset-y-0 left-1/2 w-20 -translate-x-1/2"
+        style={{
+          background: [
+            // lit core, tight enough to track the spine's wander
+            'linear-gradient(to right, transparent 32%, rgba(228,228,231,0.055) 50%, transparent 68%)',
+            // soft halo so the core has no hard edge
+            'linear-gradient(to right, transparent, rgba(228,228,231,0.022) 50%, transparent)',
+          ].join(', '),
+        }}
+      />
+
+      <div ref={shiftRef} className="relative" style={{ willChange: 'transform' }}>
+        <pre ref={tileRef} className="font-mono text-[6px] leading-none text-zinc-300/[0.32]">
           {text}
         </pre>
-        <pre className="font-mono text-[6px] leading-none text-zinc-300/[0.28]">{text}</pre>
+        <pre className="font-mono text-[6px] leading-none text-zinc-300/[0.32]">{text}</pre>
       </div>
     </div>
   );
