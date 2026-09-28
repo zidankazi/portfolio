@@ -106,3 +106,18 @@ fn request(
   headers: Array(#(String, String)),
   body: String,
 ) -> Promise(Result(#(Int, String), Nil))
+
+/// Create this once on the server, using the three SPOTIFY_* environment values.
+/// Creating a new client on every request would throw away its caches.
+pub fn new_client(
+  client_id: String,
+  client_secret: String,
+  refresh_token: String,
+) -> Client {
+  Client(
+    client_id: client_id,
+    client_secret: client_secret,
+    refresh_token: refresh_token,
+    cache: new_cell(Cache(token: None, recent: None, last_good: None)),
+  )
+}
