@@ -13,6 +13,7 @@ const pixels = await sharp(source.pathname)
   .flatten({ background: '#000000' })
   .resize(COLS, ROWS, { fit: 'fill', kernel: 'lanczos3' })
   .greyscale()
+  .linear(1.35, -30)
   .raw()
   .toBuffer();
 
@@ -26,8 +27,8 @@ function encode(mirror = false) {
       let layer = 0;
       if (value > 0.055) {
         const ramp = 'iltvzxcakdmw';
-        glyph = ramp[Math.min(ramp.length - 1, Math.floor(value ** 0.85 * ramp.length))];
-        layer = value > 0.57 ? 2 : value > 0.23 ? 1 : 0;
+        glyph = ramp[Math.min(ramp.length - 1, Math.floor(value * ramp.length))];
+        layer = value > 0.66 ? 2 : value > 0.3 ? 1 : 0;
       }
       for (let i = 0; i < 3; i++) rows[i] += i === layer ? glyph : ' ';
     }
@@ -37,7 +38,7 @@ function encode(mirror = false) {
 }
 
 // Four visible fingertip contact points, from the outer to the inner edge.
-const fingertips = [[0.353, 0.838], [0.539, 0.895], [0.728, 0.829], [0.886, 0.575]];
+const fingertips = [[0.356, 0.861], [0.568, 0.92], [0.769, 0.886], [0.902, 0.607]];
 const width = COLS * CELL_WIDTH;
 const height = ROWS * FONT_SIZE;
 const serialize = layers => `{\n${layers.map((text, i) => `  ${names[i]}: \`${text}\``).join(',\n')}\n}`;

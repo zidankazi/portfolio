@@ -8,18 +8,20 @@ function Hand({ side }: { side: 'left' | 'right' }) {
   return (
     <div
       data-puppet-hand={side}
-      className="absolute top-6"
+      className="absolute -top-3"
       style={{
         width: HAND_WIDTH,
         height: HAND_HEIGHT,
         fontSize: HAND_FONT_SIZE,
         lineHeight: `${HAND_FONT_SIZE}px`,
+        maskImage: 'linear-gradient(to bottom, transparent 12px, black 46px)',
+        WebkitMaskImage: 'linear-gradient(to bottom, transparent 12px, black 46px)',
         [side]: 'calc(50% - 480px)',
       }}
     >
-      <pre className="font-mono text-zinc-400/30">{art.detail}</pre>
-      <pre className="absolute inset-0 font-mono text-zinc-300/55">{art.body}</pre>
-      <pre className="absolute inset-0 font-mono text-zinc-100/85">{art.highlights}</pre>
+      <pre className="font-mono text-zinc-500/25">{art.detail}</pre>
+      <pre className="absolute inset-0 font-mono text-zinc-300/65">{art.body}</pre>
+      <pre className="absolute inset-0 font-mono text-zinc-100">{art.highlights}</pre>
     </div>
   );
 }
