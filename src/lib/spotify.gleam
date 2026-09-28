@@ -214,10 +214,9 @@ fn decode_token(body: String, now: Int) -> Result(Token, ApiError) {
 /// Exchanges the refresh token for a short-lived access token.
 /// Both HTTP failures and invalid JSON become explicit Result errors.
 fn refresh_access_token(client: Client) -> Promise(Result(String, ApiError)) {
+  let credentials = client.client_id <> ":" <> client.client_secret
   let authorization =
-    client.client_id
-    <> ":"
-    <> client.client_secret
+    credentials
     |> bit_array.from_string
     |> bit_array.base64_encode(True)
   let headers =
