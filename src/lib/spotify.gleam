@@ -1,4 +1,4 @@
-import gleam/option.{type Option}
+import gleam/option.{type Option, None, Some}
 
 pub type Track {
   Track(
