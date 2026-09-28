@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
-import { ViewTransitions } from 'next-view-transitions';
 
 const NavigationContext = createContext(false);
 export const useHasNavigated = () => useContext(NavigationContext);
@@ -18,7 +17,9 @@ export function PageTransitions({ children }: { children: ReactNode }) {
 
   return (
     <NavigationContext.Provider value={hasNavigated}>
-      <ViewTransitions>{children}</ViewTransitions>
+      <div className="contents" data-page-navigation={hasNavigated || undefined}>
+        {children}
+      </div>
     </NavigationContext.Provider>
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import { Link } from 'next-view-transitions';
+import Link from 'next/link';
 import { ArrowUpRight, Undo2 } from 'lucide-react';
 import { AmbientBackdrop } from '@/components/ambient/AmbientBackdrop';
 import styles from './studio.module.css';

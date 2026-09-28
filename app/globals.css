@@ -177,7 +177,6 @@ h6 {
 
 .puppet-scene {
   --hand-size: 240px;
-  view-transition-name: puppet-scene;
   min-height: var(--hand-size);
   overflow-x: clip;
   overflow-y: visible;
@@ -214,42 +213,9 @@ h6 {
   .sigil-scroll { animation: none; }
 }
 
-/* SVG strings get their own capture, outside the outgoing page bitmap. */
-::view-transition-group(puppet-scene) {
-  animation: none;
-}
-
-::view-transition-old(puppet-scene) {
-  display: none;
-}
-
-::view-transition-new(puppet-scene) {
-  animation: conversation-arrive 180ms ease-out both;
-}
-
-/* Keep both pages present while the browser blends between them. */
-::view-transition-old(root) {
-  animation: page-leave 180ms ease-out both;
-}
-
-::view-transition-new(root) {
-  animation: page-enter 300ms cubic-bezier(0.23, 1, 0.32, 1) both;
-}
-
-@keyframes page-leave {
-  to { opacity: 0; transform: translateY(-6px); }
-}
-
-@keyframes page-enter {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root),
-  ::view-transition-new(root),
-  ::view-transition-group(root),
-  ::view-transition-new(puppet-scene) {
-    animation: none;
+/* Fade the live page without rasterizing the SVG strings into a snapshot. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-page-navigation] main {
+    animation: conversation-arrive 240ms ease-out both;
   }
 }
