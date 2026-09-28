@@ -17,8 +17,8 @@ export type Project = {
 export const projects: Project[] = [
   {
     title: 'relic',
-    preview: '/projects/relic-video-poster.webp',
-    previewMotion: { src: '/projects/relic.mp4', type: 'video' },
+    preview: '/projects/relic-loop-poster.webp',
+    previewMotion: { src: '/projects/relic-loop.mp4', type: 'video' },
     description: 'the source of truth for ai-native companies. memory that builds itself from your team\'s stack and answers agent queries over mcp, with a source behind every fact.',
     links: [
       { label: 'site', href: 'https://tryrelic.io' },
