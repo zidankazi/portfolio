@@ -18,3 +18,48 @@ function isPinnedCompiler(binary) {
   const result = spawnSync(binary, ["--version"], { encoding: "utf8" });
   return result.status === 0 && result.stdout.trim() === `gleam ${version}`;
 }
+
+async function ensureCompiler() {
+  if (isPinnedCompiler("gleam")) return "gleam";
+  const platform = `${process.platform}-${process.arch}`;
+  const release = releases[platform];
+  if (!release) throw new Error(`Install Gleam ${version} on ${platform} before building.`);
+  const directory = join(root, "node_modules", ".cache", "gleam", version, platform);
+  const binary = join(directory, "gleam");
+  if (isPinnedCompiler(binary)) return binary;
+
+  await mkdir(directory, { recursive: true });
+  const temporary = await mkdtemp(join(directory, "download-"));
+  try {
+    const [target, checksum] = release;
+    const asset = `gleam-v${version}-${target}.tar.gz`;
+    console.log(`Downloading Gleam ${version} for ${platform}`);
+    const response = await fetch(
+      `https://github.com/gleam-lang/gleam/releases/download/v${version}/${asset}`,
+      { signal: AbortSignal.timeout(60_000) },
+    );
+    if (!response.ok) throw new Error(`Gleam download failed: HTTP ${response.status}`);
+    const archive = Buffer.from(await response.arrayBuffer());
+    if (createHash("sha256").update(archive).digest("hex") !== checksum) {
+      throw new Error("Gleam compiler checksum did not match the pinned release.");
+    }
+    const archivePath = join(temporary, asset);
+    await writeFile(archivePath, archive);
+    const extraction = spawnSync("tar", ["-xzf", archivePath, "-C", temporary, "gleam"], {
+      stdio: "inherit",
+    });
+    if (extraction.status !== 0) throw new Error("Could not extract the Gleam compiler.");
+    const extracted = join(temporary, "gleam");
+    await chmod(extracted, 0o755);
+    if (!isPinnedCompiler(extracted)) throw new Error("Downloaded compiler has an unexpected version.");
+    await rename(extracted, binary);
+    return binary;
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
+  }
+}
+
+const compiler = await ensureCompiler();
+const result = spawnSync(compiler, process.argv.slice(2), { cwd: root, stdio: "inherit" });
+if (result.error) throw result.error;
+process.exit(result.status ?? 1);
