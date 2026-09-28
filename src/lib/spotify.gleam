@@ -26,3 +26,13 @@ pub fn playback_label(playback: Playback) -> String {
     RecentlyPlayed(_) -> "recently played"
   }
 }
+
+// get track title
+pub fn track_title(playback: Playback) -> Option(String) {
+  case playback {
+    NothingPlaying -> None
+    Playing(track, _) -> Some(track.title)
+    Paused(track, _) -> Some(track.title)
+    RecentlyPlayed(track) -> Some(track.title)
+  }
+}
