@@ -29,40 +29,40 @@ export const SIGIL_LEFT = {
                                                         
                                                         
                                                         
-  j     j                                               
                                                         
-  j     j                                             j 
-   j                                                    
                                                         
-      i    j                                       j    
-               i   i                        j           
-                                           j            
-                j                i                      
-               j                  i    j                
-                  j    i          j   j     j  i        
-                 j   j                    i  j          
-                                               i        
-        i            j        i      j       j          
-                j     j       j j   j                   
-              i                     i        j          
-               i                j     j     j           
-                               j  i  j                  
-                                 i                      
-                i             i                         
-                                      j                 
-                             j    i                     
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
                                                         
                                                         
             z                                           
-            kti                                         
+          itkti                                         
             j             j                             
                                                         
                                                         
                              j                          
-                      j                                 
                                                         
                                                         
-                        i     i                         
+                                                        
+         j              i     i              j          
                                                         
        j                 j   j                 j        
                                                         
@@ -376,35 +376,35 @@ export const SIGIL_LEFT = {
                                                         
                                                         
                                                         
-        i                                          j    
-         ij                                    i  j     
-     j         j                                        
-          j       j                     j               
-        i            j               j    i  ji         
-                 i                j                     
-                                i     i     i   i       
-         i       ij                  i                  
-          i                     i          j            
-                               i      j     j           
-                   j                                    
-        j                                               
-               j                    i                   
-                  j                i                    
-                   j               j  i i               
-           i                                            
-                     j       j         j j              
-                                        j               
-                           j                            
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                             j                          
+                                                        
+                                                        
                                                         
                                j                        
-              t   j                                     
+              t                                         
              tkti                                       
               t                                         
                                                         
                                                         
                                                         
                            i                            
-                                i         i i           
+                         j      i         i i           
                                                         
                            j     j                      
         j          i                                    
@@ -649,40 +649,40 @@ export const SIGIL_LEFT = {
                                                         
                                                         
                                                         
- i     i                                                
-  at    mt                                      l     l 
-   mx    mj                                     j       
-    ax   zkz                                   t     t  
-     vxl   lxl                                zvt   t   
-       dv     vzl                               ix      
-        tvz t z xaz                       xv     l      
-           z       dkxi                 lz  kzv         
-         i i  zv   lw tv             i    j   zv        
-        l lj    lj  vz ja        z  kzv  zl    wl       
-        dv vz    l i ax tk             lj    v  z       
-          v lt      a iwi           l l    t    i       
-                d jvx  v l    zl v   at   jl l          
-          lz d  lx  k ajlz      vtk   v                 
-         vj   tv k i k a          jk       axixi        
-          m  x  a vz zv  t    iz t t t  vj  v           
-          j  lw zk kz                   t x   t         
-           jv id d  l l                   lxi           
-            z  l  j   t           xl   i v  z           
-                 z    v   it          kz                
-                 v    z    a      z    v                
-                 z         d           z                
-                 v                     v                
-                 z                     j                
-                 v        d  l                          
-           x     z        v  d   z                      
-           l     v                                      
-                 z       w    v                         
-                 v     i v    d                         
-                 t     z                                
-            jv          x      at        vj  i          
-             zv         i      z         z   z          
-          z   xl      tv       vt            v          
-               z xvti        z    itvx       z          
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                           t                            
+                           a                            
+                          ldl                           
+                                                        
+                                                        
+                          d  l                          
+                          v  d                          
+                                                        
+                         w    v                         
+                         v    d                         
+                                                        
+            jv          x      l         vj             
+             zv         i      z         z              
+              xl      tv       vt                       
+               z xvti        z    itvx                  
      lzv  zlt   zl     lz     zl     lz   tlz  vzl      
         l              jv     lt              l         
               jlza    j  vxk         azlj               
@@ -994,39 +994,39 @@ export const SIGIL_LEFT = {
                                                         
                                                         
                                                         
- jv    jk                                               
-  tmj   zm                                      z     t 
-   tmj   xk                                          d  
-    ja     vx                                l      x   
-      vz    ldl                              t zkz z    
-       lxl   ltkdk                         v      t     
-          lz     jvzv                    z xk   v       
-         k l       kwktl              t     tvxi        
-          v   izl l mt zv            z    v   iw        
-       ix jkj       tkt xl          j zl l     vz       
-        lw  vt   j   zkz              i      t  v       
-          t     t  kx  m      z   z wl    tv   k        
-          v  xl az  ajv kt    l  zv  zktv    t          
-         k       a ljltkjv        z t    l   l          
-         ja   v vjk  dit t     z   z t j      kj        
-          xl vx dl ajix  k     at     z zld t           
-              kziw  k    zl       v  t                  
-            z  kt j  vt   d      lz t  v   lxi          
-            v   lx        lz      v   a                 
-            z              v v v      jk                
-            v               kz t                        
-            z          v                     l          
-            v                z                          
-            z                  v                        
-            v     v     i                               
-            z     z         x   j                       
-            v               l   k             l         
-            z                           t               
-            v            t x     t      v               
-            z  l         k       v          t           
-            v  tv        z        l                     
-            z   dl l     lt      v         l   l        
-            v    d      lt        lt           z        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                             vj                         
+                             zv                         
+                                                        
+                             z                          
+                               v                        
+                                                        
+                            x   j                       
+                            l   k                       
+                                                        
+                           x     t                      
+               l                 v          t           
+               tv                                       
+                dl       lt      v         l            
+                 d      lt        lt                    
          l     kzlz       z t tlzl      tlzv      t     
        jvtl        t     jv   l  z      l       vtlz    
               tv           vx               zl          
@@ -1271,39 +1271,39 @@ export const SIGIL_LEFT = {
                                                         
                                                         
                                                         
-                                              jm    tm  
-       tk                                     m    tm   
-                                            zk    tm    
-            vd                            ldv     k     
-           a                           ixv     vw       
-        ldl   a                      zax       z        
-        w x      lx               xaw    k  tv          
-       z                        v  d    v    d          
-              tvz   x          kz  m                    
-         d t      aw     d    vz dmx   zvz  k lw        
-         a vwada v   az d       d  aw       t w         
-         d  k  w               w   xm  xmxada a         
-           iwm    x     zv     a a    zkw z             
-            m           v       k v   a   kw  a         
-           kx         d tv    jk iw tk a   m a          
-                     x   d    k  x ta lw w   x          
-           v    za   v   a   ix       x x               
-           x         z   x   x    k     k   k           
-           a    z    v   lz jk   v          d           
-           x    v     v   m a    x    v     a           
-           a    z     d   dix    a    z     d           
-           d    v     a   m m    d    v     a           
-          jv    z     x  l  d   jk    x     z           
-          v     v     a  d  v   v     a     a           
-          z     z     d  m  jm  d     d     d           
-          a     v     a v    w  a     a     a           
-          d     z     z d    v  d     z     d           
-          k     v     v m     mtv     a     k           
-          d     z      a      d       d     z           
-          k     v      x      l       a a   v           
-         v      tltvzv           vzvtlzlx   z           
-         zvzkdm a        xkzk         axmdkzl           
-        xk                jm                 kx         
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                          dix                           
+                          m m                           
+                         l  d                           
+                         d  v                           
+                         m  jm                          
+                        v    w                          
+                        d    v                          
+                        m     m                         
+                       v      d                         
+                       z      l         a               
+                 ltvzv           vzvtl lx               
+          lzkdm a        xkzk         axmdkzl           
+        xv                jm                 vx         
          zvxkdkzlt         w         tlzkdkxvz          
                   dawk      xv  tkwad                   
                                                         
@@ -1615,40 +1615,40 @@ export const SIGIL_LEFT = {
                                                         
                                                         
                                                         
-                                               v     v  
-                                              kd    a   
-      tax                                     w    m    
-                                           tm     a     
-           kd                            ld     zk      
-         d    a                       vda      d        
-        d z   d   x                vzv   a              
-       ta        t               zkxm    t   d          
-                               ld  m    z    v          
-              vzv lda    x    iw tkx        k  d        
-         a kdkxv kd  kx xk      za k   lzv    w         
-         w zk  w               da  dm    zaxa a         
-           vxa a  z            m v v  jmw tad d         
-            mw          a     v vxi   k a vdv           
-            x                     w  v l   m vx         
-           zk        zk        d z  a  w tkd w          
-                 a             a   k  x tm              
-           z          k       lz        a   a           
-           v     a    d       x   d         d           
-           z     d    a       a   a    d    a           
-           v     k    z     zkw   d    a    z           
-           z     d     d    k a   a    d    lz          
-           v     k     a    w x   d    k     a          
-           z     z     x   jm lw  a    d     x          
-           v     l     lz  k   m  d    a     a          
-           z      k     a  w   d  a    x     z          
-           v      d     d tm   lw x    v     lz         
-           z      k     v k     m v    z      a         
-           v      d     j w     x z    lz     x         
-           z      a       a      d      k  x  a         
-           v      z                     d d   z         
-           t   tv kwaxkx    vzvt    kxawaxkti l         
-          zkdad            v k              dadaxv      
-           zkzlt             w             jlzvx        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                            jkd                         
+                            k a                         
+                            w x                         
+                           jm lw                        
+                           k   m                        
+                           w   d                        
+                          tm   lw                       
+                          k     m                       
+                          w     x                       
+                          a      d         x            
+                                          d             
+               tv vdaxkx    vzvt    kxawaxkti           
+          zkxad            v k              dadkxv      
+           zvzlt             w             jlzvz        
                 xadmdkzi     axkz   tvxawmdk            
                        x          vx                    
                                                         
@@ -2010,35 +2010,35 @@ export const SIGIL_RIGHT = {
                                                         
                                                         
                                                         
-    j                                          i        
-     j  i                                    ji         
-                                        j         j     
-               j                     j       j          
-         ij  i    j               j            i        
-                     j                i                 
-       i   i     i     i                                
-                  i                  ji       i         
-            j          i                     i          
-           j     j      i                               
-                                    j                   
-                                               j        
-                   i                    j               
-                    i                j                  
-               i i  j               j                   
-                                            i           
-              j j         j       j                     
-               j                                        
-                            j                           
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                          j                             
+                                                        
+                                                        
                                                         
                         j                               
-                                     j   t              
+                                         t              
                                        itkt             
                                          t              
                                                         
                                                         
                                                         
                             i                           
-           i i         i                                
+           i i         i      j                         
                                                         
                       j     j                           
                                     i          j        
@@ -2283,40 +2283,40 @@ export const SIGIL_RIGHT = {
                                                         
                                                         
                                                         
-                                               j     j  
                                                         
- j                                             j     j  
-                                                    j   
                                                         
-    j                                       j    i      
-           j                        i   i               
-            j                                           
-                      i                j                
-                j    i                  j               
-        i  j     j   j          i    j                  
-          j  i                    j   j                 
-        i                                               
-          j       j      i        j            i        
-                   j   j j       j     j                
-          j        i                     i              
-           j     j     j                i               
-                  j  i  j                               
-                      i                                 
-                         i             i                
-                 j                                      
-                     i    j                             
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
                                                         
                                                         
                                            z            
-                                         itk            
+                                         itkti          
                              j             j            
                                                         
                                                         
                           j                             
-                                 j                      
                                                         
                                                         
-                         i     i                        
+                                                        
+          j              i     i              j         
                                                         
         j                 j   j                 j       
                                                         
@@ -2628,39 +2628,39 @@ export const SIGIL_RIGHT = {
                                                         
                                                         
                                                         
-                                               kj    vj 
- t     z                                      mz   jmt  
-  d                                          kx   jmt   
-   x      l                                xv     aj    
-    z zkz t                              ldl    zv      
-     t      v                         kdktl   lxl       
-       v   kx z                    vzvj     zl          
-        ixvt     t              ltkwk       l k         
-        wi   v    z            vz tm l lzi   v          
-       zv     l lz j          lx tkt       jkj xi       
-       v  t      i              zkz   j   tv  wl        
-        k   vt    lw z   z      m  xk  t     t          
-          t    vtkz  vz  l    tk vja  za lx  v          
-          l   l    t z        vjktljl a       k         
-        jk      j t z   z     t tid  kjv v   aj         
-           t dlz z     ta     k  xija ld xv lx          
-                  t  v       lz    k  wizk              
-          ixl   v  t zl      d   tv  j tk  z            
-                 a   v      zl        xl   v            
-                kj      v v v              z            
-                        t zk               v            
-          l                     v          z            
-                          z                v            
-                        v                  z            
-                               i     v     v            
-                       j   x         z     z            
-         l             k   l               v            
-               t                           z            
-               v      t     x t            v            
-           t          v       k         l  z            
-                     l        z        vt  v            
-        l   l         v      tl     l ld   z            
-        z           tl        tl      d    v            
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                         jv                             
+                         vz                             
+                                                        
+                          z                             
+                        v                               
+                                                        
+                       j   x                            
+                       k   l                            
+                                                        
+                      t     x                           
+           t          v                 l               
+                                       vt               
+            l         v      tl       ld                
+                    tl        tl      d                 
      t      vzlt      lzlt t z       zlzk     l         
     zltv       l      z  l   vj     t        ltvj       
           lz               xv           vt              
@@ -2903,40 +2903,40 @@ export const SIGIL_RIGHT = {
                                                         
                                                         
                                                         
-                                                i     i 
- l     l                                      tm    ta  
-       j                                     jm    xm   
-  t     t                                   zkz   xa    
-   t   tvz                                lxl   lxv     
-      xi                               lzv     vd       
-      l     vx                       zax z t zvt        
-         vzk  zl                 ixkd       z           
-        vz   j    i             vt wl   vz  i i         
-       lw    lz  vzk  z        aj zv  jl    jl l        
-       z  v    jl             kt xa i l    zv vd        
-       i    t    l l           iwi a      tl v          
-          l lj   ta   v lz    l v  xvj d                
-                 v   ktv      zlja k  xl  d zl          
-        ixixa       kj          a k i k vt   jv         
-           v  jv  t t t zi    t  vz zv a  x  m          
-         t   x t                   zk kz wl  j          
-           ixl                   l l  d di vj           
-           z  v i   lx           t   j  l  z            
-                zk          ti   v    z                 
-                v    z      a    z    v                 
-                z           d         z                 
-                v                     v                 
-                j                     z                 
-                          l  d        v                 
-                      z   d  v        z     x           
-                                      v     l           
-                         v    w       z                 
-                         d    v i     v                 
-                                z     t                 
-          i  jv        ta      x          vj            
-          z   z         z      i         vz             
-          v            tv       vt      lx   z          
-          z       xvti    z        itvx z               
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                            t                           
+                            a                           
+                           ldl                          
+                                                        
+                                                        
+                          l  d                          
+                          d  v                          
+                                                        
+                         v    w                         
+                         d    v                         
+                                                        
+             jv         l      x          vj            
+              z         z      i         vz             
+                       tv       vt      lx              
+                  xvti    z        itvx z               
       lzv  zlt   zl     lz     zl     lz   tlz  vzl     
          l              tl     vj              l        
                jlza         kxv  j    azlj              
@@ -3249,40 +3249,40 @@ export const SIGIL_RIGHT = {
                                                         
                                                         
                                                         
-  v     v                                               
-   a    dk                                              
-    m    w                                     xat      
-     a     mt                                           
-      kz     dl                            dk           
-        d      adv                       a    d         
-              a   vzv                x   d   z d        
-          d   t    mxkz               t        at       
-          v    z    m  dl                               
-        d  k        xkt wi    x    adl vzv              
-         w    vzl   k az      kx xk  dk vxkdk a         
-         a axaz    md  ad               w  kz w         
-         d dat wmj  v v m            z  a axv           
-           vdv a k   ixv v     a          wm            
-         xv m   l v  w                     x            
-          w dkt w  a  z d        kz        kz           
-              mt x  k   a             a                 
-           a   a        zl       k          z           
-           d         d   x       d    a     v           
-           a    d    a   a       a    d     z           
-           z    a    d   wkz     z    k     v           
-          zl    d    a   a k    d     d     z           
-          a     k    d   x w    a     k     v           
-          x     d    a  wl mj   x     z     z           
-          a     a    d  m   k  zl     l     v           
-          z     x    a  d   w  a     k      z           
-         zl     v    x wl   mt d     d      v           
-         a      z    v m     k v     k      z           
-         x     zl    z x     w j     d      v           
-         a  x  k      d      a       a      z           
-         z   d d                     z      v           
-         l itkxawaxk    tvzv    xkxawk vt   t           
-      vxadad              k v            dadkz          
-        xvzlj             w             tlzkz           
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                         dkj                            
+                         a k                            
+                         x w                            
+                        wl mj                           
+                        m   k                           
+                        d   w                           
+                       wl   mt                          
+                       m     k                          
+                       x     w                          
+            x         d      a                          
+             d                                          
+           itkxawaxk    tvzv    xkxadv vt               
+      vxkdad              k v            daxkz          
+        zvzlj             w             tlzvz           
             kdmwaxvt   zkxa     izkdmdax                
                     xv          x                       
                                                         
@@ -3525,39 +3525,39 @@ export const SIGIL_RIGHT = {
                                                         
                                                         
                                                         
-  mt    mj                                              
-   mt    m                                     kt       
-    mt    kz                                            
-     k     vdl                            dv            
-       wv     vxi                           a           
-        z       xaz                      a   ldl        
-          vt  k    wax               xl      x w        
-          d    v    d  v                        z       
-                    m  zk          x   zvt              
-        wl k  zvz   xmd zv    d     wa      t d         
-         w t       wa  d       d za   v adawv a         
-         a adaxmx  mx   w               w  k  d         
-             z wkz    a a     vz     x    mwi           
-         a  wk   a   v k       v           m            
-          a m   a kt wi kj    vt d         xk           
-          x   w wl at x  k    d   x                     
-               x x       xi   a   v   az    v           
-           k   k     k    x   x   z         x           
-           d          v   kj zl   v    z    a           
-           a     v    x    a m   v     v    x           
-           d     z    a    xid   d     z    a           
-           a     v    d    m m   a     v    d           
-           z     x    kj   d  l  x     z    vj          
-           a     a     v   v  d  a     v     v          
-           d     d     d  mj  m  d     z     z          
-           a     a     a  w    v a     v     a          
-           d     z     d  v    d z     z     d          
-           k     a     vtm     m v     v     k          
-           z     d       d      a      z     d          
-           v   a a       l      x      v     k          
-           z   xlzltvzv           vzvtlt      v         
-           lzkdmxa         kzkx        a mdkzvz         
-         xk                 mj                kx        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                           xid                          
+                           m m                          
+                           d  l                         
+                           v  d                         
+                          mj  m                         
+                          w    v                        
+                          v    d                        
+                         m     m                        
+                         d      v                       
+               a         l      z                       
+               xl ltvzv           vzvtl                 
+           lzkdmxa         kzkx        a mdkzl          
+         xv                 mj                vx        
           zvxkdkzlt         w         tlzkdkxvz         
                    dawkt  vx      kwad                  
                                                         

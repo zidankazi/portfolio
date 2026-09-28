@@ -29,6 +29,7 @@ export function IntroBubble() {
 
       {/* Bubble */}
       <motion.div
+        data-puppet-anchor="intro"
         className="bg-[#161618] text-[#d4d4d4] rounded-[20px] rounded-tl-sm px-4 py-3 text-[14px] leading-[1.6] border border-white/5 shadow-sm w-full"
         initial={{ opacity: 0, y: 5, filter: 'blur(4px)' }}
         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}

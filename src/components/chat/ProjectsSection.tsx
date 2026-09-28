@@ -105,7 +105,7 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
             </div>
 
             {/* Bubble — overflow-hidden here gives rounded corners, rows fill naturally */}
-            <div className="bg-[#161618] text-[#d4d4d4] rounded-[20px] rounded-tl-sm text-[14px] leading-[1.6] w-full border border-white/5 shadow-sm overflow-hidden">
+            <div data-puppet-anchor="projects" className="bg-[#161618] text-[#d4d4d4] rounded-[20px] rounded-tl-sm text-[14px] leading-[1.6] w-full border border-white/5 shadow-sm overflow-hidden">
                 {/* Header — a real button so tap + keyboard work, not just hover */}
                 <button
                     type="button"

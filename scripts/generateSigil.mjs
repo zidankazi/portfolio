@@ -1,5 +1,5 @@
 // Generates the letter-built cyber-sigilism strip for the side rails.
-// Suspended crosses, skeletal hands, broken stars, and thorn chains share a
+// Dagger crosses, broken stars, and thorn chains share a
 // barbed spine with pierced cores and needle-ended sigil contours.
 // Fine linework, raised contours, and lit edges are rasterized separately.
 // Each character cell belongs to one depth layer, keeping the tiny lowercase
@@ -298,55 +298,14 @@ function barbWire(A, B, bow, r0 = 0.5) {
   }
 }
 
-// The larger scenes reserve their own space so hands, taut strings, and a
-// suspended cross remain readable at the same tiny ASCII character size.
+// Raised contours share the same ASCII depth treatment.
 function raised(curve, weight = 1.3, taper = 'both', clearance = 1.25) {
   foreground.push({ curve, weight, taper, clearance });
 }
 
-function bonePath(points, weight = 1.2) {
-  for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1];
-    const b = points[i];
-    raised([a, [a[0] * 0.68 + b[0] * 0.32, a[1] * 0.68 + b[1] * 0.32],
-      [a[0] * 0.32 + b[0] * 0.68, a[1] * 0.32 + b[1] * 0.68], b], weight, 'both', 0.6);
-  }
-}
-
-function suspendedCross(top, variant = 0) {
+function daggerCross(top, variant = 0) {
   const cy = top + 170;
   const cx = AX + (variant ? 5 : -2);
-  for (const side of [-1, 1]) {
-    const at = (x, y) => [side < 0 ? x : PW - x, top + y + (side > 0 ? 5 : 0)];
-    const bone = (points, weight = 1.3) => bonePath(points.map(([x, y]) => at(x, y)), weight);
-
-    // Angled cuffs, open palm plates, and a thumb separated from four fingers.
-    bone([[5, 0], [19, 21], [29, 30]], 1.7);
-    bone([[23, 0], [31, 13], [42, 23]], 1.5);
-    bone([[17, 19], [30, 13], [42, 23], [30, 31], [17, 19]], 1.1);
-    bone([[29, 30], [23, 45], [31, 56], [50, 60], [64, 48], [58, 32], [42, 23]], 1.5);
-    bone([[34, 30], [31, 44], [39, 52], [54, 49]], 0.9);
-    bone([[44, 28], [42, 39], [51, 43], [58, 35]], 0.9);
-    bone([[58, 32], [69, 38], [77, 52], [73, 61], [67, 51], [61, 48]], 1.2);
-
-    // Each finger has two angular phalanges and a hooked fingertip.
-    const fingers = [
-      [[29, 52], [28, 66], [34, 82], [39, 79], [35, 64], [36, 56]],
-      [[38, 56], [40, 73], [49, 91], [54, 88], [47, 69], [46, 58]],
-      [[48, 57], [54, 71], [63, 84], [68, 81], [62, 65], [57, 53]],
-      [[58, 51], [65, 60], [72, 72], [76, 68], [72, 56], [64, 46]],
-    ];
-    fingers.forEach((finger, index) => {
-      bone(finger, index === 1 ? 1.35 : 1.15);
-      const joint = finger[1];
-      bone([[joint[0] - 2, joint[1] - 1], [joint[0] + 4, joint[1] - 3]], 0.9);
-      const tip = at(finger[2][0] + 2, finger[2][1]);
-      const attachment = [cx + side * [53, 32, 13, 3][index], cy - [0, 5, 18, 63][index]];
-      // Nearly straight, independently attached threads preserve the tension.
-      raised([tip, [tip[0] * 0.67 + attachment[0] * 0.33, tip[1] * 0.67 + attachment[1] * 0.33],
-        [tip[0] * 0.33 + attachment[0] * 0.67, tip[1] * 0.33 + attachment[1] * 0.67], attachment], 0.75, 'none', 0.3);
-    });
-  }
 
   // An elongated, hollow cross; a small eye is suspended at its intersection.
   const at = (x, y) => [cx + x, cy + y];
@@ -439,7 +398,7 @@ if (sequence.at(-1) === sequence[0]) {
 
 for (let i = 0; i < JOINTS; i++) {
   if (i === 0 || i === 10) {
-    suspendedCross(STEP * i + 148, i === 10 ? 1 : 0);
+    daggerCross(STEP * i + 148, i === 10 ? 1 : 0);
     i += 2;
     continue;
   }
