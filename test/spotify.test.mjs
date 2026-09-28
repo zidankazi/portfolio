@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import * as spotify from "../build/dev/javascript/portfolio/lib/spotify.mjs";
 import { None } from "../build/dev/javascript/gleam_stdlib/gleam/option.mjs";
+import { to_string } from "../build/dev/javascript/gleam_json/gleam/json.mjs";
 
 // Synthetic Spotify responses; these tests never use credentials or the network.
 const track = {
@@ -214,4 +215,25 @@ test("a malformed current response falls back to history, and caches stay per cl
   assert.ok(await spotify.get_track(first) instanceof spotify.RecentlyPlayed);
   assert.ok(await spotify.get_track(second) instanceof spotify.NothingPlaying);
   assert.equal(calls.length, 6);
+});
+
+test("encodes every playback state as plain JSON for React and existing API consumers", () => {
+  const playing = spotify.decode_current(JSON.stringify(playingReply.json))[0];
+  const paused = spotify.decode_current(JSON.stringify({ ...playingReply.json, is_playing: false }))[0];
+  const recent = spotify.decode_recent(JSON.stringify(recentReply.json))[0];
+  const cached = new spotify.Cached(playing.track);
+  const empty = spotify.decode_current('{"item":null}')[0];
+  const expected = {
+    isPlaying: true, title: track.name, artist: "First artist, Second artist",
+    albumArt: track.album.images[0].url, url: track.external_urls.spotify,
+    progressMs: 0, durationMs: 180_000,
+  };
+  assert.deepEqual(JSON.parse(to_string(spotify.playback_json(playing))), expected);
+  assert.deepEqual(JSON.parse(to_string(spotify.playback_json(paused))), { ...expected, isPlaying: false });
+  for (const state of [recent, cached]) {
+    assert.deepEqual(JSON.parse(to_string(spotify.playback_json(state))), {
+      ...expected, isPlaying: false, progressMs: null,
+    });
+  }
+  assert.deepEqual(JSON.parse(to_string(spotify.playback_json(empty))), { isPlaying: false, title: null });
 });
