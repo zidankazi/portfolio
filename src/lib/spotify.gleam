@@ -191,3 +191,22 @@ pub fn decode_recent(body: String) -> Result(Playback, ApiError) {
     [] -> NothingPlaying
   })
 }
+
+/// Refresh a minute before expiry. Short-lived tokens are usable for this request
+/// but are not reused. No token value is ever included in an error.
+fn decode_token(body: String, now: Int) -> Result(Token, ApiError) {
+  let decoder = {
+    use value <- decode.field("access_token", decode.string)
+    use seconds <- decode.optional_field("expires_in", 3600, decode.int)
+    decode.success(#(value, seconds))
+  }
+  use decoded <- result.try(
+    json.parse(body, decoder)
+    |> result.map_error(fn(_) { InvalidResponse }),
+  )
+  let #(value, seconds) = decoded
+  case value == "" || seconds <= 0 {
+    True -> Error(InvalidResponse)
+    False -> Ok(Token(value, now + int.max(seconds - 60, 0) * 1000))
+  }
+}
