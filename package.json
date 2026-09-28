@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "npm run build:gleam && next dev",
-    "build": "npm run build:gleam && next build",
+    "build": "npm run build:gleam && next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "build:gleam": "node scripts/gleam.mjs build --warnings-as-errors",
