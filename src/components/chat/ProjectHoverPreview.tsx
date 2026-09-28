@@ -54,6 +54,7 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
     const [enabled, setEnabled] = useState(false);
     const [warmed, setWarmed] = useState(false);
     const [active, setActive] = useState<string | null>(null);
+    const [displayed, setDisplayed] = useState<string | null>(null);
     const [size, setSize] = useState(DEFAULT_SIZE);
     const [loaded, setLoaded] = useState<Record<string, boolean>>({});
     const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -61,10 +62,17 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
     const visible = useRef(false);
     const container = useRef<HTMLDivElement>(null);
     const pointer = useRef<{ x: number; y: number } | null>(null);
+    const pointerFrame = useRef<number | null>(null);
+    const pointerTarget = useRef<Element | null>(null);
+    const rowBounds = useRef<{ row: HTMLElement; left: number; right: number } | null>(null);
     const x = useSpring(0, { stiffness: 450, damping: 40, mass: 0.6 });
     const y = useSpring(0, { stiffness: 450, damping: 40, mass: 0.6 });
 
     const dismiss = useCallback(() => {
+        if (pointerFrame.current !== null) cancelAnimationFrame(pointerFrame.current);
+        pointerFrame.current = null;
+        pointerTarget.current = null;
+        rowBounds.current = null;
         if (pending.current) clearTimeout(pending.current);
         pending.current = null;
         hovered.current = null;
@@ -85,7 +93,11 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
         const preferredSize = project.previewSize ?? DEFAULT_SIZE;
         const width = Math.min(preferredSize.width, window.innerWidth - 2 * INSET);
         const height = Math.min(preferredSize.height, window.innerHeight - 2 * INSET);
-        const rect = row.getBoundingClientRect();
+        if (rowBounds.current?.row !== row) {
+            const rect = row.getBoundingClientRect();
+            rowBounds.current = { row, left: rect.left, right: rect.right };
+        }
+        const rect = rowBounds.current;
         // Use the page margin when it fits. On smaller desktops, flip away
         // from the pointer and clamp to the viewport so links stay reachable.
         let left = clientX + GAP;
@@ -114,11 +126,13 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
 
         if (visible.current) {
             setActive(title);
+            setDisplayed(title);
         } else {
             pending.current = setTimeout(() => {
                 pending.current = null;
                 visible.current = true;
                 setActive(title);
+                setDisplayed(title);
             }, HOVER_DELAY);
         }
     }, [dismiss, projects, x, y]);
@@ -126,7 +140,13 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
     function move(event: PointerEvent<HTMLDivElement>) {
         if (!enabled || event.pointerType !== 'mouse') return;
         pointer.current = { x: event.clientX, y: event.clientY };
-        updatePreview(event.target as Element, event.clientX, event.clientY);
+        pointerTarget.current = event.target as Element;
+        if (pointerFrame.current !== null) return;
+        pointerFrame.current = requestAnimationFrame(() => {
+            pointerFrame.current = null;
+            const point = pointer.current;
+            if (point) updatePreview(pointerTarget.current, point.x, point.y);
+        });
     }
 
     useEffect(() => {
@@ -140,6 +160,7 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
         };
         let scrollFrame: number | null = null;
         const onScroll = () => {
+            rowBounds.current = null;
             if (!media.matches || !pointer.current || scrollFrame !== null) return;
             scrollFrame = requestAnimationFrame(() => {
                 scrollFrame = null;
@@ -164,10 +185,13 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
             window.removeEventListener('blur', dismiss);
             window.removeEventListener('keydown', onKeyDown);
             if (pending.current) clearTimeout(pending.current);
+            if (pointerFrame.current !== null) cancelAnimationFrame(pointerFrame.current);
         };
     }, [dismiss, updatePreview]);
 
     const show = active !== null && loaded[active] === true;
+    // Retain the last still through the exit fade, but stop moving media.
+    const activeProject = projects.find(project => project.title === displayed && project.preview);
 
     return (
         <div ref={container} onPointerMove={move} onPointerLeave={dismiss} onPointerCancel={dismiss}>
@@ -186,29 +210,29 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
                         transition={{ duration: show ? 0.18 : 0.12, ease: [0.23, 1, 0.32, 1] }}
                         className="relative h-full w-full overflow-hidden rounded-xl border border-white/10 bg-[#101012] shadow-[0_12px_40px_rgba(0,0,0,0.4)]"
                     >
-                        {projects.filter((project) => project.preview).map((project) => (
+                        {activeProject && (
                             <motion.div
-                                key={project.title}
+                                key={activeProject.title}
                                 className="absolute inset-0"
-                                initial={false}
-                                animate={{ opacity: active === project.title ? 1 : 0 }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
                                 transition={{ duration: 0.16 }}
                             >
                                 <Image
-                                    src={project.preview!}
+                                    src={activeProject.preview!}
                                     alt=""
                                     fill
                                     sizes="280px"
                                     loading="eager"
                                     className="object-contain"
-                                    onLoad={() => setLoaded((current) => ({ ...current, [project.title]: true }))}
-                                    onError={() => setLoaded((current) => ({ ...current, [project.title]: false }))}
+                                    onLoad={() => setLoaded((current) => current[activeProject.title] ? current : ({ ...current, [activeProject.title]: true }))}
+                                    onError={() => setLoaded((current) => ({ ...current, [activeProject.title]: false }))}
                                 />
-                                {active === project.title && project.previewMotion && (
-                                    <ProjectMotionPreview media={project.previewMotion} />
+                                {active === activeProject.title && activeProject.previewMotion && (
+                                    <ProjectMotionPreview media={activeProject.previewMotion} />
                                 )}
                             </motion.div>
-                        ))}
+                        )}
                     </motion.div>
                 </motion.div>,
                 document.body,
