@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "check:gleam": "gleam format --check src && gleam check --warnings-as-errors",
+    "check:gleam": "gleam format --check src && gleam check",
     "test:gleam": "gleam build --warnings-as-errors && node --test test/spotify.test.mjs"
   },
   "dependencies": {
