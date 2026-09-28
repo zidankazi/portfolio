@@ -87,19 +87,17 @@ export function PuppetHands() {
   useLayoutEffect(() => {
     const root = rootRef.current;
     const main = document.querySelector('main');
-    const svg = root?.querySelector('svg');
-    if (!root || !main || !svg || !ready) return;
+    if (!root || !main || !ready) return;
 
     const desktop = window.matchMedia('(min-width: 1024px)');
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const paths = [...svg.querySelectorAll('path')];
-    const threads = [...svg.querySelectorAll('textPath')];
-    const nodes = [...svg.querySelectorAll('circle')];
+    const paths = [...root.querySelectorAll('path')];
+    const threads = [...root.querySelectorAll('textPath')];
+    const nodes = [...root.querySelectorAll('circle')];
     const hands = [...root.querySelectorAll<HTMLElement>('[data-puppet-hand]')];
     let anchors: HTMLElement[] = [];
     let raf = 0;
-    let until = 0;
-    let previousHeight = 0;
+    let dirty = true;
     const threadCounts = new Array<number>(8).fill(0);
     const visibleCounts = new Array<number>(8).fill(-1);
     const arrivalCounts = new Array<number>(8).fill(0);
@@ -112,15 +110,10 @@ export function PuppetHands() {
     const draw = () => {
       if (!desktop.matches || document.hidden) return;
       const rootBox = root.getBoundingClientRect();
-      const height = document.body.offsetHeight;
       const handBoxes = hands.map(hand => hand.getBoundingClientRect());
       const content = main.getBoundingClientRect();
       // Batch geometry reads before changing any SVG attributes.
       const anchorBoxes = anchors.map(anchor => anchor.getBoundingClientRect());
-      if (height !== previousHeight) {
-        svg.setAttribute('height', String(height));
-        previousHeight = height;
-      }
 
       for (let side = 0; side < 2; side++) {
         for (let index = 0; index < 4; index++) {
@@ -168,7 +161,10 @@ export function PuppetHands() {
 
     const frame = (now: number) => {
       raf = 0;
-      if (now < until) draw();
+      if (dirty) {
+        dirty = false;
+        draw();
+      }
       if (growing) {
         const skip = !desktop.matches || reduced.matches;
         const progressByChain: number[] = [];
@@ -200,19 +196,21 @@ export function PuppetHands() {
         }
         if (arrived.every(Boolean)) growing = false;
       }
-      if ((growing || now < until) && !document.hidden) raf = requestAnimationFrame(frame);
+      if ((growing || dirty) && !document.hidden) raf = requestAnimationFrame(frame);
     };
-    // Track the existing bubble entrance/expansion animations, then go idle.
-    // No extra idle animation is introduced, including under reduced motion.
+    // ResizeObserver follows each actual layout change during expansion.
+    // Coalesce notifications into one frame, with no trailing polling loop.
     const schedule = () => {
-      until = performance.now() + (reduced.matches ? 80 : 450);
+      dirty = true;
       if (!raf) raf = requestAnimationFrame(frame);
     };
     const resize = new ResizeObserver(schedule);
     const discover = () => {
-      anchors = [...main.querySelectorAll<HTMLElement>('[data-puppet-anchor]')].slice(0, 4);
+      const next = [...main.querySelectorAll<HTMLElement>('[data-puppet-anchor]')].slice(0, 4);
+      if (next.length === anchors.length && next.every((anchor, index) => anchor === anchors[index])) return;
+      anchors = next;
       resize.disconnect();
-      resize.observe(document.body);
+      resize.observe(main);
       anchors.forEach(anchor => resize.observe(anchor));
       schedule();
     };
@@ -222,9 +220,6 @@ export function PuppetHands() {
     reduced.addEventListener('change', schedule);
     document.addEventListener('visibilitychange', schedule);
     window.addEventListener('resize', schedule);
-    // Scroll coordinates cancel out for this document-positioned artwork, but
-    // a refresh also covers mobile browser viewport changes and scroll reveals.
-    window.addEventListener('scroll', schedule, { passive: true });
     discover();
     draw();
     // Measure once for the entrance only, after every path is laid out.
@@ -252,25 +247,24 @@ export function PuppetHands() {
       reduced.removeEventListener('change', schedule);
       document.removeEventListener('visibilitychange', schedule);
       window.removeEventListener('resize', schedule);
-      window.removeEventListener('scroll', schedule);
     };
   }, [ready, reveal]);
 
   return (
     <div ref={rootRef} aria-hidden="true" className="pointer-events-none select-none absolute inset-x-0 top-0 -z-10 hidden lg:block">
-      <svg className="puppet-threads absolute inset-x-0 top-0 w-full overflow-visible" focusable="false">
-        <defs>
-          {Array.from({ length: 8 }, (_, index) => <path key={index} id={`${id}-thread-${index}`} />)}
-        </defs>
-        {Array.from({ length: 8 }, (_, index) => (
-          <g key={index}>
-            <text className="font-mono" fontSize="6" fill="rgba(212,212,216,0.28)">
-              <textPath href={`#${id}-thread-${index}`} />
-            </text>
-            <circle r="0" fill="rgba(228,228,231,0.4)" />
-          </g>
-        ))}
-      </svg>
+      {/* Separate SVGs keep a moving chain from relaying out every text path.
+          Their fixed viewport never resizes with the expanding project list. */}
+      {Array.from({ length: 8 }, (_, index) => (
+        <svg key={index} height="1" className="puppet-threads absolute inset-x-0 top-0 w-full overflow-visible" focusable="false">
+          <defs>
+            <path id={`${id}-thread-${index}`} />
+          </defs>
+          <text className="font-mono" fontSize="6" fill="rgba(212,212,216,0.28)">
+            <textPath href={`#${id}-thread-${index}`} />
+          </text>
+          <circle r="0" fill="rgba(228,228,231,0.4)" />
+        </svg>
+      ))}
       <Hand side="left" />
       <Hand side="right" />
     </div>
