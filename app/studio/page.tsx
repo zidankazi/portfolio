@@ -32,7 +32,7 @@ const sites = [
     domain: 'noble-square-275817.framer.app',
     href: 'https://noble-square-275817.framer.app/',
     image: '/studio/mille-works.webp',
-    decoration: '/studio/cursor.webp',
+    decoration: '/studio/safety-pin.svg',
     position: 'right',
   },
 ] as const;

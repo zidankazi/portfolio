@@ -203,11 +203,11 @@
 }
 
 .right .decoration {
-  width: 31%;
-  right: -9%;
-  bottom: -28%;
-  transform: rotate(-9deg);
-  filter: drop-shadow(0 2px 2px #ffffff22) drop-shadow(0 8px 7px #0009);
+  width: 25%;
+  right: -4%;
+  bottom: -27%;
+  transform: rotate(-28deg);
+  filter: drop-shadow(0 5px 5px #0007);
 }
 
 .footer {
@@ -285,6 +285,10 @@
 
   .center:hover .decoration {
     transform: translateY(-34px) rotate(-6deg);
+  }
+
+  .right:hover .decoration {
+    transform: translateY(-10px) rotate(-17deg);
   }
 
   .navLink:hover,
@@ -369,5 +373,9 @@
   .center:hover .decoration,
   .center:focus-visible .decoration {
     transform: none;
+  }
+
+  .right:hover .decoration {
+    transform: rotate(-28deg);
   }
 }
