@@ -345,3 +345,33 @@ fn recent_or_cached(client: Client, token: String) -> Promise(Playback) {
     }
   }
 }
+
+/// The public entry point. A Promise is JavaScript's asynchronous result.
+///
+/// 1. Reuse or refresh the access token.
+/// 2. Ask what is currently playing (including paused tracks).
+/// 3. Fall back to recent history, then the last known track.
+/// A 401 clears the token so the next poll can refresh it; there is no retry loop.
+pub fn get_track(client: Client) -> Promise(Playback) {
+  use token_result <- promise.await(get_access_token(client))
+  case token_result {
+    Error(_) -> promise.resolve(cached_playback(client))
+    Ok(token) -> {
+      use response <- promise.await(fetch_playback(
+        "https://api.spotify.com/v1/me/player/currently-playing",
+        token,
+        decode_current,
+      ))
+      case response {
+        Ok(Playing(_, _) as playback) | Ok(Paused(_, _) as playback) ->
+          promise.resolve(remember_playback(client, playback))
+        Error(HttpError(401)) -> {
+          let cache = read_cell(client.cache)
+          write_cell(client.cache, Cache(..cache, token: None))
+          promise.resolve(cached_playback(client))
+        }
+        _ -> recent_or_cached(client, token)
+      }
+    }
+  }
+}
