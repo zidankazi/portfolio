@@ -1,13 +1,16 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useHasNavigated } from './PageTransitions';
 
-const EntranceContext = createContext<{ ready: boolean; settle: (side: string) => void; reveal: () => void }>({ ready: true, settle: () => {}, reveal: () => {} });
+const EntranceContext = createContext<{ ready: boolean; skip: boolean; settle: (side: string) => void; reveal: () => void }>({ ready: true, skip: false, settle: () => {}, reveal: () => {} });
 export const useEntrance = () => useContext(EntranceContext);
 
 export function Entrance({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(false);
-  const [revealed, setRevealed] = useState(false);
+  const skip = useHasNavigated();
+  const [settledReady, setReady] = useState(skip);
+  const ready = skip || settledReady;
+  const [revealed, setRevealed] = useState(skip);
   const reveal = useCallback(() => setRevealed(true), []);
   const settled = useRef(new Set<string>());
   const settle = useCallback((side: string) => {
@@ -29,10 +32,10 @@ export function Entrance({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const value = useMemo(() => ({ ready, settle, reveal }), [ready, settle, reveal]);
+  const value = useMemo(() => ({ ready, skip, settle, reveal }), [ready, skip, settle, reveal]);
   return (
     <EntranceContext.Provider value={value}>
-      <div className="contents" data-puppet-stage={revealed ? 'ready' : ready ? 'threading' : 'dropping'}>
+      <div className="contents" data-puppet-skip={skip || undefined} data-puppet-stage={skip || revealed ? 'ready' : ready ? 'threading' : 'dropping'}>
         <noscript><style>{`[data-puppet-stage] main { visibility: visible !important; }`}</style></noscript>
         {children}
       </div>

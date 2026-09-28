@@ -1,4 +1,5 @@
 import { metadata as siteMetadata } from '@/data/site.server';
+import { PageTransitions } from '@/components/motion/PageTransitions';
 import { Inter, Newsreader, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
@@ -28,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${bodyFont.variable} ${headingFont.variable} ${monoFont.variable} h-full bg-[#0a0a0a]`}>
       {/* No bg on body — it would paint over the -z-10 ambient backdrop; html carries the color */}
       <body className="font-body text-zinc-300 selection:bg-zinc-800 selection:text-white min-h-full antialiased">
-        {children}
+        <PageTransitions>{children}</PageTransitions>
       </body>
     </html>
   );

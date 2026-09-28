@@ -27,15 +27,15 @@ function Hand({ side }: { side: 'left' | 'right' }) {
   const wrapId = useId().replace(/:/g, '');
   const art = side === 'left' ? HAND_LEFT : HAND_RIGHT;
   const entrance = HAND_ENTRANCES[side];
-  const { settle } = useEntrance();
+  const { settle, skip } = useEntrance();
   const reduced = useReducedMotion();
   return (
     <motion.div
       data-puppet-hand={side}
       className={`puppet-hand absolute -top-3 puppet-hand-${side}`}
-      initial={{ transform: entrance.from }}
+      initial={skip ? false : { transform: entrance.from }}
       animate={{ transform: 'translate3d(0, 0, 0) rotate(0deg)' }}
-      transition={reduced ? { duration: 0 } : {
+      transition={reduced || skip ? { duration: 0 } : {
         duration: entrance.duration,
         delay: entrance.delay,
         ease: [0.22, 0.1, 0.25, 1],
@@ -89,7 +89,7 @@ function Hand({ side }: { side: 'left' | 'right' }) {
 }
 
 export function PuppetHands() {
-  const { ready, reveal } = useEntrance();
+  const { ready, reveal, skip } = useEntrance();
   const rootRef = useRef<HTMLDivElement>(null);
   const id = useId().replace(/:/g, '');
 
@@ -115,7 +115,7 @@ export function PuppetHands() {
     const phrasing: { delay: number; duration: number; beats: number[] }[] = [];
     const arrived = new Array<boolean>(8).fill(false);
     const started = performance.now();
-    let growing = !reduced.matches;
+    let growing = !reduced.matches && !skip;
     let revealed = false;
 
     const draw = () => {
@@ -272,7 +272,7 @@ export function PuppetHands() {
       document.removeEventListener('visibilitychange', schedule);
       window.removeEventListener('resize', schedule);
     };
-  }, [ready, reveal]);
+  }, [ready, reveal, skip]);
 
   return (
     <div ref={rootRef} aria-hidden="true" className="pointer-events-none select-none puppet-scene absolute inset-x-0 top-0 -z-10">

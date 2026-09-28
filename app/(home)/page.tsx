@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import Link from 'next/link';
+import { Link } from 'next-view-transitions';
 import { projects } from '@/data/projects.server';
 import { IntroBubble } from '@/components/chat/IntroBubble';
 import { ChatBubble } from '@/components/chat/ChatBubble';
