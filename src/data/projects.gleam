@@ -1,3 +1,5 @@
+import gleam/json
+import gleam/list
 import gleam/option.{type Option, None, Some}
 
 pub type ProjectLink {
@@ -127,4 +129,69 @@ pub fn projects() -> List(Project) {
       preview_size: None,
     ),
   ]
+}
+
+pub fn project_json(project: Project) -> json.Json {
+  let fields = [
+    #("title", json.string(project.title)),
+    #("description", json.string(project.description)),
+    #(
+      "links",
+      json.array(project.links, fn(link) {
+        json.object([
+          #("label", json.string(link.label)),
+          #("href", json.string(link.href)),
+        ])
+      }),
+    ),
+  ]
+  let description_link = case project.description_link {
+    None -> []
+    Some(link) -> [
+      #(
+        "descriptionLink",
+        json.object([
+          #("text", json.string(link.text)),
+          #("href", json.string(link.href)),
+        ]),
+      ),
+    ]
+  }
+  let preview = case project.preview {
+    None -> []
+    Some(src) -> [#("preview", json.string(src))]
+  }
+  let preview_motion = case project.preview_motion {
+    None -> []
+    Some(motion) -> {
+      let #(src, kind) = case motion {
+        Gif(src) -> #(src, "gif")
+        Video(src) -> #(src, "video")
+      }
+      [
+        #(
+          "previewMotion",
+          json.object([
+            #("src", json.string(src)),
+            #("type", json.string(kind)),
+          ]),
+        ),
+      ]
+    }
+  }
+  let preview_size = case project.preview_size {
+    None -> []
+    Some(size) -> [
+      #(
+        "previewSize",
+        json.object([
+          #("width", json.int(size.width)),
+          #("height", json.int(size.height)),
+        ]),
+      ),
+    ]
+  }
+  [fields, description_link, preview, preview_motion, preview_size]
+  |> list.flatten
+  |> json.object
 }
