@@ -1,0 +1,6 @@
+// Runtime operations only. Spotify decoding and cache policy live in Gleam.
+import { Result$Ok, Result$Error } from "../gleam.mjs";
+
+export function new_cell(value) {
+  return { value };
+}
