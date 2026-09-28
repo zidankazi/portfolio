@@ -1,17 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter, Newsreader, JetBrains_Mono } from 'next/font/google';
-import localFont from 'next/font/local';
 import { AmbientBackdrop } from '@/components/ambient/AmbientBackdrop';
 import { SigilRails } from '@/components/ambient/SigilRails';
 import './globals.css';
-
-// Gossip by Deborah Khodanovich (https://dvorit.ca) — SIL OFL 1.1, see ./fonts/Gossip-LICENSE.txt
-const displayFont = localFont({
-  src: './fonts/Gossip-HighCrossSmall.woff2',
-  variable: '--font-display',
-  weight: '200',
-  display: 'swap'
-});
 
 const bodyFont = Inter({
   subsets: ['latin'],
@@ -46,7 +37,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${bodyFont.variable} ${headingFont.variable} ${monoFont.variable} ${displayFont.variable} h-full bg-[#0a0a0a]`}>
+    <html lang="en" className={`${bodyFont.variable} ${headingFont.variable} ${monoFont.variable} h-full bg-[#0a0a0a]`}>
       {/* No bg on body — it would paint over the -z-10 ambient backdrop; html carries the color */}
       <body className="font-body text-zinc-300 selection:bg-zinc-800 selection:text-white min-h-full antialiased flex flex-col items-center pt-14 sm:pt-20 pb-24 px-5 sm:px-10">
         {/* Album-palette wash — tints the page to whatever's playing */}
