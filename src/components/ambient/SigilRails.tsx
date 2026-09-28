@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { SIGIL_LEFT, SIGIL_RIGHT } from './sigilStrip';
+import { useEntrance } from '@/components/motion/Entrance';
 
 /**
  * Cyber-sigilism rails — hollow-outline thorn work crawling up each side of
@@ -30,13 +31,14 @@ function InkLayers({ text }: { text: SigilText }) {
 }
 
 function Rail({ text, side }: { text: SigilText; side: 'left' | 'right' }) {
+  const { ready } = useEntrance();
   const shiftRef = useRef<HTMLDivElement>(null);
   const tileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const shift = shiftRef.current;
     const tile = tileRef.current;
-    if (!shift || !tile) return;
+    if (!shift || !tile || !ready) return;
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (reduced.matches) return;
@@ -45,6 +47,8 @@ function Rail({ text, side }: { text: SigilText; side: 'left' | 'right' }) {
     let raf = 0;
     let last = performance.now();
     let drift = 0;
+    let elapsed = 0;
+    let scroll = window.scrollY;
     let h = tile.offsetHeight;
     const resize = new ResizeObserver(() => { h = tile.offsetHeight; });
     resize.observe(tile);
@@ -57,8 +61,14 @@ function Rail({ text, side }: { text: SigilText; side: 'left' | 'right' }) {
 
       if (h <= 0) return; // rails are hidden at this breakpoint
 
-      drift += dt * DRIFT_PX_PER_SEC * dir;
-      const raw = drift + window.scrollY * PARALLAX * dir;
+      // Bring the drift up to speed during the shared fade, then soften
+      // wheel/trackpad steps with frame-rate-independent interpolation.
+      elapsed += dt;
+      const progress = Math.min(elapsed / 1.1, 1);
+      const speed = progress * progress * (3 - 2 * progress);
+      drift += dt * DRIFT_PX_PER_SEC * dir * speed;
+      scroll += (window.scrollY - scroll) * (1 - Math.exp(-dt / 0.12));
+      const raw = drift + scroll * PARALLAX * dir;
       // wrap into (-h, 0] so the second copy always covers the viewport
       const y = ((raw % h) - h) % h;
       shift.style.transform = `translate3d(0, ${y.toFixed(2)}px, 0)`;
@@ -69,7 +79,7 @@ function Rail({ text, side }: { text: SigilText; side: 'left' | 'right' }) {
       cancelAnimationFrame(raf);
       resize.disconnect();
     };
-  }, [side]);
+  }, [side, ready]);
 
   return (
     <div

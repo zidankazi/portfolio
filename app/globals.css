@@ -101,26 +101,8 @@ h6 {
   animation: blob-drift 26s ease-in-out infinite;
 }
 
-/* The sigil rails' drift + scroll parallax is driven in SigilRails.tsx, which
-   also sits out under prefers-reduced-motion. Their entrance, though, is CSS:
-   the rail opens from the vertical centre outward like the linework is being
-   inked down the page. Runs on first paint, so there's no hydration flash. */
-@keyframes sigil-ink {
-  from {
-    clip-path: inset(50% 0 50% 0);
-    opacity: 0;
-  }
-
-  to {
-    clip-path: inset(0 0 0 0);
-    opacity: 1;
-  }
-}
-
-.sigil-ink {
-  animation: sigil-ink 1.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
+/* One gentle reveal for the conversation, strings, and side art. Geometry
+   stays still during the fade so the strings stay attached to the bubbles. */
 @keyframes conversation-arrive {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -132,14 +114,12 @@ h6 {
   }
 
   [data-puppet-stage='ready'] main,
-  [data-puppet-stage='ready'] .puppet-threads {
-    animation: conversation-arrive 0.32s cubic-bezier(0.2, 0.65, 0.3, 1) both;
+  [data-puppet-stage='ready'] .puppet-threads,
+  [data-puppet-stage='ready'] .sigil-ink {
+    animation: conversation-arrive 0.95s cubic-bezier(0.4, 0, 0.2, 1) both;
   }
 
-  [data-puppet-stage='dropping'] .sigil-ink {
-    animation-play-state: paused;
-  }
-
+  [data-puppet-stage='dropping'] .sigil-ink,
   [data-puppet-stage='dropping'] .puppet-threads {
     opacity: 0;
   }
@@ -160,7 +140,7 @@ h6 {
     animation: none;
   }
 
-  /* skip the draw-on, but don't leave the rails clipped shut */
+  /* Keep the rails still and fully visible under reduced motion. */
   .sigil-ink {
     animation: none;
   }
