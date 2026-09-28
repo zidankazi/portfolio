@@ -42,7 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-body text-zinc-300 selection:bg-zinc-800 selection:text-white min-h-full antialiased flex flex-col items-center pt-14 sm:pt-20 pb-24 px-5 sm:px-10">
         {/* Album-palette wash — tints the page to whatever's playing */}
         <AmbientBackdrop />
-        {/* Generative sigil linework crawling up the page edges */}
+        {/* Generative ASCII sigil linework crawling up the page edges */}
         <SigilRails />
         <div className="w-full max-w-[520px] flex flex-col">
           {children}
