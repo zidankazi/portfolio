@@ -124,3 +124,17 @@ test("uses recent history for 204 responses and expires its cache after one minu
   assert.ok(await spotify.get_track(client) instanceof spotify.RecentlyPlayed);
   assert.equal(calls.length, 6);
 });
+
+test("refreshes the access token one minute before expiry", async (t) => {
+  let now = 100_000;
+  t.mock.method(Date, "now", () => now);
+  const calls = mockSpotify(t, [tokenReply, playingReply, playingReply, tokenReply, playingReply]);
+  const client = spotify.new_client("client", "secret", "refresh");
+  await spotify.get_track(client);
+  now += 3_539_999;
+  await spotify.get_track(client);
+  assert.equal(calls.length, 3);
+  now += 1;
+  await spotify.get_track(client);
+  assert.equal(calls.length, 5);
+});
