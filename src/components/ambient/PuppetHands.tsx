@@ -47,8 +47,6 @@ function Hand({ side }: { side: 'left' | 'right' }) {
         fontSize: `calc(var(--hand-size) / ${HAND_WIDTH / HAND_FONT_SIZE})`,
         lineHeight: `calc(var(--hand-size) / ${HAND_WIDTH / HAND_FONT_SIZE})`,
         transformOrigin: entrance.origin,
-        maskImage: 'linear-gradient(to bottom, transparent 12px, black 46px)',
-        WebkitMaskImage: 'linear-gradient(to bottom, transparent 12px, black 46px)',
       }}
     >
       <pre className="font-mono text-zinc-500/25">{art.detail}</pre>
@@ -284,8 +282,10 @@ export function PuppetHands() {
           <circle r="0" fill="#b7191d" />
         </svg>
       ))}
-      <Hand side="left" />
-      <Hand side="right" />
+      <div className="puppet-hand-stage absolute inset-x-0 top-0">
+        <Hand side="left" />
+        <Hand side="right" />
+      </div>
     </div>
   );
 }

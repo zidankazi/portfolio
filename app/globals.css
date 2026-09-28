@@ -177,8 +177,15 @@ h6 {
 
 .puppet-scene {
   --hand-size: 240px;
+  min-height: var(--hand-size);
   overflow-x: clip;
   overflow-y: visible;
+}
+
+.puppet-hand-stage {
+  height: calc(var(--hand-size) + 24px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 34px);
+  mask-image: linear-gradient(to bottom, transparent, black 34px);
 }
 
 .puppet-hand-left { left: calc(50% - 480px); }
