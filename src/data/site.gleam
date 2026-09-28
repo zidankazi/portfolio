@@ -1,3 +1,5 @@
+import gleam/json
+
 pub type Icon {
   Icon(src: String, sizes: String, media_type: String)
 }
@@ -36,4 +38,29 @@ pub fn site() -> Site {
       Icon("/android-chrome-512x512.png", "512x512", "image/png"),
     ],
   )
+}
+
+pub fn metadata_json() -> String {
+  let data = site()
+  json.object([
+    #("title", json.string(data.title)),
+    #("description", json.string(data.description)),
+    #(
+      "icons",
+      json.object([
+        #(
+          "icon",
+          json.array(data.favicons, fn(icon) {
+            json.object([
+              #("url", json.string(icon.src)),
+              #("sizes", json.string(icon.sizes)),
+              #("type", json.string(icon.media_type)),
+            ])
+          }),
+        ),
+        #("apple", json.string(data.apple_icon)),
+      ]),
+    ),
+  ])
+  |> json.to_string
 }
