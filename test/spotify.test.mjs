@@ -76,3 +76,16 @@ test("rejects malformed JSON, invalid fields, and unsupported episode items", ()
     assert.ok(result[0] instanceof spotify.InvalidResponse);
   }
 });
+
+test("decodes null current playback, empty history, and recent tracks", () => {
+  const empty = spotify.decode_current('{"item":null}');
+  assert.ok(empty.isOk());
+  assert.ok(empty[0] instanceof spotify.NothingPlaying);
+  assert.ok(spotify.track_title(empty[0]) instanceof None);
+  assert.ok(spotify.decode_recent('{"items":[]}')[0] instanceof spotify.NothingPlaying);
+  const recent = spotify.decode_recent(JSON.stringify(recentReply.json));
+  assert.ok(recent.isOk());
+  assert.ok(recent[0] instanceof spotify.RecentlyPlayed);
+  assert.equal(recent[0].track.title, track.name);
+  assert.equal(spotify.decode_recent('{"items":[{"track":null}]}').isOk(), false);
+});
