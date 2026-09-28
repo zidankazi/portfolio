@@ -13,6 +13,44 @@ const INSET = 16;
 const HOVER_DELAY = 240;
 const PREVIEW_QUERY = '(min-width: 768px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)';
 
+// Only mount moving media for the hovered row. The still underneath remains
+// visible while it loads, or if playback fails.
+function ProjectMotionPreview({ media }: { media: NonNullable<Project['previewMotion']> }) {
+    const [ready, setReady] = useState(false);
+    const className = 'absolute inset-0 h-full w-full object-contain transition-opacity duration-150';
+
+    if (media.type === 'video') {
+        return (
+            <video
+                src={media.src}
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="auto"
+                className={className}
+                style={{ opacity: ready ? 1 : 0 }}
+                onPlaying={() => setReady(true)}
+                onError={() => setReady(false)}
+            />
+        );
+    }
+
+    return (
+        <Image
+            src={media.src}
+            alt=""
+            fill
+            unoptimized
+            loading="eager"
+            className={className}
+            style={{ opacity: ready ? 1 : 0 }}
+            onLoad={() => setReady(true)}
+            onError={() => setReady(false)}
+        />
+    );
+}
+
 export function ProjectHoverPreview({ projects, children }: { projects: Project[]; children: ReactNode }) {
     const [enabled, setEnabled] = useState(false);
     const [warmed, setWarmed] = useState(false);
@@ -140,6 +178,9 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
                                     onLoad={() => setLoaded((current) => ({ ...current, [project.title]: true }))}
                                     onError={() => setLoaded((current) => ({ ...current, [project.title]: false }))}
                                 />
+                                {active === project.title && project.previewMotion && (
+                                    <ProjectMotionPreview media={project.previewMotion} />
+                                )}
                             </motion.div>
                         ))}
                     </motion.div>

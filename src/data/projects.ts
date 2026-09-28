@@ -10,6 +10,7 @@ export type Project = {
   descriptionLink?: { text: string; href: string };
   links: ProjectLink[];
   preview?: string;
+  previewMotion?: { src: string; type: 'gif' | 'video' };
 };
 
 export const projects: Project[] = [
@@ -24,6 +25,7 @@ export const projects: Project[] = [
   {
     title: 'roster',
     preview: '/projects/roster.webp',
+    previewMotion: { src: '/projects/roster.mp4', type: 'video' },
     description: 'terminal multiplexer for claude code agents. run several in real panes and see which one is blocked, working, or done — plus the exact prompt each one is waiting on.',
     links: [
       { label: 'github', href: 'https://github.com/zidankazi/roster' },
@@ -33,6 +35,7 @@ export const projects: Project[] = [
   {
     title: 'multi-agent hide and seek',
     preview: '/projects/hide-and-seek.webp',
+    previewMotion: { src: '/projects/hide-and-seek.gif', type: 'gif' },
     description: 'trained with self-play ppo, reproducing the emergent tool use from openai\'s 2019 paper.',
     descriptionLink: {
       text: 'openai\'s 2019 paper',
@@ -72,6 +75,7 @@ export const projects: Project[] = [
   {
     title: 'orbital',
     preview: '/projects/orbital.webp',
+    previewMotion: { src: '/projects/orbital.gif', type: 'gif' },
     description: 'real-time satellite tracker for the terminal. renders earth as a 3d ascii globe and tracks satellites utilizing live sgp4 mechanics.',
     links: [
       { label: 'github', href: 'https://github.com/zidankazi/orbital' },
