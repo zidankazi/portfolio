@@ -2,22 +2,36 @@
 
 ## Learning Gleam through Spotify
 
-The site still uses `src/lib/spotify.ts`. The separate
-`src/lib/spotify.gleam` implementation is ready to study and run on Node, but
-has not been connected to the Next.js routes or React components yet.
-`src/data/projects.ts` is left for the next exercise.
+The site uses `src/lib/spotify.gleam` for Spotify decoding, API requests, and
+caching. The small `src/lib/spotify.server.ts` adapter creates the server-side
+client and parses its JSON for React. Both Spotify API routes use that adapter.
+The old TypeScript implementation has been removed. `src/types/spotify.ts`
+describes the plain JSON consumed by the card; `src/data/projects.ts` is left
+for the next exercise.
 
-Install Gleam (tested with 1.18.1) and Node.js 22 or newer, then run:
+With Node.js 22 or newer, run:
 
 ```sh
 npm run check:gleam
 npm run test:gleam
+npm run dev
 ```
 
 The tests use synthetic Spotify responses and a mocked clock and fetch. They
 do not need environment variables or make network requests. Gleam downloads its
 dependencies on the first build. `build/` is generated and ignored by Git,
 TypeScript, and Vercel uploads; `manifest.toml` locks the Gleam dependencies.
+
+`npm run dev` and `npm run build` compile Gleam before starting Next.js. The
+compiler wrapper uses Gleam 1.18.1 if installed, or downloads that pinned official
+release into `node_modules/.cache/gleam` and verifies its SHA-256 digest. Downloads
+support macOS and Linux on x64 and arm64, including Vercel's Linux build hosts.
+Other platforms require Gleam 1.18.1 on PATH. No Erlang runtime is needed for
+this JavaScript target. A clean build needs network access to GitHub and Hex.
+
+When editing `.gleam` during a running development session, run
+`npm run build:gleam` again. Next.js picks up the changed JavaScript output.
+Generated TypeScript declarations keep the server adapter checked against Gleam.
 
 Read `spotify.gleam` in this order:
 
@@ -67,5 +81,7 @@ one minute. A 401 clears the access token for the next poll. Errors fall back to
 Caches are local to each client/process and do not deduplicate concurrent calls.
 Unsupported item shapes, such as podcast episodes, fall back to recent history.
 
-The next integration step is a server-only adapter from `Playback` to the existing
-UI's `Track` shape, plus compiling Gleam in the Next.js build pipeline.
+`playback_json` encodes the existing API shape, converting `Option` values to JSON
+nulls and keeping Gleam class instances out of React props. `get_track_json` is
+the entry point used by the server-only Next.js adapter. The browser imports only
+the plain `Track` type, never the credential-bearing client or its runtime.
