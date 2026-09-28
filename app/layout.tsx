@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import { metadata as siteMetadata } from '@/data/site.server';
 import { Inter, Newsreader, JetBrains_Mono } from 'next/font/google';
 import { AmbientBackdrop } from '@/components/ambient/AmbientBackdrop';
 import { SigilRails } from '@/components/ambient/SigilRails';
@@ -25,17 +25,7 @@ const monoFont = JetBrains_Mono({
   weight: ['400', '500'],
 });
 
-export const metadata: Metadata = {
-  title: 'zidan kazi',
-  description: 'builder portfolio of zidan kazi',
-  icons: {
-    icon: [
-      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' }
-    ],
-    apple: '/apple-touch-icon.png'
-  }
-};
+export const metadata = siteMetadata;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
