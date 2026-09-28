@@ -1,6 +1,6 @@
 // Generates the letter-built cyber-sigilism strip for the side rails.
-// A barbed spine of pierced cores and opposing sickle blades, with fine
-// recursive thorns woven through the heavier, needle-ended ink contours.
+// Suspended crosses, skeletal hands, broken stars, and thorn chains share a
+// barbed spine with pierced cores and needle-ended sigil contours.
 // Fine linework, raised contours, and lit edges are rasterized separately.
 // Each character cell belongs to one depth layer, keeping the tiny lowercase
 // letter texture crisp without overlapping glyphs.
@@ -298,6 +298,112 @@ function barbWire(A, B, bow, r0 = 0.5) {
   }
 }
 
+// The larger scenes reserve their own space so hands, taut strings, and a
+// suspended cross remain readable at the same tiny ASCII character size.
+function raised(curve, weight = 1.3, taper = 'both', clearance = 1.25) {
+  foreground.push({ curve, weight, taper, clearance });
+}
+
+function bonePath(points, weight = 1.2) {
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1];
+    const b = points[i];
+    raised([a, [a[0] * 0.68 + b[0] * 0.32, a[1] * 0.68 + b[1] * 0.32],
+      [a[0] * 0.32 + b[0] * 0.68, a[1] * 0.32 + b[1] * 0.68], b], weight, 'both', 0.6);
+  }
+}
+
+function suspendedCross(top, variant = 0) {
+  const cy = top + 170;
+  const cx = AX + (variant ? 5 : -2);
+  for (const side of [-1, 1]) {
+    const at = (x, y) => [side < 0 ? x : PW - x, top + y + (side > 0 ? 5 : 0)];
+    const bone = (points, weight = 1.3) => bonePath(points.map(([x, y]) => at(x, y)), weight);
+
+    // Angled cuffs, open palm plates, and a thumb separated from four fingers.
+    bone([[5, 0], [19, 21], [29, 30]], 1.7);
+    bone([[23, 0], [31, 13], [42, 23]], 1.5);
+    bone([[17, 19], [30, 13], [42, 23], [30, 31], [17, 19]], 1.1);
+    bone([[29, 30], [23, 45], [31, 56], [50, 60], [64, 48], [58, 32], [42, 23]], 1.5);
+    bone([[34, 30], [31, 44], [39, 52], [54, 49]], 0.9);
+    bone([[44, 28], [42, 39], [51, 43], [58, 35]], 0.9);
+    bone([[58, 32], [69, 38], [77, 52], [73, 61], [67, 51], [61, 48]], 1.2);
+
+    // Each finger has two angular phalanges and a hooked fingertip.
+    const fingers = [
+      [[29, 52], [28, 66], [34, 82], [39, 79], [35, 64], [36, 56]],
+      [[38, 56], [40, 73], [49, 91], [54, 88], [47, 69], [46, 58]],
+      [[48, 57], [54, 71], [63, 84], [68, 81], [62, 65], [57, 53]],
+      [[58, 51], [65, 60], [72, 72], [76, 68], [72, 56], [64, 46]],
+    ];
+    fingers.forEach((finger, index) => {
+      bone(finger, index === 1 ? 1.35 : 1.15);
+      const joint = finger[1];
+      bone([[joint[0] - 2, joint[1] - 1], [joint[0] + 4, joint[1] - 3]], 0.9);
+      const tip = at(finger[2][0] + 2, finger[2][1]);
+      const attachment = [cx + side * [53, 32, 13, 3][index], cy - [0, 5, 18, 63][index]];
+      // Nearly straight, independently attached threads preserve the tension.
+      raised([tip, [tip[0] * 0.67 + attachment[0] * 0.33, tip[1] * 0.67 + attachment[1] * 0.33],
+        [tip[0] * 0.33 + attachment[0] * 0.67, tip[1] * 0.33 + attachment[1] * 0.67], attachment], 0.75, 'none', 0.3);
+    });
+  }
+
+  // An elongated, hollow cross; a small eye is suspended at its intersection.
+  const at = (x, y) => [cx + x, cy + y];
+  const edge = (points, width = 1.7) => raised(points.map(([x, y]) => at(x, y)), width);
+  for (const side of [-1, 1]) {
+    edge([[0, -76], [side * 4, -45], [side * 10, -24], [side * 12, -10]], 1.6);
+    edge([[side * 12, -10], [side * 28, -9], [side * 44, -4], [side * 67, 0]], 1.8);
+    edge([[side * 67, 0], [side * 33, 7], [side * 18, 9], [side * 11, 14]], 1.7);
+    edge([[side * 11, 14], [side * 13, 69], [side * 3, 136], [0, 182]], 1.9);
+    // Raised, irregular thorns echo the worn dagger and broken-star references.
+    edge([[side * 10, 44], [side * 25, 31], [side * 20, 50], [side * 29, 56]], 1.1);
+    edge([[side * 30, 2], [side * 41, -14], [side * 39, -15], [side * 44, -23]], 1.05);
+    for (let j = 0; j < 6; j++) {
+      const y = 26 + j * 19;
+      const span = 10 - j;
+      strokeCubic([at(-span, y), at(-3, y + 7), at(3, y + 8), at(span, y + 14)], 0.55);
+    }
+  }
+  edge([[-12, 1], [-5, -9], [5, -9], [12, 1]], 1.2);
+  edge([[-12, 1], [-4, 12], [5, 12], [12, 1]], 1.2);
+  raised([at(0, -2), at(-2, 0), at(2, 4), at(0, 6)], 1.4, 'none');
+  // One loose chain and offset glints give the scene an uneven tattoo finish.
+  for (let j = 0; j < 6; j++) {
+    const x = cx - 38 - Math.sin(j * 0.6) * 7;
+    const y = cy + 29 + j * 12;
+    crescent([x, y], [x + 2, y + 12], 1, 0.3, 0.55);
+    crescent([x, y], [x + 2, y + 12], -1, 0.3, 0.55);
+  }
+  starburst(cx + 43, cy + 59, 11);
+  sparkle(cx - 45, cy - 48, 5);
+}
+
+function brokenStar(cx, cy) {
+  // Five unequal, slashed points surround an empty center.
+  for (let i = 0; i < 5; i++) {
+    const angle = -DN + i * TAU / 5 + 0.15;
+    const length = 52 + rnd() * 23;
+    const at = (r, offset = 0) => [cx + Math.cos(angle + offset) * r * 0.83, cy + Math.sin(angle + offset) * r];
+    raised([at(14, -0.42), at(33, -0.31), at(length * 0.7, 0.13), at(length)], 1.9);
+    raised([at(length), at(length * 0.68, 0.27), at(28, 0.46), at(16, 0.4)], 1.5);
+    const p = at(36, 0.18);
+    tendril(p[0], p[1], angle + 0.9, 29 + rnd() * 14, -1.2, 0.6, 2);
+  }
+}
+
+function thornChain(cx, cy) {
+  // Sparse, asymmetrical skin-like thornwork between the heavier symbols.
+  for (let i = 0; i < 3; i++) {
+    const y = cy - 76 + i * 52;
+    const side = i % 2 ? -1 : 1;
+    const x = cx + side * 9;
+    raised([[x, y], [x + side * 26, y + 12], [x - side * 23, y + 29], [cx, y + 57]], 1.1);
+    raised([[x, y], [x - side * 19, y + 14], [x + side * 10, y + 38], [cx, y + 57]], 0.85);
+    tendril(x + side * 8, y + 13, -DN + side * 0.65, 28, -side * 1.2, 0.7, 2);
+  }
+}
+
 const JOINTS = 18;
 const STEP = PH / JOINTS;
 // periodic over the tile, so the spine meets itself across the seam
@@ -305,6 +411,7 @@ const spineX = (y) => AX + Math.sin((TAU * 7 * y) / PH) * 9 + Math.sin((TAU * 3 
 
 // barbed spine, joint to joint
 for (let i = 0; i < JOINTS; i++) {
+  if (i < 3 || (i >= 10 && i < 13)) continue;
   const y0 = STEP * i;
   const y1 = STEP * (i + 1);
   barbWire([spineX(y0), y0], [spineX(y1), y1], (i % 2 ? 1 : -1) * 0.05, 0.58);
@@ -331,6 +438,19 @@ if (sequence.at(-1) === sequence[0]) {
 }
 
 for (let i = 0; i < JOINTS; i++) {
+  if (i === 0 || i === 10) {
+    suspendedCross(STEP * i + 148, i === 10 ? 1 : 0);
+    i += 2;
+    continue;
+  }
+  if (i === 4 || i === 14) {
+    brokenStar(AX, STEP * (i + 0.5));
+    continue;
+  }
+  if (i === 6 || i === 16) {
+    thornChain(AX, STEP * (i + 0.5));
+    continue;
+  }
   const family = sequence[i];
   const y = STEP * (i + 0.5) + (rnd() - 0.5) * 18;
   const x = spineX(y);
@@ -435,11 +555,11 @@ for (let i = 0; i < JOINTS; i++) {
 
 // Draw raised blades after their filigree. Clear a small channel underneath
 // each one so crossings read as over/under, not a single dense knot of letters.
-for (const { curve, weight, taper } of foreground) {
+for (const { curve, weight, taper, clearance = 1.25 } of foreground) {
   ink = 0;
   for (const under of [detail, body, highlights]) {
     grid = under;
-    strokeCubic(curve, weight + 1.25, { taper });
+    strokeCubic(curve, weight + clearance, { taper });
   }
   ink = 1;
   grid = body;
@@ -457,7 +577,7 @@ for (const { curve, weight, taper } of foreground) {
     let ny = Math.cos(angle);
     if (nx + ny > 0) { nx *= -1; ny *= -1; }
     const facing = -(nx + ny) / Math.SQRT2;
-    const radius = weight * (taper === 'both' ? Math.sin(Math.PI * t) ** 0.9 : (1 - t) ** 1.3);
+    const radius = weight * (taper === 'none' ? 1 : taper === 'both' ? Math.sin(Math.PI * t) ** 0.9 : (1 - t) ** 1.3);
     if (facing > 0.45 && radius > 0.7) {
       stamp(x + nx * radius * 0.7, y + ny * radius * 0.7, 0.45);
     }
@@ -477,7 +597,7 @@ function glyphFor(cov, x, y) {
   return band[(x * 7 + y * 13) % band.length];
 }
 
-function encode(mirror = false) {
+function encode(mirror = false, rowOffset = 0) {
   const layers = [[], [], []];
   for (let cy = 0; cy < ROWS; cy++) {
     const lines = ['', '', ''];
@@ -487,7 +607,8 @@ function encode(mirror = false) {
       for (let dy = 0; dy < CELL_H; dy++) {
         for (let dx = 0; dx < CELL_W; dx++) {
           const x = cx * CELL_W + dx;
-          const pos = (cy * CELL_H + dy) * PW + (mirror ? PW - 1 - x : x);
+          const py = (cy * CELL_H + dy + rowOffset * CELL_H) % PH;
+          const pos = py * PW + (mirror ? PW - 1 - x : x);
           counts[0] += detail[pos];
           counts[1] += body[pos];
           counts[2] += highlights[pos];
@@ -509,7 +630,7 @@ const serialize = (layers) => `{\n${layers.map((text, i) => `  ${names[i]}: \`${
 const out = `// Generated by scripts/generateSigil.mjs — run it again rather than editing.
 export const SIGIL_LEFT = ${serialize(encode())};
 
-export const SIGIL_RIGHT = ${serialize(encode(true))};
+export const SIGIL_RIGHT = ${serialize(encode(true, 229))};
 `;
 
 writeFileSync(new URL('../src/components/ambient/sigilStrip.ts', import.meta.url), out);
