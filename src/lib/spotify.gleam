@@ -121,3 +121,34 @@ pub fn new_client(
     cache: new_cell(Cache(token: None, recent: None, last_good: None)),
   )
 }
+
+/// A decoder is a recipe for checking untrusted JSON and building a typed value.
+/// "use" passes the remaining code as a callback; each field must decode first.
+fn track_decoder() -> Decoder(Track) {
+  use title <- decode.field("name", decode.string)
+  use artists <- decode.field(
+    "artists",
+    decode.list(decode.at(["name"], decode.string)),
+  )
+  use images <- decode.subfield(
+    ["album", "images"],
+    decode.list(decode.at(["url"], decode.string)),
+  )
+  use url <- decode.subfield(["external_urls", "spotify"], decode.string)
+  use duration <- decode.optional_field(
+    "duration_ms",
+    None,
+    decode.optional(decode.int),
+  )
+  let artwork = case images {
+    [first, ..] -> Some(first)
+    [] -> None
+  }
+  decode.success(Track(
+    title,
+    string.join(artists, ", "),
+    url,
+    artwork,
+    duration,
+  ))
+}
