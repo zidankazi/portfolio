@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowUpRight, Undo2 } from 'lucide-react';
 import { AmbientBackdrop } from '@/components/ambient/AmbientBackdrop';
+import { LiveSitePreview } from '@/components/studio/LiveSitePreview';
 import styles from './studio.module.css';
 
 export const metadata: Metadata = {
@@ -18,6 +19,7 @@ const sites = [
     image: '/studio/omu-page.webp',
     decoration: '/studio/pushpin-photo.png',
     position: 'left',
+    live: true,
   },
   {
     name: 'Relic',
@@ -26,6 +28,7 @@ const sites = [
     image: '/studio/relic.webp',
     decoration: '/studio/binderclip-photo.png',
     position: 'center',
+    live: true,
   },
   {
     name: 'Mille Works',
@@ -34,6 +37,7 @@ const sites = [
     image: '/studio/mille-works-page.webp',
     decoration: '/studio/safety-pin-photo.png',
     position: 'right',
+    live: false,
   },
 ] as const;
 
@@ -59,16 +63,18 @@ export default function StudioPage() {
               aria-label={`Visit ${site.name} (opens in a new tab)`}
             >
               <div className={styles.card}>
-                <Image
+                {site.live ? (
+                  <LiveSitePreview src={site.href} poster={site.image} name={site.name} />
+                ) : <Image
                   src={site.image}
                   alt=""
                   fill
                   priority
-                  sizes="(max-width: 540px) 290px, 340px"
+                  unoptimized
+                  sizes="(max-width: 540px) 82vw, 500px"
                   className={styles.artwork}
-                />
+                />}
                 <div className={styles.shade} />
-                <div className={styles.texture} />
                 <div className={styles.label}>
                   <span className={styles.name}>{site.name}</span>
                   <span className={styles.domain}>{site.domain}</span>
