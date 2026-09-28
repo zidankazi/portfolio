@@ -402,3 +402,10 @@ pub fn playback_json(playback: Playback) -> json.Json {
       ])
   }
 }
+
+/// Server adapters can parse this into a plain object without knowing how Gleam
+/// represents its custom types in JavaScript.
+pub fn get_track_json(client: Client) -> Promise(String) {
+  use playback <- promise.map(get_track(client))
+  playback |> playback_json |> json.to_string
+}
