@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { ChevronDown } from 'lucide-react';
 import { Project } from '@/data/projects';
+import { ProjectHoverPreview } from './ProjectHoverPreview';
 
 // Links a phrase inside the description, leaving the rest as plain text
 function Description({ project }: { project: Project }) {
@@ -32,7 +33,7 @@ function Description({ project }: { project: Project }) {
 // Row fills the full bubble width — no negative margins needed
 function ProjectRow({ project }: { project: Project }) {
     return (
-        <div className="w-full px-4 py-3 transition-colors duration-100 hover:bg-white/[0.06]">
+        <div data-project-preview={project.title} className="w-full px-4 py-3 transition-colors duration-100 hover:bg-white/[0.06]">
             <div className="flex items-baseline justify-between gap-4">
                 <h2 className="font-heading italic text-white text-[17px] leading-snug">
                     {project.title}
@@ -137,9 +138,11 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
                         transition={{ duration: 0.3, ease: [0, 0, 0.2, 1] }}
                         className="overflow-hidden select-none"
                     >
-                        {projects.map((project) => (
-                            <ProjectRow key={project.title} project={project} />
-                        ))}
+                        <ProjectHoverPreview projects={projects}>
+                            {projects.map((project) => (
+                                <ProjectRow key={project.title} project={project} />
+                            ))}
+                        </ProjectHoverPreview>
                     </motion.div>
 
                     {/* Bottom fade */}

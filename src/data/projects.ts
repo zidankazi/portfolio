@@ -9,11 +9,13 @@ export type Project = {
   /** Turns the first occurrence of `text` inside `description` into a link. */
   descriptionLink?: { text: string; href: string };
   links: ProjectLink[];
+  preview?: string;
 };
 
 export const projects: Project[] = [
   {
     title: 'relic',
+    preview: '/projects/relic.webp',
     description: 'the source of truth for ai-native companies. memory that builds itself from your team\'s stack and answers agent queries over mcp, with a source behind every fact.',
     links: [
       { label: 'site', href: 'https://tryrelic.io' },
@@ -21,6 +23,7 @@ export const projects: Project[] = [
   },
   {
     title: 'roster',
+    preview: '/projects/roster.webp',
     description: 'terminal multiplexer for claude code agents. run several in real panes and see which one is blocked, working, or done — plus the exact prompt each one is waiting on.',
     links: [
       { label: 'github', href: 'https://github.com/zidankazi/roster' },
@@ -29,6 +32,7 @@ export const projects: Project[] = [
   },
   {
     title: 'multi-agent hide and seek',
+    preview: '/projects/hide-and-seek.webp',
     description: 'trained with self-play ppo, reproducing the emergent tool use from openai\'s 2019 paper.',
     descriptionLink: {
       text: 'openai\'s 2019 paper',
@@ -40,6 +44,7 @@ export const projects: Project[] = [
   },
   {
     title: 'sponge',
+    preview: '/projects/sponge.webp',
     description: 'gamified ai-assisted coding interview practice. built in 24 hours at quackhacks \'26.',
     links: [
       { label: 'github', href: 'https://github.com/zidankazi/sponge' },
@@ -49,6 +54,7 @@ export const projects: Project[] = [
   },
   {
     title: 'zilean',
+    preview: '/projects/zilean.webp',
     description: 'privacy-first productivity agent that tracks your digital context to measure focus without sending data to the cloud.',
     links: [
       { label: 'site', href: 'https://zilean.app' },
@@ -56,6 +62,7 @@ export const projects: Project[] = [
   },
   {
     title: 'sage',
+    preview: '/projects/sage.webp',
     description: 'iMessage supercharged with xAI\'s Grok, bringing live internet access to your group chats.',
     links: [
       { label: 'github', href: 'https://github.com/zidankazi/sage' },
@@ -64,6 +71,7 @@ export const projects: Project[] = [
   },
   {
     title: 'orbital',
+    preview: '/projects/orbital.webp',
     description: 'real-time satellite tracker for the terminal. renders earth as a 3d ascii globe and tracks satellites utilizing live sgp4 mechanics.',
     links: [
       { label: 'github', href: 'https://github.com/zidankazi/orbital' },
