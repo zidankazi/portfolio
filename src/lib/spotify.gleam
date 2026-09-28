@@ -247,3 +247,20 @@ fn refresh_access_token(client: Client) -> Promise(Result(String, ApiError)) {
     }
   }
 }
+
+fn get_access_token(client: Client) -> Promise(Result(String, ApiError)) {
+  let now = now_ms()
+  let cache = read_cell(client.cache)
+  case
+    client.client_id == ""
+    || client.client_secret == ""
+    || client.refresh_token == ""
+  {
+    True -> promise.resolve(Error(MissingCredentials))
+    False ->
+      case cache.token {
+        Some(token) if now < token.expires_at -> promise.resolve(Ok(token.value))
+        _ -> refresh_access_token(client)
+      }
+  }
+}
