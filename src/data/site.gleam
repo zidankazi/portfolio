@@ -64,3 +64,28 @@ pub fn metadata_json() -> String {
   ])
   |> json.to_string
 }
+
+pub fn manifest_json() -> String {
+  let data = site()
+  json.object([
+    #("name", json.string(data.name)),
+    #("short_name", json.string(data.name)),
+    #("description", json.string(data.description)),
+    #("start_url", json.string(data.start_url)),
+    #("display", json.string(data.display)),
+    #("background_color", json.string(data.background_color)),
+    #("theme_color", json.string(data.theme_color)),
+    #(
+      "icons",
+      json.array(data.app_icons, fn(icon) {
+        json.object([
+          #("src", json.string(icon.src)),
+          #("sizes", json.string(icon.sizes)),
+          #("type", json.string(icon.media_type)),
+          #("purpose", json.string("any")),
+        ])
+      }),
+    ),
+  ])
+  |> json.to_string
+}
