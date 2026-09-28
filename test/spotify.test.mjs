@@ -156,3 +156,15 @@ test("rate limits and network failures use cached metadata without old progress"
   }
   assert.equal(calls.length, 6);
 });
+
+test("invalidates a rejected access token and refreshes on the next poll", async (t) => {
+  const calls = mockSpotify(t, [
+    tokenReply, playingReply, { status: 401 }, tokenReply, playingReply,
+  ]);
+  const client = spotify.new_client("client", "secret", "refresh");
+  await spotify.get_track(client);
+  assert.ok(await spotify.get_track(client) instanceof spotify.Cached);
+  assert.ok(await spotify.get_track(client) instanceof spotify.Playing);
+  assert.equal(calls.length, 5);
+  assert.equal(calls[3].method, "POST");
+});
