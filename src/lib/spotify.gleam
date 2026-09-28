@@ -281,3 +281,11 @@ fn fetch_playback(
     Ok(#(status, _)) -> Error(HttpError(status))
   }
 }
+
+/// A stale fallback never claims the track is still playing.
+fn cached_playback(client: Client) -> Playback {
+  case read_cell(client.cache).last_good {
+    Some(track) -> Cached(track)
+    None -> NothingPlaying
+  }
+}
