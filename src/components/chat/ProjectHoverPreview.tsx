@@ -5,10 +5,8 @@ import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { motion, useSpring } from 'framer-motion';
 import type { Project } from '@/types/project';
+import * as previewPosition from '../../../build/dev/javascript/portfolio/lib/preview_position.mjs';
 
-const DEFAULT_SIZE = { width: 280, height: 210 };
-const GAP = 20;
-const INSET = 16;
 const HOVER_DELAY = 240;
 const PREVIEW_QUERY = '(min-width: 768px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)';
 
@@ -55,7 +53,7 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
     const [warmed, setWarmed] = useState(false);
     const [active, setActive] = useState<string | null>(null);
     const [displayed, setDisplayed] = useState<string | null>(null);
-    const [size, setSize] = useState(DEFAULT_SIZE);
+    const [size, setSize] = useState<{ width: number; height: number }>(previewPosition.default_size);
     const [loaded, setLoaded] = useState<Record<string, boolean>>({});
     const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
     const hovered = useRef<string | null>(null);
@@ -90,26 +88,18 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
             return;
         }
 
-        const preferredSize = project.previewSize ?? DEFAULT_SIZE;
-        const width = Math.min(preferredSize.width, window.innerWidth - 2 * INSET);
-        const height = Math.min(preferredSize.height, window.innerHeight - 2 * INSET);
+        const preferredSize = project.previewSize ?? previewPosition.default_size;
         if (rowBounds.current?.row !== row) {
             const rect = row.getBoundingClientRect();
             rowBounds.current = { row, left: rect.left, right: rect.right };
         }
         const rect = rowBounds.current;
-        // Use the page margin when it fits. On smaller desktops, flip away
-        // from the pointer and clamp to the viewport so links stay reachable.
-        let left = clientX + GAP;
-        if (rect.right + GAP + width <= window.innerWidth - INSET) {
-            left = rect.right + GAP + (clientX - rect.left) * 0.025;
-        } else if (rect.left - GAP - width >= INSET) {
-            left = rect.left - GAP - width;
-        } else if (left + width > window.innerWidth - INSET) {
-            left = clientX - width - GAP;
-        }
-        left = Math.max(INSET, Math.min(left, window.innerWidth - width - INSET));
-        const top = Math.max(INSET, Math.min(clientY - height / 2, window.innerHeight - height - INSET));
+        const { left, top, width, height } = previewPosition.place(
+            new previewPosition.Point(clientX, clientY),
+            new previewPosition.Bounds(rect.left, rect.right),
+            new previewPosition.Size(window.innerWidth, window.innerHeight),
+            new previewPosition.Size(preferredSize.width, preferredSize.height),
+        );
 
         if (!visible.current) {
             x.jump(left);
