@@ -12,3 +12,7 @@ export function read_cell(cell) {
 export function write_cell(cell, value) {
   cell.value = value;
 }
+
+export function now_ms() {
+  return Date.now();
+}

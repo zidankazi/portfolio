@@ -94,3 +94,6 @@ fn read_cell(cell: Cell(a)) -> a
 
 @external(javascript, "./spotify_ffi.mjs", "write_cell")
 fn write_cell(cell: Cell(a), value: a) -> Nil
+
+@external(javascript, "./spotify_ffi.mjs", "now_ms")
+fn now_ms() -> Int
