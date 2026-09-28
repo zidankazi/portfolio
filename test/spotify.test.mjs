@@ -168,3 +168,11 @@ test("invalidates a rejected access token and refreshes on the next poll", async
   assert.equal(calls.length, 5);
   assert.equal(calls[3].method, "POST");
 });
+
+test("missing credentials skip requests and failed token refreshes return empty", async (t) => {
+  const calls = mockSpotify(t, [{ status: 400 }]);
+  assert.ok(await spotify.get_track(spotify.new_client("", "secret", "refresh")) instanceof spotify.NothingPlaying);
+  assert.equal(calls.length, 0);
+  assert.ok(await spotify.get_track(spotify.new_client("client", "secret", "refresh")) instanceof spotify.NothingPlaying);
+  assert.equal(calls.length, 1);
+});
