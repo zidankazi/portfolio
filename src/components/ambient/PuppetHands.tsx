@@ -10,25 +10,15 @@ import { HAND_LEFT, HAND_RIGHT, HAND_WIDTH, HAND_HEIGHT, HAND_FONT_SIZE, HAND_TI
 const CHAIN_ENTRIES = [0, 225, 385, 725, 65, 175, 465, 640];
 const CHAIN_DURATIONS = [940, 1070, 1150, 1240, 975, 1030, 1190, 1210];
 
-// Each wrist reaches in on its own arc, then eases into tension without
-// dropping below its resting position or exposing the cropped forearm.
+// A single easing curve carries each wrist all the way to rest. Separate
+// keyframe easings would brake and restart the descent between poses.
 const HAND_ENTRANCES = {
   left: {
-    frames: [
-      'translate3d(-9px, -260px, 0) rotate(-7deg)',
-      'translate3d(-3px, -38px, 0) rotate(-2deg)',
-      'translate3d(1px, -3px, 0) rotate(0.6deg)',
-      'translate3d(0, 0, 0) rotate(0deg)',
-    ],
+    from: 'translate3d(-9px, -260px, 0) rotate(-7deg)',
     origin: '32% 0%', duration: 1.22, delay: 0.04,
   },
   right: {
-    frames: [
-      'translate3d(11px, -275px, 0) rotate(9deg)',
-      'translate3d(4px, -46px, 0) rotate(2.8deg)',
-      'translate3d(-1px, -4px, 0) rotate(-0.7deg)',
-      'translate3d(0, 0, 0) rotate(0deg)',
-    ],
+    from: 'translate3d(11px, -275px, 0) rotate(9deg)',
     origin: '68% 0%', duration: 1.34, delay: 0.18,
   },
 };
@@ -43,17 +33,12 @@ function Hand({ side }: { side: 'left' | 'right' }) {
     <motion.div
       data-puppet-hand={side}
       className={`puppet-hand absolute -top-3 puppet-hand-${side}`}
-      initial={{ transform: entrance.frames[0] }}
-      animate={{ transform: reduced ? entrance.frames.at(-1) : entrance.frames }}
+      initial={{ transform: entrance.from }}
+      animate={{ transform: 'translate3d(0, 0, 0) rotate(0deg)' }}
       transition={reduced ? { duration: 0 } : {
         duration: entrance.duration,
         delay: entrance.delay,
-        times: [0, 0.52, 0.82, 1],
-        ease: [
-          [0.25, 0.1, 0.3, 1],
-          [0.2, 0.45, 0.3, 1],
-          [0.25, 0.1, 0.25, 1],
-        ],
+        ease: [0.22, 0.1, 0.25, 1],
       }}
       onAnimationComplete={() => settle(side)}
       style={{
