@@ -176,3 +176,18 @@ test("missing credentials skip requests and failed token refreshes return empty"
   assert.ok(await spotify.get_track(spotify.new_client("client", "secret", "refresh")) instanceof spotify.NothingPlaying);
   assert.equal(calls.length, 1);
 });
+
+test("invalid token payloads are never cached or used for playback requests", async (t) => {
+  const replies = [
+    { body: "not json" },
+    { json: { access_token: "", expires_in: 3600 } },
+    { json: { access_token: "test", expires_in: -1 } },
+    { json: { access_token: "test", expires_in: "3600" } },
+  ];
+  const calls = mockSpotify(t, [...replies]);
+  const client = spotify.new_client("client", "secret", "refresh");
+  for (let index = 0; index < replies.length; index += 1) {
+    assert.ok(await spotify.get_track(client) instanceof spotify.NothingPlaying);
+  }
+  assert.equal(calls.length, replies.length);
+});
