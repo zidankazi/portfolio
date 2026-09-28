@@ -374,3 +374,31 @@ pub fn get_track(client: Client) -> Promise(Playback) {
     }
   }
 }
+
+/// Encode the existing UI/API shape. JSON removes Gleam constructors and Options
+/// before the value crosses Next.js's server-to-client component boundary.
+pub fn playback_json(playback: Playback) -> json.Json {
+  let details = case playback {
+    NothingPlaying -> None
+    Playing(track, progress) -> Some(#(track, True, progress))
+    Paused(track, progress) -> Some(#(track, False, progress))
+    RecentlyPlayed(track) | Cached(track) -> Some(#(track, False, None))
+  }
+  case details {
+    None ->
+      json.object([
+        #("isPlaying", json.bool(False)),
+        #("title", json.null()),
+      ])
+    Some(#(track, playing, progress)) ->
+      json.object([
+        #("isPlaying", json.bool(playing)),
+        #("title", json.string(track.title)),
+        #("artist", json.string(track.artist)),
+        #("albumArt", json.nullable(track.album_art, json.string)),
+        #("url", json.string(track.url)),
+        #("progressMs", json.nullable(progress, json.int)),
+        #("durationMs", json.nullable(track.duration_ms, json.int)),
+      ])
+  }
+}
