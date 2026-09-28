@@ -152,3 +152,28 @@ fn track_decoder() -> Decoder(Track) {
     duration,
   ))
 }
+
+/// An item can be null when Spotify has no supported track to report.
+/// An episode or malformed track fails decoding instead of becoming a fake Track.
+pub fn decode_current(body: String) -> Result(Playback, ApiError) {
+  let decoder = {
+    use item <- decode.field("item", decode.optional(track_decoder()))
+    case item {
+      None -> decode.success(NothingPlaying)
+      Some(track) -> {
+        use playing <- decode.field("is_playing", decode.bool)
+        use progress <- decode.optional_field(
+          "progress_ms",
+          None,
+          decode.optional(decode.int),
+        )
+        decode.success(case playing {
+          True -> Playing(track, progress)
+          False -> Paused(track, progress)
+        })
+      }
+    }
+  }
+  json.parse(body, decoder)
+  |> result.map_error(fn(_) { InvalidResponse })
+}
