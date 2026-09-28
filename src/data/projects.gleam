@@ -195,3 +195,9 @@ pub fn project_json(project: Project) -> json.Json {
   |> list.flatten
   |> json.object
 }
+
+pub fn get_projects_json() -> String {
+  projects()
+  |> json.array(project_json)
+  |> json.to_string
+}
