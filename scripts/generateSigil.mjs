@@ -310,68 +310,126 @@ for (let i = 0; i < JOINTS; i++) {
   barbWire([spineX(y0), y0], [spineX(y1), y1], (i % 2 ? 1 : -1) * 0.05, 0.58);
 }
 
+// Shuffle complete sets so every family appears, without adjacent repeats.
+// A family changes the structure itself, not just the size of one template.
+const families = ['sickle', 'crown', 'eye', 'spear', 'crescent'];
+const sequence = [];
+while (sequence.length < JOINTS) {
+  const bag = [...families];
+  for (let j = bag.length - 1; j > 0; j--) {
+    const k = Math.floor(rnd() * (j + 1));
+    [bag[j], bag[k]] = [bag[k], bag[j]];
+  }
+  if (bag[0] === sequence.at(-1)) [bag[0], bag[1]] = [bag[1], bag[0]];
+  sequence.push(...bag.slice(0, JOINTS - sequence.length));
+}
+if (sequence.at(-1) === sequence[0]) {
+  const replacement = sequence.findIndex((family, i) => i > 1 && i < JOINTS - 2
+    && family !== sequence[0] && family !== sequence[JOINTS - 2]
+    && sequence[i - 1] !== sequence[0] && sequence[i + 1] !== sequence[0]);
+  [sequence[replacement], sequence[JOINTS - 1]] = [sequence[JOINTS - 1], sequence[replacement]];
+}
+
 for (let i = 0; i < JOINTS; i++) {
-  const y = STEP * (i + 0.5);
+  const family = sequence[i];
+  const y = STEP * (i + 0.5) + (rnd() - 0.5) * 18;
   const x = spineX(y);
   const width = 48 + rnd() * 17;
-  const height = 0.85 + rnd() * 0.35;
-  const flip = i % 4 === 1 ? -1 : 1;
+  const height = 0.85 + rnd() * 0.3;
+  const flip = rnd() < 0.35 ? -1 : 1;
   const bladeWeight = 1.65 + rnd() * 0.8;
 
-  // An elongated pierced core gives each mark a recognizable tattoo axis.
-  // Broad ink shoulders taper to hairlines, rather than uniform vine strokes.
   for (const side of [-1, 1]) {
-    const skew = (rnd() - 0.5) * 9;
-    const at = (px, py) => [x + side * px, y + flip * (py * height + skew * px / width)];
+    const skew = (rnd() - 0.5) * 12;
+    const balance = family === 'crescent' && side < 0 ? 0.7 : 0.92 + rnd() * 0.08;
+    const at = (px, py) => [x + side * px * balance, y + flip * (py * height + skew * px / width)];
     const blade = (points, weight, taper = 'both') => {
       const curve = points.map(([px, py]) => at(px, py));
       if (weight >= 1) foreground.push({ curve, weight, taper });
       else strokeCubic(curve, weight, { taper });
     };
+    const arms = [];
 
-    // Long central spear with narrow, pointed negative spaces.
-    blade([[0, -83], [3, -34], [22, -13], [0, 30]], 1.6);
-    blade([[0, -41], [18, -12], [10, 18], [0, 42]], 1.2);
-    blade([[0, 3], [20, 36], [5, 57], [0, 91]], 1.8);
-
-    // Opposing sickle blades: sharp outward tips, cinched roots, open pockets.
-    // The second set reverses direction so the silhouette is barbed on both ends.
-    for (const direction of [-1, 1]) {
-      const span = width * (direction < 0 ? 1 : 0.78);
-      const rootY = direction < 0 ? 13 : -9;
-      const tipY = direction * (53 + (i % 3) * 8);
-      const curve = [[0, rootY], [span * 0.52, rootY - direction * 35],
-        [span * 0.5, tipY - direction * 4], [span, tipY]];
-      blade(curve, bladeWeight);
-      blade([[0, rootY], [span * 0.82, rootY + direction * 28],
-        [span * 0.66, tipY + direction * 22], [span, tipY]], 0.8);
-
-      // Recurved barbs grow from the blades, instead of free-floating branches.
-      for (const t of [0.42, 0.68]) {
-        const [bx, by] = cubicPt(curve, t);
-        blade([[bx, by], [bx + 10, by - direction * 6],
-          [bx + 19, by + direction * 14], [bx + 12, by + direction * 27]], 1.1, 'tip');
+    if (family === 'sickle') {
+      blade([[0, -83], [3, -34], [22, -13], [0, 30]], 1.6);
+      blade([[0, -41], [18, -12], [10, 18], [0, 42]], 1.2);
+      blade([[0, 3], [20, 36], [5, 57], [0, 91]], 1.8);
+      for (const direction of [-1, 1]) {
+        const span = width * (direction < 0 ? 1 : 0.78);
+        const rootY = direction < 0 ? 13 : -9;
+        const tipY = direction * (53 + rnd() * 16);
+        arms.push({ direction, curve: [[0, rootY], [span * 0.52, rootY - direction * 35],
+          [span * 0.5, tipY - direction * 4], [span, tipY]] });
       }
-      const branch = at(span * 0.69, tipY * 0.62);
-      tendril(branch[0], branch[1], Math.atan2(flip * direction, side * 0.8),
-        36 + rnd() * 23, -side * flip * direction * 1.25, 0.6, 3);
+    } else if (family === 'crown') {
+      // A broad, upward fan with a long pendant point underneath.
+      blade([[0, -53], [21, -28], [15, 1], [0, 28]], 1.5);
+      blade([[0, 3], [24, 45], [3, 70], [0, 108]], 2);
+      for (let tier = 0; tier < 3; tier++) {
+        const span = width * (1 - tier * 0.25);
+        arms.push({ direction: -1, curve: [[0, 22 + tier * 7], [span * 0.3, -32],
+          [span * 0.95, 3 - tier * 15], [span, -58 - tier * 17]] });
+      }
+    } else if (family === 'eye') {
+      // A wide pierced lozenge; the open middle stays deliberately spacious.
+      blade([[0, -41], [33, -24], [33, 24], [0, 41]], 1.8);
+      blade([[0, -94], [3, -64], [4, -57], [0, -41]], 1.4);
+      blade([[0, 41], [7, 56], [2, 83], [0, 98]], 1.7);
+      for (const direction of [-1, 1]) {
+        arms.push({ direction, curve: [[0, direction * 37], [width * 0.61, direction * 61],
+          [width * 0.5, direction * 9], [width + 2, direction * 7]] });
+      }
+    } else if (family === 'spear') {
+      // A narrow serrated spine with staggered, short lateral teeth.
+      blade([[0, -114], [6, -47], [17, -6], [0, 80]], 1.7);
+      blade([[0, -68], [15, -31], [12, 42], [0, 112]], 1.3);
+      for (let tier = 0; tier < 3; tier++) {
+        const rootY = -40 + tier * 36;
+        const span = width * (0.6 - tier * 0.12);
+        arms.push({ direction: -1, curve: [[0, rootY + 17], [span * 0.6, rootY - 19],
+          [span * 0.7, rootY + 10], [span, rootY - 29]] });
+      }
+    } else {
+      // Opposed off-axis hooks make a tilted, asymmetric crescent knot.
+      blade([[0, -79], [28, -51], [-12, 20], [0, 89]], 1.8);
+      const direction = side;
+      arms.push({ direction, curve: [[0, -direction * 23], [width * 1.05, -direction * 67],
+        [width * 0.28, direction * 47], [width * 0.85, direction * 68]] });
+      arms.push({ direction: -direction, curve: [[0, direction * 17], [width * 0.3, direction * 35],
+        [width * 0.63, -direction * 12], [width * 0.53, -direction * 46]] });
     }
 
-    // Fine spurs and crossing filaments retain the original dense ASCII detail.
-    blade([[5, -19], [width * 0.72, -8], [width * 0.85, -38], [width + 5, -19]], 0.7);
-    blade([[9, 15], [width * 0.85, 43], [width * 0.72, 57], [width + 3, 39]], 0.65);
-    const shoulder = at(23, -7);
+    for (const { curve, direction } of arms) {
+      blade(curve, family === 'spear' ? bladeWeight * 0.8 : bladeWeight);
+      // A second edge encloses a pointed hollow along each main contour.
+      const outline = curve.map(([px, py], j) => j === 1 || j === 2
+        ? [px * 1.13, py + direction * 18] : [px, py]);
+      blade(outline, 0.8);
+      for (const t of [0.42, 0.68]) {
+        const [bx, by] = cubicPt(curve, t);
+        blade([[bx, by], [bx + 9, by - direction * 6],
+          [bx + 16, by + direction * 14], [bx + 10, by + direction * 25]], 1.1, 'tip');
+      }
+      const [bx, by] = cubicPt(curve, 0.72);
+      const branch = at(bx, by);
+      tendril(branch[0], branch[1], Math.atan2(flip * direction, side * 0.8),
+        (family === 'spear' ? 21 : 32) + rnd() * 18,
+        -side * flip * direction * 1.25, 0.6, family === 'spear' ? 2 : 3);
+    }
+
+    // Filigree follows each family's footprint rather than a shared wide frame.
+    const reach = family === 'spear' ? width * 0.5 : width;
+    const shoulder = at(reach * 0.5, -7);
     tendril(shoulder[0], shoulder[1], Math.atan2(-flip, side * 0.9),
-      45 + rnd() * 22, -side * 1.4, 0.62, 2);
+      reach * 0.55 + rnd() * 15, -side * 1.4, 0.62, 2);
   }
 
-  // Uneven fine details keep the paired blackwork from becoming a repeated logo.
-  diamond(x, y, 5 + rnd() * 3);
+  if (family !== 'eye') diamond(x, y, 5 + rnd() * 3);
   if (i % 3 === 0) starburst(x, y + 62, 10 + rnd() * 8);
   if (i % 2 === 0) {
     const side = i % 4 === 0 ? -1 : 1;
     rib(x + side * 8, y + 20, DN - side * 0.4, STEP * 0.68, -side * 0.8, 9, 0.45);
-    sparkle(x + side * (width + 3), y - 16, 3.5);
+    sparkle(x + side * (family === 'spear' ? width * 0.5 : width), y - 16, 3.5);
   }
 }
 
