@@ -31,7 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${bodyFont.variable} ${headingFont.variable} ${monoFont.variable} h-full bg-[#0a0a0a]`}>
       {/* No bg on body — it would paint over the -z-10 ambient backdrop; html carries the color */}
-      <body className="font-body text-zinc-300 selection:bg-zinc-800 selection:text-white min-h-full antialiased flex flex-col items-center pt-14 sm:pt-20 lg:pt-64 pb-24 px-5 sm:px-10">
+      <body className="font-body text-zinc-300 selection:bg-zinc-800 selection:text-white min-h-full antialiased flex flex-col items-center pt-[190px] sm:pt-[220px] lg:pt-64 pb-16 sm:pb-24 px-4 sm:px-10">
         {/* Album-palette wash — tints the page to whatever's playing */}
         <AmbientBackdrop />
         <Entrance>

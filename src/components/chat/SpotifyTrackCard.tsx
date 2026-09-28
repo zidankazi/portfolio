@@ -171,7 +171,7 @@ export function SpotifyTrackCard({ initialData }: { initialData: Track }) {
                 href={data.url}
                 target="_blank"
                 rel="noreferrer"
-                className="group relative flex items-center gap-4 rounded-[14px] p-4 overflow-hidden"
+                className="group relative flex items-center gap-3 sm:gap-4 rounded-[14px] p-3 sm:p-4 overflow-hidden"
                 style={{
                     background: '#0c0c0c',
                     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 8px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.3)',

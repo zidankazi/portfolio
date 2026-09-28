@@ -34,7 +34,7 @@ function Description({ project }: { project: Project }) {
 function ProjectRow({ project }: { project: Project }) {
     return (
         <div data-project-preview={project.title} className="w-full px-4 py-3 transition-colors duration-100 hover:bg-white/[0.06]">
-            <div className="flex items-baseline justify-between gap-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <h2 className="font-heading italic text-white text-[17px] leading-snug">
                     {project.title}
                 </h2>
@@ -46,7 +46,7 @@ function ProjectRow({ project }: { project: Project }) {
                                 href={link.href}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="cursor-pointer text-[13px] text-zinc-400 underline underline-offset-2 hover:text-zinc-200 hover:decoration-zinc-200 transition-colors"
+                                className="inline-flex min-h-9 items-center sm:min-h-0 cursor-pointer text-[13px] text-zinc-400 underline underline-offset-2 hover:text-zinc-200 hover:decoration-zinc-200 transition-colors"
                             >
                                 {link.label}
                             </a>
@@ -78,7 +78,7 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
     const [canHover, setCanHover] = useState(true);
 
     useEffect(() => {
-        const mq = window.matchMedia('(hover: hover)');
+        const mq = window.matchMedia('(min-width: 768px) and (hover: hover) and (pointer: fine)');
         const update = () => setCanHover(mq.matches);
         update();
         mq.addEventListener('change', update);
@@ -89,7 +89,7 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
 
     return (
         <div
-            className="flex gap-3 items-end sm:items-start w-full"
+            className="flex gap-2 sm:gap-3 items-start w-full"
             onMouseEnter={canHover ? () => setHovered(true) : undefined}
             onMouseLeave={canHover ? () => setHovered(false) : undefined}
             onFocusCapture={() => setFocused(true)}
@@ -98,14 +98,14 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
             }}
         >
             {/* Avatar */}
-            <div className="shrink-0 w-8 flex justify-center">
-                <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 mt-1">
+            <div className="shrink-0 w-6 sm:w-8 flex justify-center">
+                <div className="relative w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden shrink-0 mt-1">
                     <Image src="/avatar.jpeg" alt="Zidan Kazi" fill className="object-cover" sizes="32px" />
                 </div>
             </div>
 
             {/* Bubble — overflow-hidden here gives rounded corners, rows fill naturally */}
-            <div data-puppet-anchor="projects" className="bg-[#161618] text-[#d4d4d4] rounded-[20px] rounded-tl-sm text-[14px] leading-[1.6] w-full border border-white/5 shadow-sm overflow-hidden">
+            <div data-puppet-anchor="projects" className="min-w-0 bg-[#161618] text-[#d4d4d4] rounded-[20px] rounded-tl-sm text-[14px] leading-[1.6] w-full border border-white/5 shadow-sm overflow-hidden">
                 {/* Header — a real button so tap + keyboard work, not just hover */}
                 <button
                     type="button"
@@ -118,7 +118,7 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
                         A few things I&apos;ve made.{' '}
                         {/* Both rendered; CSS shows one by hover capability — no hydration flash */}
                         <span className="hint-hover text-zinc-500">Hover your mouse here to see the list.</span>
-                        <span className="hint-tap text-zinc-500">Tap to see the list.</span>
+                        <span className="hint-tap text-zinc-500">{isOpen ? 'Tap to collapse.' : 'Tap to explore.'}</span>
                     </span>
                     {/* Tap affordance — CSS reveals it only where there's no hover */}
                     <motion.span

@@ -107,7 +107,7 @@ h6 {
   to { opacity: 1; }
 }
 
-@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+@media (prefers-reduced-motion: no-preference) {
   [data-puppet-stage='dropping'] main,
   [data-puppet-stage='threading'] main {
     visibility: hidden;
@@ -161,7 +161,7 @@ h6 {
   }
 }
 
-@media (hover: none) {
+@media (hover: none), (pointer: coarse), (max-width: 767px) {
   .hint-hover {
     display: none;
   }
@@ -173,4 +173,37 @@ h6 {
   .tap-chevron {
     display: flex;
   }
+}
+
+.puppet-scene {
+  --hand-size: 240px;
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+.puppet-hand-left { left: calc(50% - 480px); }
+.puppet-hand-right { right: calc(50% - 480px); }
+
+@media (max-width: 1023px) {
+  .puppet-scene {
+    --hand-size: clamp(134px, 40vw, 192px);
+  }
+
+  .puppet-hand-left { left: max(4px, calc(50% - 240px)); }
+  .puppet-hand-right { right: max(4px, calc(50% - 240px)); }
+
+  .puppet-threads text { fill: rgba(212, 212, 216, 0.18); }
+
+  .sigil-pose { width: 102px; left: -27px; }
+  .sigil-scroll { animation: mobile-sigil-drift 160s linear infinite; }
+  [data-sigil-side="right"] .sigil-scroll { animation-direction: reverse; }
+}
+
+@keyframes mobile-sigil-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, -50%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sigil-scroll { animation: none; }
 }

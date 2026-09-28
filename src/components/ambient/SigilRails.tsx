@@ -108,18 +108,19 @@ function Rail({ text, side }: { text: SigilText; side: 'left' | 'right' }) {
   return (
     <div
       aria-hidden
-      className={`sigil-ink pointer-events-none select-none fixed inset-y-0 -z-10 hidden lg:block overflow-hidden w-[234px] ${side === 'left' ? 'left-1' : 'right-1'}`}
+      data-sigil-side={side}
+      className={`sigil-ink pointer-events-none select-none fixed inset-y-0 -z-10 overflow-hidden w-[48px] opacity-60 lg:opacity-100 lg:w-[234px] ${side === 'left' ? '-left-4 lg:left-1' : '-right-4 lg:right-1'}`}
       style={{
         maskImage: 'linear-gradient(to bottom, transparent, black 14%, black 86%, transparent)',
         WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 14%, black 86%, transparent)',
       }}
     >
-      <div ref={poseRef} className="absolute inset-0 px-4" style={{ willChange: 'transform' }}>
-        <div ref={shiftRef} className="relative" style={{ willChange: 'transform' }}>
+      <div ref={poseRef} className="sigil-pose absolute inset-0 lg:px-4" style={{ willChange: 'transform' }}>
+        <div ref={shiftRef} className="sigil-scroll relative" style={{ willChange: 'transform' }}>
           {INK.map(({ key, color }, index) => (
             <div key={key} data-sigil-depth={key} style={{ willChange: 'transform, opacity' }} className={index === 0 ? 'relative' : 'absolute inset-x-0 top-0'}>
-              <pre className={`font-mono text-[6px] leading-none ${color}`}>{text[key]}</pre>
-              <pre className={`font-mono text-[6px] leading-none ${color}`}>{text[key]}</pre>
+              <pre className={`font-mono text-[3px] lg:text-[6px] leading-none ${color}`}>{text[key]}</pre>
+              <pre className={`font-mono text-[3px] lg:text-[6px] leading-none ${color}`}>{text[key]}</pre>
             </div>
           ))}
         </div>

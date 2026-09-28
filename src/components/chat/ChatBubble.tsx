@@ -11,11 +11,11 @@ interface ChatBubbleProps {
 
 export function ChatBubble({ children, showAvatar = true, compact = false }: ChatBubbleProps) {
     return (
-        <div className="flex gap-3 items-end sm:items-start group w-full">
+        <div className="flex gap-2 sm:gap-3 items-start group w-full">
             {/* Avatar */}
-            <div className="shrink-0 w-8 flex justify-center">
+            <div className="shrink-0 w-6 sm:w-8 flex justify-center">
                 {showAvatar ? (
-                    <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 mt-1">
+                    <div className="relative w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden shrink-0 mt-1">
                         <Image
                             src="/avatar.jpeg"
                             alt="Zidan Kazi"
@@ -25,7 +25,7 @@ export function ChatBubble({ children, showAvatar = true, compact = false }: Cha
                         />
                     </div>
                 ) : (
-                    <div className="w-8" />
+                    <div className="w-6 sm:w-8" />
                 )}
             </div>
 

@@ -24,10 +24,10 @@ export function Pill({ href, icon, children, isPrefix }: PillProps) {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 bg-[#1C1C1E] hover:bg-[#2C2C2E] border border-white/5 hover:border-white/10 text-zinc-300 transition-colors text-[14px] px-4 py-2 rounded-full w-fit"
+            className="flex min-w-0 max-w-full min-h-11 sm:min-h-0 items-center gap-2 bg-[#1C1C1E] hover:bg-[#2C2C2E] border border-white/5 hover:border-white/10 text-zinc-300 transition-colors text-[14px] px-4 py-2 rounded-[22px] sm:rounded-full w-fit"
         >
-            {children}
-            {icon && <span className="text-zinc-500">{icon}</span>}
+            <span className="min-w-0 break-words">{children}</span>
+            {icon && <span className="shrink-0 text-zinc-500">{icon}</span>}
         </Link>
     );
 }

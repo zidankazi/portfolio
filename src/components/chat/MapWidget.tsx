@@ -9,12 +9,12 @@ export function MapWidget() {
     return (
         <div className="flex flex-col gap-3">
             {/* Map card — aligned with bubble content */}
-            <div className="ml-11">
+            <div className="ml-8 sm:ml-11">
                 <a
                     href={APPLE_MAPS_URL}
                     target="_blank"
                     rel="noreferrer"
-                    className="relative block h-[260px] w-full overflow-hidden rounded-[20px] cursor-pointer"
+                    className="relative block h-[200px] sm:h-[260px] w-full overflow-hidden rounded-[20px] cursor-pointer"
                 >
                     {/* Map image */}
                     <Image

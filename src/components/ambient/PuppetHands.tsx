@@ -45,7 +45,7 @@ function Hand({ side }: { side: 'left' | 'right' }) {
   return (
     <motion.div
       data-puppet-hand={side}
-      className="absolute -top-3"
+      className={`puppet-hand absolute -top-3 puppet-hand-${side}`}
       initial={{ transform: entrance.frames[0] }}
       animate={{ transform: reduced ? entrance.frames.at(-1) : entrance.frames }}
       transition={reduced ? { duration: 0 } : {
@@ -62,14 +62,13 @@ function Hand({ side }: { side: 'left' | 'right' }) {
       }}
       onAnimationComplete={() => settle(side)}
       style={{
-        width: HAND_WIDTH,
-        height: HAND_HEIGHT,
-        fontSize: HAND_FONT_SIZE,
-        lineHeight: `${HAND_FONT_SIZE}px`,
+        width: 'var(--hand-size)',
+        height: `calc(var(--hand-size) * ${HAND_HEIGHT / HAND_WIDTH})`,
+        fontSize: `calc(var(--hand-size) / ${HAND_WIDTH / HAND_FONT_SIZE})`,
+        lineHeight: `calc(var(--hand-size) / ${HAND_WIDTH / HAND_FONT_SIZE})`,
         transformOrigin: entrance.origin,
         maskImage: 'linear-gradient(to bottom, transparent 12px, black 46px)',
         WebkitMaskImage: 'linear-gradient(to bottom, transparent 12px, black 46px)',
-        [side]: 'calc(50% - 480px)',
       }}
     >
       <pre className="font-mono text-zinc-500/25">{art.detail}</pre>
@@ -104,11 +103,11 @@ export function PuppetHands() {
     const phrasing: { delay: number; duration: number; beats: number[] }[] = [];
     const arrived = new Array<boolean>(8).fill(false);
     const started = performance.now();
-    let growing = desktop.matches && !reduced.matches;
+    let growing = !reduced.matches;
     let revealed = false;
 
     const draw = () => {
-      if (!desktop.matches || document.hidden) return;
+      if (document.hidden) return;
       const rootBox = root.getBoundingClientRect();
       const handBoxes = hands.map(hand => hand.getBoundingClientRect());
       const content = main.getBoundingClientRect();
@@ -131,21 +130,29 @@ export function PuppetHands() {
           }
           const hand = handBoxes[side];
           const tip = HAND_TIPS[3 - index];
-          const sx = hand.left - rootBox.left + (side === 0 ? tip[0] : HAND_WIDTH - tip[0]);
-          const sy = hand.top - rootBox.top + tip[1];
+          const scale = hand.width / HAND_WIDTH;
+          const sx = hand.left - rootBox.left + (side === 0 ? tip[0] : HAND_WIDTH - tip[0]) * scale;
+          const sy = hand.top - rootBox.top + tip[1] * scale;
           const ex = (side === 0 ? box.left + 3 : box.right - 3) - rootBox.left;
           const ey = box.top - rootBox.top + 14;
           // Keep the long strings outside the conversation until their final
           // approach, including narrow bubbles far down the page.
-          const gutter = (side === 0 ? content.left - 30 : content.right + 30) - rootBox.left;
+          const mobile = !desktop.matches;
+          const inset = mobile ? 4 + index * 2.5 : 30;
+          const gutter = (side === 0 ? content.left - inset : content.right + inset) - rootBox.left;
           const span = Math.max(0, ey - sy);
-          const d = `M${sx.toFixed(1)},${sy.toFixed(1)} C${sx.toFixed(1)},${(sy + span * 0.35).toFixed(1)} ${gutter.toFixed(1)},${(ey - Math.min(80, span * 0.2)).toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)}`;
+          const shoulder = content.top - rootBox.top - 18 + index * 3;
+          const d = mobile
+            ? `M${sx.toFixed(1)},${sy.toFixed(1)} C${sx.toFixed(1)},${(sy + 18).toFixed(1)} ${gutter.toFixed(1)},${(shoulder - 20).toFixed(1)} ${gutter.toFixed(1)},${shoulder.toFixed(1)} L${gutter.toFixed(1)},${(ey - 18).toFixed(1)} Q${gutter.toFixed(1)},${ey.toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)}`
+            : `M${sx.toFixed(1)},${sy.toFixed(1)} C${sx.toFixed(1)},${(sy + span * 0.35).toFixed(1)} ${gutter.toFixed(1)},${(ey - Math.min(80, span * 0.2)).toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)}`;
           if (path.getAttribute('d') !== d) {
             path.setAttribute('d', d);
             // Letters run along the thread, preserving the ASCII material.
             // A conservative control-polygon length avoids synchronous SVG
             // path measurement; reuse text while the panel animates.
-            const length = span * 0.35 + Math.hypot(gutter - sx, span * 0.65 - Math.min(80, span * 0.2)) + Math.hypot(ex - gutter, Math.min(80, span * 0.2));
+            const length = mobile
+              ? 56 + Math.hypot(gutter - sx, shoulder - sy - 38) + Math.abs(ey - 18 - shoulder) + Math.abs(ex - gutter)
+              : span * 0.35 + Math.hypot(gutter - sx, span * 0.65 - Math.min(80, span * 0.2)) + Math.hypot(ex - gutter, Math.min(80, span * 0.2));
             const count = Math.ceil(length / 115.2) * 16;
             if (count !== threadCounts[slot]) {
               if (!growing || arrived[slot]) thread.textContent = 'il'.repeat(count);
@@ -166,7 +173,7 @@ export function PuppetHands() {
         draw();
       }
       if (growing) {
-        const skip = !desktop.matches || reduced.matches;
+        const skip = reduced.matches;
         const progressByChain: number[] = [];
         threads.forEach((thread, slot) => {
           const phrase = phrasing[slot];
@@ -251,7 +258,7 @@ export function PuppetHands() {
   }, [ready, reveal]);
 
   return (
-    <div ref={rootRef} aria-hidden="true" className="pointer-events-none select-none absolute inset-x-0 top-0 -z-10 hidden lg:block">
+    <div ref={rootRef} aria-hidden="true" className="pointer-events-none select-none puppet-scene absolute inset-x-0 top-0 -z-10">
       {/* Separate SVGs keep a moving chain from relaying out every text path.
           Their fixed viewport never resizes with the expanding project list. */}
       {Array.from({ length: 8 }, (_, index) => (

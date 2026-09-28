@@ -21,7 +21,7 @@ export default function HomePage() {
         <MapWidget />
 
         {/* Links */}
-        <div className="flex flex-col gap-2 ml-11">
+        <div className="flex flex-col gap-2 ml-8 sm:ml-11">
           <Pill isPrefix href="#">
             Find me online:
           </Pill>
@@ -34,8 +34,8 @@ export default function HomePage() {
         </div>
 
         {/* Email row with avatar */}
-        <div className="flex items-end gap-3">
-          <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0">
+        <div className="flex items-end gap-2 sm:gap-3">
+          <div className="relative w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden shrink-0">
             <Image
               src="/avatar.jpeg"
               alt="Zidan Kazi"

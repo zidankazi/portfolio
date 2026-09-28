@@ -16,7 +16,7 @@ export function Entrance({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const skip = window.matchMedia('(max-width: 1023px), (prefers-reduced-motion: reduce)');
+    const skip = window.matchMedia('(prefers-reduced-motion: reduce)');
     const skipEntrance = () => { setReady(true); setRevealed(true); };
     const check = () => { if (skip.matches) skipEntrance(); };
     const keyboard = (event: KeyboardEvent) => { if (event.key === 'Tab') skipEntrance(); };
