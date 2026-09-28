@@ -7,6 +7,7 @@ import { HAND_LEFT, HAND_RIGHT, HAND_WIDTH, HAND_HEIGHT, HAND_FONT_SIZE, HAND_TI
 
 // A descending phrase, with the leading hand alternating between pairs.
 // Slots 0–3 belong to the left hand; 4–7 belong to the right.
+const WRAP_DURATION = 360;
 const CHAIN_ENTRIES = [0, 225, 385, 725, 65, 175, 465, 640];
 const CHAIN_DURATIONS = [940, 1070, 1150, 1240, 975, 1030, 1190, 1210];
 
@@ -56,30 +57,34 @@ function Hand({ side }: { side: 'left' | 'right' }) {
         {HAND_WRAPS.map((wrap, finger) => {
           const x = side === 'left' ? wrap.x : HAND_WIDTH - wrap.x;
           const { y, rx, ry } = wrap;
+          const tipY = HAND_TIPS[finger][1];
+          // Each half-turn continues where the last ended, descending into a coil.
+          const segments = [-2, 2].flatMap(offset => [
+            { back: true, d: `M${x - rx},${y + offset - 2} C${x - rx},${y + offset - 2 - ry * 1.33} ${x + rx},${y + offset - ry * 1.33} ${x + rx},${y + offset}` },
+            { back: false, d: `M${x + rx},${y + offset} C${x + rx},${y + offset + ry * 1.33} ${x - rx},${y + offset + 2 + ry * 1.33} ${x - rx},${y + offset + 2}` },
+          ]);
+          segments.push({ back: false, d: `M${x - rx},${y + 4} Q${x},${y + 4} ${x},${tipY}` });
           return (
             <g key={finger} data-finger-wrap={finger} opacity="0">
-              {[-2, 2].map((offset, turn) => {
-                const id = `${wrapId}-${finger}-${turn}`;
-                const front = `M${x - rx},${y + offset} C${x - rx},${y + offset + ry * 1.33} ${x + rx},${y + offset + ry * 1.33} ${x + rx},${y + offset}`;
-                const back = `M${x - rx},${y + offset} C${x - rx},${y + offset - ry * 1.33} ${x + rx},${y + offset - ry * 1.33} ${x + rx},${y + offset}`;
+              {segments.map((segment, index) => {
+                const id = `${wrapId}-${finger}-${index}`;
                 return (
-                  <g key={turn}>
+                  <g key={index}>
                     <defs>
-                      <path id={id} d={front} />
-                      <path id={`${id}-back`} d={back} />
+                      <path id={id} d={segment.d} />
+                      <mask id={`${id}-reveal`} maskUnits="userSpaceOnUse" x="0" y="0" width={HAND_WIDTH} height={HAND_HEIGHT}>
+                        <path data-wrap-reveal d={segment.d} pathLength="1" fill="none" stroke="white" strokeWidth="14" strokeDasharray="1 1" strokeDashoffset="1" />
+                      </mask>
                     </defs>
-                    <text className="font-mono" fontSize="6" fill="#781114">
-                      <textPath href={`#${id}-back`}>------------</textPath>
-                    </text>
-                    {/* A narrow shadow makes the cord sit in front of the chrome. */}
-                    <use href={`#${id}`} fill="none" stroke="#0a0a0a" strokeWidth="3" />
-                    <text className="font-mono" fontSize="6" fontWeight="500" fill="#c51b20" stroke="#c51b20" strokeWidth="0.25">
-                      <textPath href={`#${id}`}>------------</textPath>
-                    </text>
+                    <g mask={`url(#${id}-reveal)`}>
+                      {!segment.back && <use href={`#${id}`} fill="none" stroke="#0a0a0a" strokeWidth="3" />}
+                      <text className="font-mono" fontSize="6" fontWeight="500" fill={segment.back ? '#781114' : '#c51b20'} stroke={segment.back ? 'none' : '#c51b20'} strokeWidth="0.25">
+                        <textPath href={`#${id}`}>------------</textPath>
+                      </text>
+                    </g>
                   </g>
                 );
               })}
-              <text x={x} y={y + ry + 3} textAnchor="middle" className="font-mono" fontSize="5" fill="#c51b20">x</text>
             </g>
           );
         })}
@@ -106,6 +111,25 @@ export function PuppetHands() {
     const hands = [...root.querySelectorAll<HTMLElement>('[data-puppet-hand]')];
     // Chains start at the innermost finger, opposite the artwork's wrap order.
     const wraps = hands.flatMap(hand => [...hand.querySelectorAll<SVGGElement>('[data-finger-wrap]')].reverse());
+    const coils = wraps.map(wrap => {
+      const masks = [...wrap.querySelectorAll<SVGPathElement>('[data-wrap-reveal]')];
+      const lengths = masks.map(path => path.getTotalLength());
+      return { masks, lengths, total: lengths.reduce((sum, length) => sum + length, 0) };
+    });
+    const wrapProgress = new Array<number>(8).fill(-1);
+    const wind = (slot: number, progress: number) => {
+      if (wrapProgress[slot] === progress) return;
+      wrapProgress[slot] = progress;
+      wraps[slot].setAttribute('opacity', progress > 0 ? '1' : '0');
+      const coil = coils[slot];
+      let remaining = progress * coil.total;
+      coil.masks.forEach((mask, index) => {
+        const length = coil.lengths[index];
+        const portion = Math.max(0, Math.min(remaining / length, 1));
+        mask.setAttribute('stroke-dashoffset', (1 - portion).toFixed(3));
+        remaining -= length;
+      });
+    };
     let anchors: HTMLElement[] = [];
     let raf = 0;
     let dirty = true;
@@ -133,16 +157,15 @@ export function PuppetHands() {
           const path = paths[slot];
           const thread = threads[slot];
           const node = nodes[slot];
-          const wrap = wraps[slot];
           if (!box) {
             path.removeAttribute('d');
             thread.textContent = '';
             threadCounts[slot] = 0;
             node.setAttribute('r', '0');
-            wrap.setAttribute('opacity', '0');
+            wind(slot, 0);
             continue;
           }
-          if (!growing || arrived[slot]) wrap.setAttribute('opacity', '1');
+          if (!growing || arrived[slot]) wind(slot, 1);
           const hand = handBoxes[side];
           const tip = HAND_TIPS[3 - index];
           const scale = hand.width / HAND_WIDTH;
@@ -192,7 +215,10 @@ export function PuppetHands() {
         const progressByChain: number[] = [];
         threads.forEach((thread, slot) => {
           const phrase = phrasing[slot];
-          const t = skip ? 1 : Math.max(0, Math.min((now - started - phrase.delay) / phrase.duration, 1));
+          const elapsed = now - started - phrase.delay;
+          const winding = skip ? 1 : Math.max(0, Math.min(elapsed / WRAP_DURATION, 1));
+          wind(slot, anchors[slot % 4] ? winding : 0);
+          const t = skip ? 1 : Math.max(0, Math.min((elapsed - WRAP_DURATION) / phrase.duration, 1));
           const progress = t * t * (3 - 2 * t);
           progressByChain[slot] = progress;
           if (arrived[slot]) return;
@@ -203,8 +229,6 @@ export function PuppetHands() {
           if (count !== visibleCounts[slot]) {
             thread.textContent = '='.repeat(count);
             visibleCounts[slot] = count;
-            // The wrap appears with its first few hanging characters, never alone.
-            wraps[slot].setAttribute('opacity', anchors[slot % 4] ? String(Math.min(1, count / 4)) : '0');
           }
           if (t === 1) {
             arrived[slot] = true;
