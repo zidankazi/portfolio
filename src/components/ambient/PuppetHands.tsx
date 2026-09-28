@@ -185,18 +185,16 @@ export function PuppetHands() {
           const scale = hand.width / HAND_WIDTH;
           const sx = hand.left - rootBox.left + (side === 0 ? tip[0] : HAND_WIDTH - tip[0]) * scale;
           const sy = hand.top - rootBox.top + tip[1] * scale;
-          // Two strands sling beneath an earlier message, cross its front,
+          // Two strands bear against an earlier message, cross its front,
           // and emerge on the opposite side before reaching their destination.
           const crossed = slot === 1 || slot === 7 ? anchorBoxes[index - 1] : undefined;
           const endSide = crossed ? 1 - side : side;
           const ex = (endSide === 0 ? box.left + 3 : box.right - 3) - rootBox.left;
           const ey = box.top - rootBox.top + 14;
-          const direction = side === 0 ? 1 : -1;
           const mobile = !desktop.matches;
           const inset = mobile ? 4 + index * 2.5 : 30 + index * 9;
           const gutter = (side === 0 ? content.left - inset : content.right + inset) - rootBox.left;
           const span = Math.max(0, ey - sy);
-          const shoulder = content.top - rootBox.top - 18 + index * 3;
           const curves: number[][] = [];
           if (crossed) {
             const left = crossed.left - rootBox.left;
@@ -206,18 +204,19 @@ export function PuppetHands() {
             const entryX = side === 0 ? left - 7 : right + 7;
             const exitX = side === 0 ? right + 7 : left - 7;
             if (slot === 1) {
+              // A taut band crosses the bottom padding, below the last line.
               curves.push(
-                [sx, sy + 28, left - (mobile ? 18 : 65), top - 22, entryX, top + crossed.height * 0.22],
-                [left + crossed.width * 0.12, bottom + 5, right - crossed.width * 0.24, bottom + 8, exitX, top + crossed.height * 0.58],
-                [exitX + (mobile ? 7 : 24), bottom + 3, ex + 18, ey - 14, ex, ey],
+                [sx + (entryX - sx) * 0.33, sy + (bottom - 15 - sy) * 0.33, entryX - 3, bottom - 40, entryX, bottom - 12],
+                [left + crossed.width * 0.3, bottom - 10, right - crossed.width * 0.3, bottom - 7, exitX, bottom - 5],
+                [exitX + 3, bottom + 1, ex + 4, ey - 9, ex, ey],
               );
             } else {
               // Catch only the outer corner, then slip behind the bubble.
               curves.push(
-                [sx, sy + 44, right + (mobile ? 7 : 44), top - 24, entryX, top + crossed.height * 0.65],
-                [right - crossed.width * 0.12, top + crossed.height * 0.6, right - crossed.width * 0.28, top + 16, right - crossed.width * 0.34, top - 6],
-                [right - crossed.width * 0.34 - 40, top - 14, left - 5, top + 4, exitX, bottom - 11],
-                [exitX - (mobile ? 8 : 24), bottom + 9, ex - 20, ey - 13, ex, ey],
+                [sx + (entryX - sx) * 0.33, sy + (top - sy) * 0.33, entryX + 3, top + 12, entryX, top + crossed.height * 0.65],
+                [right - crossed.width * 0.1, top + crossed.height * 0.44, right - crossed.width * 0.23, top + crossed.height * 0.19, right - crossed.width * 0.34, top - 3],
+                [right - crossed.width * 0.45, top + 1, left + crossed.width * 0.22, bottom - 28, exitX, bottom - 11],
+                [exitX - 3, bottom + 1, ex - 4, ey - 9, ex, ey],
               );
             }
             const clip = frontClips[slot];
@@ -227,15 +226,8 @@ export function PuppetHands() {
             clip.setAttribute('height', crossed.height.toFixed(1));
           } else {
             frontClips[slot].setAttribute('width', '0');
-            if (mobile) {
-              const bow = 10 + index * 7;
-              curves.push(
-                [sx, sy + 18, gutter, shoulder - 20, gutter, shoulder],
-                [gutter + direction * bow, shoulder + span * 0.42, gutter + direction * bow, ey - 32, ex, ey],
-              );
-            } else {
-              curves.push([sx, sy + span * 0.35, gutter, ey - Math.min(80, span * 0.2), ex, ey]);
-            }
+            // Each finger pulls along its own line instead of joining a rail.
+            curves.push([sx + (gutter - sx) * 0.33, sy + span * 0.33, gutter, ey - 24, ex, ey]);
           }
           // The control polygon safely overestimates the cord length without
           // forcing SVG layout on every frame of an expanding message.
@@ -369,10 +361,10 @@ export function PuppetHands() {
             <defs>
               <path id={`${id}-thread-${index}`} />
             </defs>
-            <text className="font-mono" fontSize="6" fontWeight="500" fill="#b7191d" stroke="#b7191d" strokeWidth="0.2">
+            <text className="font-mono" fontSize="6" fontWeight="500" fill="#ce272d" stroke="#ce272d" strokeWidth="0.3">
               <textPath href={`#${id}-thread-${index}`} />
             </text>
-            <circle r="0" fill="#b7191d" />
+            <circle r="0" fill="#ce272d" />
           </svg>
         ))}
         <div className="puppet-hand-stage absolute inset-x-0 top-0">
@@ -388,7 +380,7 @@ export function PuppetHands() {
                 <rect width="0" height="0" rx="20" />
               </clipPath>
             </defs>
-            <text className="font-mono" fontSize="6" fontWeight="500" fill="#b7191d" stroke="#0a0a0a" strokeWidth="1.2" paintOrder="stroke">
+            <text className="font-mono" fontSize="6" fontWeight="500" fill="#ce272d" stroke="#0a0a0a" strokeWidth="1.2" paintOrder="stroke">
               <textPath href={`#${id}-thread-${slot}`} />
             </text>
           </g>
