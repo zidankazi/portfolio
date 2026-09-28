@@ -17,9 +17,21 @@ import { SIGIL_LEFT, SIGIL_RIGHT } from './sigilStrip';
 const DRIFT_PX_PER_SEC = 14;
 const PARALLAX = 0.45;
 
-function Rail({ text, side }: { text: string; side: 'left' | 'right' }) {
+type SigilText = typeof SIGIL_LEFT;
+
+function InkLayers({ text }: { text: SigilText }) {
+  return (
+    <>
+      <pre className="font-mono text-[6px] leading-none text-zinc-400/[0.18]">{text.detail}</pre>
+      <pre className="absolute inset-0 font-mono text-[6px] leading-none text-zinc-300/[0.36]">{text.body}</pre>
+      <pre className="absolute inset-0 font-mono text-[6px] leading-none text-zinc-200/[0.58]">{text.highlights}</pre>
+    </>
+  );
+}
+
+function Rail({ text, side }: { text: SigilText; side: 'left' | 'right' }) {
   const shiftRef = useRef<HTMLDivElement>(null);
-  const tileRef = useRef<HTMLPreElement>(null);
+  const tileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const shift = shiftRef.current;
@@ -68,10 +80,8 @@ function Rail({ text, side }: { text: string; side: 'left' | 'right' }) {
       }}
     >
       <div ref={shiftRef} style={{ willChange: 'transform' }}>
-        <pre ref={tileRef} className="font-mono text-[6px] leading-none text-zinc-300/[0.32]">
-          {text}
-        </pre>
-        <pre className="font-mono text-[6px] leading-none text-zinc-300/[0.32]">{text}</pre>
+        <div ref={tileRef} className="relative"><InkLayers text={text} /></div>
+        <div className="relative"><InkLayers text={text} /></div>
       </div>
     </div>
   );

@@ -1,9 +1,9 @@
 // Generates the letter-built cyber-sigilism strip for the side rails.
 // A barbed spine of pierced cores and opposing sickle blades, with fine
 // recursive thorns woven through the heavier, needle-ended ink contours.
-// Hollow pockets keep the paired blackwork legible inside the dense detail. Strokes rasterize to a pixel canvas, then each
-// character cell's ink coverage picks a tiny lowercase letter — the ASCII
-// rendering is unchanged, only the geometry it draws.
+// Fine linework, raised contours, and lit edges are rasterized separately.
+// Each character cell belongs to one depth layer, keeping the tiny lowercase
+// letter texture crisp without overlapping glyphs.
 // Output: src/components/ambient/sigilStrip.ts
 //
 //   node scripts/generateSigil.mjs
@@ -19,7 +19,12 @@ const CELL_H = 5;
 const PW = COLS * CELL_W;
 const PH = ROWS * CELL_H;
 
-const grid = new Uint8Array(PW * PH);
+const detail = new Uint8Array(PW * PH);
+const body = new Uint8Array(PW * PH);
+const highlights = new Uint8Array(PW * PH);
+let grid = detail;
+let ink = 1;
+const foreground = [];
 
 // Deterministic PRNG so regenerating gives stable diffs.
 let seed = 20260814;
@@ -32,7 +37,7 @@ function dot(x, y) {
   x = Math.round(x);
   // wrap vertically so shapes crossing the tile edge continue on the far side
   y = ((Math.round(y) % PH) + PH) % PH;
-  if (x >= 0 && x < PW) grid[y * PW + x] = 1;
+  if (x >= 0 && x < PW) grid[y * PW + x] = ink;
 }
 
 function stamp(cx, cy, r) {
@@ -318,8 +323,11 @@ for (let i = 0; i < JOINTS; i++) {
   for (const side of [-1, 1]) {
     const skew = (rnd() - 0.5) * 9;
     const at = (px, py) => [x + side * px, y + flip * (py * height + skew * px / width)];
-    const blade = (points, weight, taper = 'both') =>
-      strokeCubic(points.map(([px, py]) => at(px, py)), weight, { taper });
+    const blade = (points, weight, taper = 'both') => {
+      const curve = points.map(([px, py]) => at(px, py));
+      if (weight >= 1) foreground.push({ curve, weight, taper });
+      else strokeCubic(curve, weight, { taper });
+    };
 
     // Long central spear with narrow, pointed negative spaces.
     blade([[0, -83], [3, -34], [22, -13], [0, 30]], 1.6);
@@ -367,18 +375,41 @@ for (let i = 0; i < JOINTS; i++) {
   }
 }
 
-// ---- letter encode --------------------------------------------------------
-// Each cell's ink coverage picks a letter band: thin glyphs trace the curve
-// edges, heavy ones fill the cores. The in-band pick is a position hash so
-// output is stable across runs.
+// Draw raised blades after their filigree. Clear a small channel underneath
+// each one so crossings read as over/under, not a single dense knot of letters.
+for (const { curve, weight, taper } of foreground) {
+  ink = 0;
+  for (const under of [detail, body, highlights]) {
+    grid = under;
+    strokeCubic(curve, weight + 1.25, { taper });
+  }
+  ink = 1;
+  grid = body;
+  strokeCubic(curve, weight, { taper });
 
+  // A fine edge facing the upper left catches light. Leave the opposite edge
+  // and needle tips in the middle tone; no blur or glow over the ASCII texture.
+  grid = highlights;
+  const samples = 160;
+  for (let i = 12; i < samples - 14; i++) {
+    const t = i / samples;
+    const [x, y] = cubicPt(curve, t);
+    const angle = cubicTan(curve, t);
+    let nx = -Math.sin(angle);
+    let ny = Math.cos(angle);
+    if (nx + ny > 0) { nx *= -1; ny *= -1; }
+    const facing = -(nx + ny) / Math.SQRT2;
+    const radius = weight * (taper === 'both' ? Math.sin(Math.PI * t) ** 0.9 : (1 - t) ** 1.3);
+    if (facing > 0.45 && radius > 0.7) {
+      stamp(x + nx * radius * 0.7, y + ny * radius * 0.7, 0.45);
+    }
+  }
+}
+
+// ---- letter encode --------------------------------------------------------
 const BANDS = [
-  [0.06, 'ij'],
-  [0.16, 'lt'],
-  [0.28, 'vz'],
-  [0.42, 'kx'],
-  [0.56, 'ad'],
-  [0.72, 'mw'],
+  [0.06, 'ij'], [0.16, 'lt'], [0.28, 'vz'],
+  [0.42, 'kx'], [0.56, 'ad'], [0.72, 'mw'],
 ];
 
 function glyphFor(cov, x, y) {
@@ -388,31 +419,40 @@ function glyphFor(cov, x, y) {
   return band[(x * 7 + y * 13) % band.length];
 }
 
-function encode(g) {
-  const lines = [];
+function encode(mirror = false) {
+  const layers = [[], [], []];
   for (let cy = 0; cy < ROWS; cy++) {
-    let line = '';
+    const lines = ['', '', ''];
     for (let cx = 0; cx < COLS; cx++) {
-      let ink = 0;
-      for (let dy = 0; dy < CELL_H; dy++)
-        for (let dx = 0; dx < CELL_W; dx++)
-          ink += g[(cy * CELL_H + dy) * PW + (cx * CELL_W + dx)];
-      line += glyphFor(ink / (CELL_W * CELL_H), cx, cy);
+      const counts = [0, 0, 0];
+      let total = 0;
+      for (let dy = 0; dy < CELL_H; dy++) {
+        for (let dx = 0; dx < CELL_W; dx++) {
+          const x = cx * CELL_W + dx;
+          const pos = (cy * CELL_H + dy) * PW + (mirror ? PW - 1 - x : x);
+          counts[0] += detail[pos];
+          counts[1] += body[pos];
+          counts[2] += highlights[pos];
+          total += detail[pos] || body[pos] || highlights[pos];
+        }
+      }
+      // One visible glyph per cell; brighter bands follow geometry, not noise.
+      const layer = counts[2] >= 2 ? 2 : counts[1] >= 2 ? 1 : 0;
+      const glyph = glyphFor(total / (CELL_W * CELL_H), cx, cy);
+      for (let i = 0; i < layers.length; i++) lines[i] += i === layer ? glyph : ' ';
     }
-    lines.push(line);
+    lines.forEach((line, i) => layers[i].push(line));
   }
-  return lines.join('\n');
+  return layers.map(lines => lines.join('\n'));
 }
 
-const mirrored = new Uint8Array(PW * PH);
-for (let y = 0; y < PH; y++)
-  for (let x = 0; x < PW; x++) mirrored[y * PW + (PW - 1 - x)] = grid[y * PW + x];
-
+const names = ['detail', 'body', 'highlights'];
+const serialize = (layers) => `{\n${layers.map((text, i) => `  ${names[i]}: \`${text}\``).join(',\n')}\n}`;
 const out = `// Generated by scripts/generateSigil.mjs — run it again rather than editing.
-export const SIGIL_LEFT = \`${encode(grid)}\`;
+export const SIGIL_LEFT = ${serialize(encode())};
 
-export const SIGIL_RIGHT = \`${encode(mirrored)}\`;
+export const SIGIL_RIGHT = ${serialize(encode(true))};
 `;
 
 writeFileSync(new URL('../src/components/ambient/sigilStrip.ts', import.meta.url), out);
-console.log(`wrote sigilStrip.ts (${COLS} chars x ${ROWS} lines per rail)`);
+console.log(`wrote sigilStrip.ts (${COLS} chars x ${ROWS} lines, three depth layers per rail)`);
