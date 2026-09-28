@@ -16,7 +16,7 @@ const sites = [
     domain: 'omu.food',
     href: 'https://omu.food/',
     image: '/studio/omu-page.webp',
-    decoration: '/studio/pushpin.webp',
+    decoration: '/studio/pushpin-photo.png',
     position: 'left',
   },
   {
@@ -24,7 +24,7 @@ const sites = [
     domain: 'tryrelic.io',
     href: 'https://tryrelic.io/',
     image: '/studio/relic.webp',
-    decoration: '/studio/binderclip.svg',
+    decoration: '/studio/binderclip-photo.png',
     position: 'center',
   },
   {
@@ -32,7 +32,7 @@ const sites = [
     domain: 'noble-square-275817.framer.app',
     href: 'https://noble-square-275817.framer.app/',
     image: '/studio/mille-works-page.webp',
-    decoration: '/studio/safety-pin.svg',
+    decoration: '/studio/safety-pin-photo.png',
     position: 'right',
   },
 ] as const;
@@ -81,7 +81,7 @@ export default function StudioPage() {
                 aria-hidden="true"
                 width={90}
                 height={110}
-                sizes="90px"
+                sizes="130px"
                 priority
                 className={styles.decoration}
               />
