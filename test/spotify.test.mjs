@@ -60,3 +60,19 @@ test("decodes paused playback with missing or null optional fields", () => {
     assert.ok(result[0].progress_ms instanceof None);
   }
 });
+
+test("rejects malformed JSON, invalid fields, and unsupported episode items", () => {
+  const bodies = [
+    "{",
+    "{}",
+    JSON.stringify({ item: track, is_playing: "yes" }),
+    JSON.stringify({ item: { ...track, name: 42 }, is_playing: true }),
+    JSON.stringify({ item: { ...track, duration_ms: "180000" }, is_playing: true }),
+    JSON.stringify({ item: { name: "Podcast", type: "episode" }, is_playing: true }),
+  ];
+  for (const body of bodies) {
+    const result = spotify.decode_current(body);
+    assert.equal(result.isOk(), false);
+    assert.ok(result[0] instanceof spotify.InvalidResponse);
+  }
+});
