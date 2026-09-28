@@ -264,3 +264,20 @@ fn get_access_token(client: Client) -> Promise(Result(String, ApiError)) {
       }
   }
 }
+
+/// Transport is shared; the caller supplies the decoder for each endpoint.
+/// HTTP 204 means no content, so there is no JSON body to parse.
+fn fetch_playback(
+  url: String,
+  token: String,
+  decode_body: fn(String) -> Result(Playback, ApiError),
+) -> Promise(Result(Playback, ApiError)) {
+  let headers = array.from_list([#("Authorization", "Bearer " <> token)])
+  use response <- promise.map(request("GET", url, headers, ""))
+  case response {
+    Error(_) -> Error(NetworkError)
+    Ok(#(200, body)) -> decode_body(body)
+    Ok(#(204, _)) -> Ok(NothingPlaying)
+    Ok(#(status, _)) -> Error(HttpError(status))
+  }
+}
