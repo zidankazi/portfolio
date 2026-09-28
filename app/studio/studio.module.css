@@ -3,55 +3,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 32px 24px 72px;
-  background: #101012;
-  color: #ededee;
+  padding: 64px 24px;
+  background: #0a0a0a;
+  color: #d4d4d4;
   isolation: isolate;
-}
-
-.navigation {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  height: 56px;
-  padding: 4px;
-  border-radius: 32px;
-  background: #19191b;
-  box-shadow: inset 0 1px 0 #ffffff05;
-}
-
-.navLink {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  color: #77777d;
-  transition: color 160ms ease, transform 160ms ease;
-}
-
-.current {
-  width: 48px;
-  height: 48px;
-  color: #efeff0;
-  background: linear-gradient(145deg, #2d2d30, #202022);
-  box-shadow: 0 2px 5px #0006, inset 0 1px 1px #ffffff0d;
-}
-
-.tooltip {
-  position: absolute;
-  top: calc(100% + 13px);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 8px;
-  border-radius: 5px;
-  background: #29292c;
-  color: #c3c3ca;
-  font-size: 11px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 150ms ease;
 }
 
 .work {
@@ -61,7 +16,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 35px 0 50px;
 }
 
 .stack {
@@ -154,7 +108,9 @@
 
 .name {
   color: #efefef;
-  font-size: 19px;
+  font-family: var(--font-heading), Georgia, serif;
+  font-size: 24px;
+  font-style: italic;
   font-weight: 500;
   letter-spacing: -0.6px;
   line-height: 1.15;
@@ -210,30 +166,6 @@
   filter: drop-shadow(0 5px 5px #0007);
 }
 
-.footer {
-  width: min(100%, 450px);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  color: #96969e;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.footer a {
-  padding: 8px 0;
-  transition: color 150ms ease;
-}
-
-.footer time {
-  display: inline-block;
-  min-width: 8ch;
-  font-family: var(--font-mono), monospace;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-
 .project:focus-visible {
   z-index: 5;
   outline: 2px solid #e4e4e7;
@@ -242,14 +174,7 @@
   transition: none;
 }
 
-.navLink:focus-visible,
-.footer a:focus-visible {
-  outline: 2px solid #e4e4e7;
-  outline-offset: 4px;
-}
-
-.project:focus-visible .visit,
-.navLink:focus-visible .tooltip {
+.project:focus-visible .visit {
   opacity: 1;
   transition: none;
 }
@@ -263,10 +188,6 @@
   --zoom: 0.98;
 }
 
-.navLink:active {
-  transform: scale(0.96);
-}
-
 @media (hover: hover) and (pointer: fine) {
   .project:hover {
     --lift: -18px;
@@ -274,8 +195,7 @@
     z-index: 5;
   }
 
-  .project:hover .visit,
-  .navLink:hover .tooltip {
+  .project:hover .visit {
     opacity: 1;
   }
 
@@ -291,15 +211,11 @@
     transform: translateY(-10px) rotate(-17deg);
   }
 
-  .navLink:hover,
-  .footer a:hover {
-    color: #fff;
-  }
 }
 
 @media (max-width: 540px) {
   .studio {
-    padding: 24px 20px 32px;
+    padding: 56px 20px 40px;
   }
 
   .work {
@@ -332,7 +248,7 @@
   }
 
   .name {
-    font-size: 17px;
+    font-size: 21px;
   }
 
   .label {
@@ -340,19 +256,12 @@
     bottom: 12px;
   }
 
-  .footer {
-    max-width: 330px;
-    font-size: 12px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .project,
-  .navLink,
-  .tooltip,
   .visit,
-  .decoration,
-  .footer a {
+  .decoration {
     transition: none;
   }
 
@@ -360,10 +269,6 @@
   .project:active {
     --lift: 0px;
     --zoom: 1;
-  }
-
-  .navLink:active {
-    transform: none;
   }
 
   .left:hover .decoration {

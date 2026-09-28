@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import Link from 'next/link';
-import { ArrowUpRight, BriefcaseBusiness, House } from 'lucide-react';
-import { StudioClock } from '@/components/studio/StudioClock';
+import { ArrowUpRight } from 'lucide-react';
+import { AmbientBackdrop } from '@/components/ambient/AmbientBackdrop';
 import styles from './studio.module.css';
 
 export const metadata: Metadata = {
@@ -40,18 +39,8 @@ const sites = [
 export default function StudioPage() {
   return (
     <main className={styles.studio}>
+      <AmbientBackdrop />
       <h1 className="sr-only">Studio, websites by Zidan Kazi</h1>
-
-      <nav className={styles.navigation} aria-label="Pages">
-        <Link href="/" className={styles.navLink} aria-label="Back to the conversation">
-          <House size={17} strokeWidth={2} aria-hidden="true" />
-          <span className={styles.tooltip}>home</span>
-        </Link>
-        <Link href="/studio" className={`${styles.navLink} ${styles.current}`} aria-label="Studio" aria-current="page">
-          <BriefcaseBusiness size={18} strokeWidth={2} aria-hidden="true" />
-          <span className={styles.tooltip}>studio</span>
-        </Link>
-      </nav>
 
       <section className={styles.work} aria-label="Selected websites">
         <div className={styles.stack}>
@@ -96,10 +85,6 @@ export default function StudioPage() {
         </div>
       </section>
 
-      <footer className={styles.footer}>
-        <a href="mailto:zidankazi01@outlook.com">let&apos;s make something.</a>
-        <StudioClock />
-      </footer>
     </main>
   );
 }
