@@ -4,16 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import { setAmbientPalette, type RGB } from '@/components/ambient/ambient';
-
-interface TrackData {
-    isPlaying: boolean;
-    title: string;
-    artist?: string;
-    albumArt?: string | null;
-    url?: string;
-    progressMs?: number | null;
-    durationMs?: number | null;
-}
+import type { Track } from '@/lib/spotify';
 
 function SpotifyIcon({ className }: { className?: string }) {
     return (
@@ -52,8 +43,8 @@ function brighten([r, g, b]: RGB, target = 225): RGB {
     ];
 }
 
-export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
-    const [data, setData] = useState<TrackData>(initialData);
+export function SpotifyTrackCard({ initialData }: { initialData: Track }) {
+    const [data, setData] = useState<Track>(initialData);
     const [colors, setColors] = useState<{ primary: RGB; secondary: RGB } | null>(null);
     // Both start at 0 so server and client render identical progress (SSR-safe);
     // the mount-time fetch below swaps in real clocks.
@@ -64,7 +55,8 @@ export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
 
     const fetchTrack = useCallback(async () => {
         try {
-            const res = await fetch('/api/spotify/now-playing');
+            const res = await fetch('/api/spotify/now-playing', { cache: 'no-store' });
+            if (!res.ok) return;
             const json = await res.json();
             if (json.title) {
                 setData(json);
@@ -164,6 +156,9 @@ export function SpotifyTrackCard({ initialData }: { initialData: TrackData }) {
         elapsed != null && data.durationMs
             ? Math.round((elapsed / data.durationMs) * 10000) / 100
             : 0;
+
+    // Keep the polling effects mounted even when the first request has no track.
+    if (!data.title) return <p>I listen to a lot of music.</p>;
 
     return (
         <div>

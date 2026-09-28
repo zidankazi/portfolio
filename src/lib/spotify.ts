@@ -41,6 +41,11 @@ async function getAccessToken(): Promise<string | null> {
         }),
         cache: 'no-store',
     });
+    if (!res.ok) {
+        // Do not log the response body: authentication responses may contain secrets.
+        console.error(`[spotify] Token refresh failed (HTTP ${res.status}). Check the Spotify connection.`);
+        return null;
+    }
     const data = await res.json();
     if (!data.access_token) return null;
 
