@@ -3,7 +3,7 @@
 import { useLayoutEffect, useId, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useEntrance } from '@/components/motion/Entrance';
-import { HAND_LEFT, HAND_RIGHT, HAND_WIDTH, HAND_HEIGHT, HAND_FONT_SIZE, HAND_TIPS } from './puppetHandArt';
+import { HAND_LEFT, HAND_RIGHT, HAND_WIDTH, HAND_HEIGHT, HAND_FONT_SIZE, HAND_TIPS, HAND_WRAPS } from './puppetHandArt';
 
 // A descending phrase, with the leading hand alternating between pairs.
 // Slots 0–3 belong to the left hand; 4–7 belong to the right.
@@ -38,6 +38,7 @@ const HAND_ENTRANCES = {
 };
 
 function Hand({ side }: { side: 'left' | 'right' }) {
+  const wrapId = useId().replace(/:/g, '');
   const art = side === 'left' ? HAND_LEFT : HAND_RIGHT;
   const entrance = HAND_ENTRANCES[side];
   const { settle } = useEntrance();
@@ -74,6 +75,38 @@ function Hand({ side }: { side: 'left' | 'right' }) {
       <pre className="font-mono text-zinc-500/25">{art.detail}</pre>
       <pre className="absolute inset-0 font-mono text-zinc-300/65">{art.body}</pre>
       <pre className="absolute inset-0 font-mono text-zinc-100">{art.highlights}</pre>
+      <svg className="absolute inset-0 h-full w-full overflow-visible" viewBox={`0 0 ${HAND_WIDTH} ${HAND_HEIGHT}`} focusable="false">
+        {HAND_WRAPS.map((wrap, finger) => {
+          const x = side === 'left' ? wrap.x : HAND_WIDTH - wrap.x;
+          const { y, rx, ry } = wrap;
+          return (
+            <g key={finger} data-finger-wrap={finger}>
+              {[-2, 2].map((offset, turn) => {
+                const id = `${wrapId}-${finger}-${turn}`;
+                const front = `M${x - rx},${y + offset} C${x - rx},${y + offset + ry * 1.33} ${x + rx},${y + offset + ry * 1.33} ${x + rx},${y + offset}`;
+                const back = `M${x - rx},${y + offset} C${x - rx},${y + offset - ry * 1.33} ${x + rx},${y + offset - ry * 1.33} ${x + rx},${y + offset}`;
+                return (
+                  <g key={turn}>
+                    <defs>
+                      <path id={id} d={front} />
+                      <path id={`${id}-back`} d={back} />
+                    </defs>
+                    <text className="font-mono" fontSize="4.5" fill="rgba(161,161,170,0.38)">
+                      <textPath href={`#${id}-back`}>ilililililil</textPath>
+                    </text>
+                    {/* A narrow shadow makes the cord sit in front of the chrome. */}
+                    <use href={`#${id}`} fill="none" stroke="#0a0a0a" strokeWidth="3" />
+                    <text className="font-mono" fontSize="4.5" fill="rgba(228,228,231,0.85)">
+                      <textPath href={`#${id}`}>ilililililil</textPath>
+                    </text>
+                  </g>
+                );
+              })}
+              <text x={x} y={y + ry + 3} textAnchor="middle" className="font-mono" fontSize="5" fill="rgba(228,228,231,0.85)">x</text>
+            </g>
+          );
+        })}
+      </svg>
     </motion.div>
   );
 }
@@ -90,9 +123,9 @@ export function PuppetHands() {
 
     const desktop = window.matchMedia('(min-width: 1024px)');
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const paths = [...root.querySelectorAll('path')];
-    const threads = [...root.querySelectorAll('textPath')];
-    const nodes = [...root.querySelectorAll('circle')];
+    const paths = [...root.querySelectorAll<SVGPathElement>('.puppet-threads path')];
+    const threads = [...root.querySelectorAll<SVGTextPathElement>('.puppet-threads textPath')];
+    const nodes = [...root.querySelectorAll<SVGCircleElement>('.puppet-threads circle')];
     const hands = [...root.querySelectorAll<HTMLElement>('[data-puppet-hand]')];
     let anchors: HTMLElement[] = [];
     let raf = 0;
