@@ -149,6 +149,10 @@ export function PuppetHands() {
       const content = main.getBoundingClientRect();
       // Batch geometry reads before changing any SVG attributes.
       const anchorBoxes = anchors.map(anchor => anchor.getBoundingClientRect());
+      // Keep the complete strings inside their SVG canvases when the browser
+      // captures a page transition, including when the project list expands.
+      const sceneHeight = Math.ceil(Math.max(content.bottom - rootBox.top, window.innerHeight));
+      if (sceneHeight !== rootBox.height) root.style.height = `${sceneHeight}px`;
 
       for (let side = 0; side < 2; side++) {
         for (let index = 0; index < 4; index++) {
@@ -301,9 +305,9 @@ export function PuppetHands() {
   return (
     <div ref={rootRef} aria-hidden="true" className="pointer-events-none select-none puppet-scene absolute inset-x-0 top-0 -z-10">
       {/* Separate SVGs keep a moving chain from relaying out every text path.
-          Their fixed viewport never resizes with the expanding project list. */}
+          Full-height canvases also keep page-transition snapshots bounded. */}
       {Array.from({ length: 8 }, (_, index) => (
-        <svg key={index} height="1" className="puppet-threads absolute inset-x-0 top-0 w-full overflow-visible" focusable="false">
+        <svg key={index} height="100%" className="puppet-threads absolute inset-x-0 top-0 w-full overflow-hidden" focusable="false">
           <defs>
             <path id={`${id}-thread-${index}`} />
           </defs>
