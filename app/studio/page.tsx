@@ -14,7 +14,6 @@ export const metadata: Metadata = {
 const sites = [
   {
     name: 'OMU',
-    domain: 'omu.food',
     href: 'https://omu.food/',
     image: '/studio/omu-page.webp',
     decoration: '/studio/pushpin-photo.png',
@@ -23,7 +22,6 @@ const sites = [
   },
   {
     name: 'Relic',
-    domain: 'tryrelic.io',
     href: 'https://tryrelic.io/',
     image: '/studio/relic.webp',
     decoration: '/studio/binderclip-photo.png',
@@ -32,7 +30,6 @@ const sites = [
   },
   {
     name: 'Mille Works',
-    domain: 'noble-square-275817.framer.app',
     href: 'https://noble-square-275817.framer.app/',
     image: '/studio/mille-works-page.webp',
     decoration: '/studio/safety-pin-photo.png',
@@ -77,7 +74,6 @@ export default function StudioPage() {
                 <div className={styles.shade} />
                 <div className={styles.label}>
                   <span className={styles.name}>{site.name}</span>
-                  <span className={styles.domain}>{site.domain}</span>
                 </div>
                 <ArrowUpRight className={styles.visit} size={17} aria-hidden="true" />
               </div>

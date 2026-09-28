@@ -141,16 +141,6 @@
   line-height: 1.15;
 }
 
-.domain {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #b6b6b9;
-  font-family: var(--font-mono), monospace;
-  font-size: 11px;
-  line-height: 1.5;
-}
-
 .visit {
   position: absolute;
   top: 12px;
