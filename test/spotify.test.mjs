@@ -45,3 +45,18 @@ test("decodes a playing track, artist names, artwork, and zero progress", () => 
   assert.equal(playback.progress_ms[0], 0);
   assert.equal(spotify.track_title(playback)[0], track.name);
 });
+
+test("decodes paused playback with missing or null optional fields", () => {
+  for (const missing of [undefined, null]) {
+    const result = spotify.decode_current(JSON.stringify({
+      item: { ...track, album: { images: [] }, duration_ms: missing },
+      is_playing: false,
+      progress_ms: missing,
+    }));
+    assert.ok(result.isOk());
+    assert.ok(result[0] instanceof spotify.Paused);
+    assert.ok(result[0].track.album_art instanceof None);
+    assert.ok(result[0].track.duration_ms instanceof None);
+    assert.ok(result[0].progress_ms instanceof None);
+  }
+});
