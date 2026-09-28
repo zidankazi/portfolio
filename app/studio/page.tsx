@@ -24,7 +24,7 @@ const sites = [
     domain: 'tryrelic.io',
     href: 'https://tryrelic.io/',
     image: '/studio/relic.webp',
-    decoration: '/studio/binderclip.webp',
+    decoration: '/studio/binderclip.svg',
     position: 'center',
   },
   {
