@@ -11,12 +11,14 @@ export type Project = {
   links: ProjectLink[];
   preview?: string;
   previewMotion?: { src: string; type: 'gif' | 'video' };
+  previewSize?: { width: number; height: number };
 };
 
 export const projects: Project[] = [
   {
     title: 'relic',
-    preview: '/projects/relic.webp',
+    preview: '/projects/relic-video-poster.webp',
+    previewMotion: { src: '/projects/relic.mp4', type: 'video' },
     description: 'the source of truth for ai-native companies. memory that builds itself from your team\'s stack and answers agent queries over mcp, with a source behind every fact.',
     links: [
       { label: 'site', href: 'https://tryrelic.io' },
@@ -65,7 +67,9 @@ export const projects: Project[] = [
   },
   {
     title: 'sage',
-    preview: '/projects/sage.webp',
+    preview: '/projects/sage-video-poster.webp',
+    previewMotion: { src: '/projects/sage.mp4', type: 'video' },
+    previewSize: { width: 220, height: 360 },
     description: 'iMessage supercharged with xAI\'s Grok, bringing live internet access to your group chats.',
     links: [
       { label: 'github', href: 'https://github.com/zidankazi/sage' },

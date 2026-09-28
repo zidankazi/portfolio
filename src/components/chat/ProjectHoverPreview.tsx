@@ -6,8 +6,7 @@ import Image from 'next/image';
 import { motion, useSpring } from 'framer-motion';
 import type { Project } from '@/data/projects';
 
-const WIDTH = 280;
-const HEIGHT = 210;
+const DEFAULT_SIZE = { width: 280, height: 210 };
 const GAP = 20;
 const INSET = 16;
 const HOVER_DELAY = 240;
@@ -17,7 +16,7 @@ const PREVIEW_QUERY = '(min-width: 768px) and (hover: hover) and (pointer: fine)
 // visible while it loads, or if playback fails.
 function ProjectMotionPreview({ media }: { media: NonNullable<Project['previewMotion']> }) {
     const [ready, setReady] = useState(false);
-    const className = 'absolute inset-0 h-full w-full object-contain transition-opacity duration-150';
+    const className = 'absolute inset-0 h-full w-full bg-[#101012] object-contain transition-opacity duration-150';
 
     if (media.type === 'video') {
         return (
@@ -55,6 +54,7 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
     const [enabled, setEnabled] = useState(false);
     const [warmed, setWarmed] = useState(false);
     const [active, setActive] = useState<string | null>(null);
+    const [size, setSize] = useState(DEFAULT_SIZE);
     const [loaded, setLoaded] = useState<Record<string, boolean>>({});
     const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
     const hovered = useRef<string | null>(null);
@@ -76,24 +76,28 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
     const updatePreview = useCallback((target: Element | null, clientX: number, clientY: number) => {
         const row = target?.closest<HTMLElement>('[data-project-preview]');
         const title = row?.dataset.projectPreview;
-        if (!row || !container.current?.contains(row) || !title || !projects.some((project) => project.title === title && project.preview)) {
+        const project = projects.find((project) => project.title === title);
+        if (!row || !container.current?.contains(row) || !title || !project?.preview) {
             dismiss();
             return;
         }
 
+        const preferredSize = project.previewSize ?? DEFAULT_SIZE;
+        const width = Math.min(preferredSize.width, window.innerWidth - 2 * INSET);
+        const height = Math.min(preferredSize.height, window.innerHeight - 2 * INSET);
         const rect = row.getBoundingClientRect();
         // Use the page margin when it fits. On smaller desktops, flip away
         // from the pointer and clamp to the viewport so links stay reachable.
         let left = clientX + GAP;
-        if (rect.right + GAP + WIDTH <= window.innerWidth - INSET) {
+        if (rect.right + GAP + width <= window.innerWidth - INSET) {
             left = rect.right + GAP + (clientX - rect.left) * 0.025;
-        } else if (rect.left - GAP - WIDTH >= INSET) {
-            left = rect.left - GAP - WIDTH;
-        } else if (left + WIDTH > window.innerWidth - INSET) {
-            left = clientX - WIDTH - GAP;
+        } else if (rect.left - GAP - width >= INSET) {
+            left = rect.left - GAP - width;
+        } else if (left + width > window.innerWidth - INSET) {
+            left = clientX - width - GAP;
         }
-        left = Math.max(INSET, Math.min(left, window.innerWidth - WIDTH - INSET));
-        const top = Math.max(INSET, Math.min(clientY - HEIGHT / 2, window.innerHeight - HEIGHT - INSET));
+        left = Math.max(INSET, Math.min(left, window.innerWidth - width - INSET));
+        const top = Math.max(INSET, Math.min(clientY - height / 2, window.innerHeight - height - INSET));
 
         if (!visible.current) {
             x.jump(left);
@@ -104,6 +108,7 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
         }
         if (hovered.current === title) return;
         hovered.current = title;
+        setSize({ width, height });
         setWarmed(true);
         if (pending.current) clearTimeout(pending.current);
 
@@ -173,7 +178,7 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
                     data-project-hover-preview=""
                     data-active-project={show ? active : undefined}
                     className="project-hover-preview pointer-events-none fixed left-0 top-0 z-50"
-                    style={{ x, y, width: WIDTH, height: HEIGHT }}
+                    style={{ x, y, width: size.width, height: size.height }}
                 >
                     <motion.div
                         initial={{ opacity: 0, scale: 0.97 }}
