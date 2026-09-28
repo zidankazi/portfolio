@@ -4,7 +4,7 @@ import { useEffect, useId, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { ChevronDown } from 'lucide-react';
-import { Project } from '@/data/projects';
+import type { Project } from '@/types/project';
 import { ProjectHoverPreview } from './ProjectHoverPreview';
 
 // Links a phrase inside the description, leaving the rest as plain text

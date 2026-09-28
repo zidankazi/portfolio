@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { projects } from '@/data/projects';
+import { projects } from '@/data/projects.server';
 import { IntroBubble } from '@/components/chat/IntroBubble';
 import { MapWidget } from '@/components/chat/MapWidget';
 import { ProjectsSection } from '@/components/chat/ProjectsSection';

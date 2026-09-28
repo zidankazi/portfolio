@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent, type React
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { motion, useSpring } from 'framer-motion';
-import type { Project } from '@/data/projects';
+import type { Project } from '@/types/project';
 
 const DEFAULT_SIZE = { width: 280, height: 210 };
 const GAP = 20;
