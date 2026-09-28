@@ -203,3 +203,15 @@ test("a refresh failure keeps the last track without claiming it is still playin
   assert.ok(playback instanceof spotify.Cached);
   assert.equal(playback.track.title, track.name);
 });
+
+test("a malformed current response falls back to history, and caches stay per client", async (t) => {
+  const calls = mockSpotify(t, [
+    tokenReply, { body: "not json" }, recentReply,
+    tokenReply, { status: 204 }, { json: { items: [] } },
+  ]);
+  const first = spotify.new_client("first", "secret", "refresh");
+  const second = spotify.new_client("second", "secret", "refresh");
+  assert.ok(await spotify.get_track(first) instanceof spotify.RecentlyPlayed);
+  assert.ok(await spotify.get_track(second) instanceof spotify.NothingPlaying);
+  assert.equal(calls.length, 6);
+});
