@@ -39,7 +39,7 @@ function Hand({ side }: { side: 'left' | 'right' }) {
 }
 
 export function PuppetHands() {
-  const { ready } = useEntrance();
+  const { ready, reveal } = useEntrance();
   const rootRef = useRef<HTMLDivElement>(null);
   const id = useId().replace(/:/g, '');
 
@@ -60,6 +60,11 @@ export function PuppetHands() {
     let until = 0;
     let previousHeight = 0;
     const threadCounts = new Array<number>(8).fill(0);
+    const visibleCounts = new Array<number>(8).fill(-1);
+    const arrivalCounts = new Array<number>(8).fill(0);
+    const started = performance.now();
+    let growing = desktop.matches && !reduced.matches;
+    let revealed = false;
 
     const draw = () => {
       if (!desktop.matches || document.hidden) return;
@@ -107,12 +112,12 @@ export function PuppetHands() {
             const length = span * 0.35 + Math.hypot(gutter - sx, span * 0.65 - Math.min(80, span * 0.2)) + Math.hypot(ex - gutter, Math.min(80, span * 0.2));
             const count = Math.ceil(length / 115.2) * 16;
             if (count !== threadCounts[slot]) {
-              thread.textContent = 'il'.repeat(count);
+              if (!growing) thread.textContent = 'il'.repeat(count);
               threadCounts[slot] = count;
             }
             node.setAttribute('cx', ex.toFixed(1));
             node.setAttribute('cy', ey.toFixed(1));
-            node.setAttribute('r', '1.5');
+            node.setAttribute('r', growing ? '0' : '1.5');
           }
         }
       }
@@ -120,8 +125,28 @@ export function PuppetHands() {
 
     const frame = (now: number) => {
       raf = 0;
-      draw();
-      if (now < until && desktop.matches && !document.hidden) raf = requestAnimationFrame(frame);
+      if (now < until) draw();
+      if (growing) {
+        const t = !desktop.matches || reduced.matches ? 1 : Math.min((now - started) / 1250, 1);
+        const progress = t * t * (3 - 2 * t);
+        threads.forEach((thread, slot) => {
+          const count = Math.floor(arrivalCounts[slot] * progress);
+          if (count !== visibleCounts[slot]) {
+            thread.textContent = 'il'.repeat(Math.ceil(count / 2)).slice(0, count);
+            visibleCounts[slot] = count;
+          }
+        });
+        // Begin the shared bubble fade just as the chains approach their ends.
+        if (progress >= 0.88 && !revealed) { reveal(); revealed = true; }
+        if (t === 1) {
+          growing = false;
+          threads.forEach((thread, slot) => {
+            thread.textContent = 'il'.repeat(threadCounts[slot]);
+            nodes[slot].setAttribute('r', anchors[slot % 4] ? '1.5' : '0');
+          });
+        }
+      }
+      if ((growing || now < until) && !document.hidden) raf = requestAnimationFrame(frame);
     };
     // Track the existing bubble entrance/expansion animations, then go idle.
     // No extra idle animation is introduced, including under reduced motion.
@@ -148,6 +173,12 @@ export function PuppetHands() {
     window.addEventListener('scroll', schedule, { passive: true });
     discover();
     draw();
+    // Measure once for the entrance only, after every path is laid out.
+    // Hover/resize updates retain the cheaper control-polygon estimate.
+    paths.forEach((path, slot) => {
+      arrivalCounts[slot] = path.hasAttribute('d') ? Math.ceil(path.getTotalLength() / 3.6) : 0;
+    });
+    if (!growing) reveal();
 
     return () => {
       cancelAnimationFrame(raf);
@@ -159,7 +190,7 @@ export function PuppetHands() {
       window.removeEventListener('resize', schedule);
       window.removeEventListener('scroll', schedule);
     };
-  }, [ready]);
+  }, [ready, reveal]);
 
   return (
     <div ref={rootRef} aria-hidden="true" className="pointer-events-none select-none absolute inset-x-0 top-0 -z-10 hidden lg:block">

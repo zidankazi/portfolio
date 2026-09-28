@@ -101,21 +101,20 @@ h6 {
   animation: blob-drift 26s ease-in-out infinite;
 }
 
-/* One gentle reveal for the conversation, strings, and side art. Geometry
-   stays still during the fade so the strings stay attached to the bubbles. */
+/* The chains type toward stationary anchors, then the conversation fades in. */
 @keyframes conversation-arrive {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
 @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
-  [data-puppet-stage='dropping'] main {
+  [data-puppet-stage='dropping'] main,
+  [data-puppet-stage='threading'] main {
     visibility: hidden;
   }
 
   [data-puppet-stage='ready'] main,
-  [data-puppet-stage='ready'] .puppet-threads,
-  [data-puppet-stage='ready'] .sigil-ink {
+  [data-puppet-stage]:not([data-puppet-stage='dropping']) .sigil-ink {
     animation: conversation-arrive 0.95s cubic-bezier(0.4, 0, 0.2, 1) both;
   }
 
