@@ -177,3 +177,17 @@ pub fn decode_current(body: String) -> Result(Playback, ApiError) {
   json.parse(body, decoder)
   |> result.map_error(fn(_) { InvalidResponse })
 }
+
+/// The endpoint is requested with limit=1. An empty history is a valid response.
+pub fn decode_recent(body: String) -> Result(Playback, ApiError) {
+  let decoder =
+    decode.at(["items"], decode.list(decode.at(["track"], track_decoder())))
+  use tracks <- result.try(
+    json.parse(body, decoder)
+    |> result.map_error(fn(_) { InvalidResponse }),
+  )
+  Ok(case tracks {
+    [track, ..] -> RecentlyPlayed(track)
+    [] -> NothingPlaying
+  })
+}
