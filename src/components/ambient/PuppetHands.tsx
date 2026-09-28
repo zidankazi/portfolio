@@ -10,20 +10,55 @@ import { HAND_LEFT, HAND_RIGHT, HAND_WIDTH, HAND_HEIGHT, HAND_FONT_SIZE, HAND_TI
 const CHAIN_ENTRIES = [0, 225, 385, 725, 65, 175, 465, 640];
 const CHAIN_DURATIONS = [940, 1070, 1150, 1240, 975, 1030, 1190, 1210];
 
+// Separate gestures, pivoting at the wrists: reach, catch the weight, then
+// correct the grip. Full transforms let the browser composite the entrance.
+const HAND_ENTRANCES = {
+  left: {
+    frames: [
+      'translate3d(-32px, -300px, 0) rotate(-24deg) scale(0.92)',
+      'translate3d(-22px, -126px, 0) rotate(-16deg) scale(0.96)',
+      'translate3d(12px, 19px, 0) rotate(6deg) scale(1.02)',
+      'translate3d(-5px, -9px, 0) rotate(-2.5deg) scale(0.995)',
+      'translate3d(2px, 3px, 0) rotate(0.8deg) scale(1)',
+      'translate3d(0, 0, 0) rotate(0deg) scale(1)',
+    ],
+    origin: '32% 0%', duration: 1.38, delay: 0.06,
+  },
+  right: {
+    frames: [
+      'translate3d(30px, -320px, 0) rotate(27deg) scale(0.9)',
+      'translate3d(17px, -108px, 0) rotate(13deg) scale(0.97)',
+      'translate3d(-14px, 25px, 0) rotate(-8deg) scale(1.025)',
+      'translate3d(6px, -11px, 0) rotate(3deg) scale(0.99)',
+      'translate3d(-2px, 4px, 0) rotate(-1deg) scale(1.003)',
+      'translate3d(0, 0, 0) rotate(0deg) scale(1)',
+    ],
+    origin: '68% 0%', duration: 1.51, delay: 0.23,
+  },
+};
+
 function Hand({ side }: { side: 'left' | 'right' }) {
   const art = side === 'left' ? HAND_LEFT : HAND_RIGHT;
+  const entrance = HAND_ENTRANCES[side];
   const { settle } = useEntrance();
   const reduced = useReducedMotion();
   return (
     <motion.div
       data-puppet-hand={side}
       className="absolute -top-3"
-      initial={{ y: -HAND_HEIGHT - 40 }}
-      animate={{ y: 0 }}
+      initial={{ transform: entrance.frames[0] }}
+      animate={{ transform: reduced ? entrance.frames.at(-1) : entrance.frames }}
       transition={reduced ? { duration: 0 } : {
-        type: 'spring', stiffness: 150, damping: 17, mass: 1.2,
-        delay: side === 'left' ? 0.08 : 0.16,
-        restDelta: 0.5, restSpeed: 2,
+        duration: entrance.duration,
+        delay: entrance.delay,
+        times: [0, 0.23, 0.54, 0.73, 0.87, 1],
+        ease: [
+          [0.42, 0, 0.8, 0.6],
+          [0.12, 0.72, 0.22, 1],
+          [0.22, 0.6, 0.35, 1],
+          [0.35, 0, 0.3, 1],
+          [0.25, 0.1, 0.25, 1],
+        ],
       }}
       onAnimationComplete={() => settle(side)}
       style={{
@@ -31,6 +66,7 @@ function Hand({ side }: { side: 'left' | 'right' }) {
         height: HAND_HEIGHT,
         fontSize: HAND_FONT_SIZE,
         lineHeight: `${HAND_FONT_SIZE}px`,
+        transformOrigin: entrance.origin,
         maskImage: 'linear-gradient(to bottom, transparent 12px, black 46px)',
         WebkitMaskImage: 'linear-gradient(to bottom, transparent 12px, black 46px)',
         [side]: 'calc(50% - 480px)',
