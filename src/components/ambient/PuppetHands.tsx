@@ -5,6 +5,11 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { useEntrance } from '@/components/motion/Entrance';
 import { HAND_LEFT, HAND_RIGHT, HAND_WIDTH, HAND_HEIGHT, HAND_FONT_SIZE, HAND_TIPS } from './puppetHandArt';
 
+// A descending phrase, with the leading hand alternating between pairs.
+// Slots 0–3 belong to the left hand; 4–7 belong to the right.
+const CHAIN_ENTRIES = [0, 225, 385, 725, 65, 175, 465, 640];
+const CHAIN_DURATIONS = [940, 1070, 1150, 1240, 975, 1030, 1190, 1210];
+
 function Hand({ side }: { side: 'left' | 'right' }) {
   const art = side === 'left' ? HAND_LEFT : HAND_RIGHT;
   const { settle } = useEntrance();
@@ -62,6 +67,8 @@ export function PuppetHands() {
     const threadCounts = new Array<number>(8).fill(0);
     const visibleCounts = new Array<number>(8).fill(-1);
     const arrivalCounts = new Array<number>(8).fill(0);
+    const phrasing: { delay: number; duration: number; beats: number[] }[] = [];
+    const arrived = new Array<boolean>(8).fill(false);
     const started = performance.now();
     let growing = desktop.matches && !reduced.matches;
     let revealed = false;
@@ -112,12 +119,12 @@ export function PuppetHands() {
             const length = span * 0.35 + Math.hypot(gutter - sx, span * 0.65 - Math.min(80, span * 0.2)) + Math.hypot(ex - gutter, Math.min(80, span * 0.2));
             const count = Math.ceil(length / 115.2) * 16;
             if (count !== threadCounts[slot]) {
-              if (!growing) thread.textContent = 'il'.repeat(count);
+              if (!growing || arrived[slot]) thread.textContent = 'il'.repeat(count);
               threadCounts[slot] = count;
             }
             node.setAttribute('cx', ex.toFixed(1));
             node.setAttribute('cy', ey.toFixed(1));
-            node.setAttribute('r', growing ? '0' : '1.5');
+            node.setAttribute('r', growing && !arrived[slot] ? '0' : '1.5');
           }
         }
       }
@@ -127,24 +134,35 @@ export function PuppetHands() {
       raf = 0;
       if (now < until) draw();
       if (growing) {
-        const t = !desktop.matches || reduced.matches ? 1 : Math.min((now - started) / 1250, 1);
-        const progress = t * t * (3 - 2 * t);
+        const skip = !desktop.matches || reduced.matches;
+        const progressByChain: number[] = [];
         threads.forEach((thread, slot) => {
-          const count = Math.floor(arrivalCounts[slot] * progress);
+          const phrase = phrasing[slot];
+          const t = skip ? 1 : Math.max(0, Math.min((now - started - phrase.delay) / phrase.duration, 1));
+          const progress = t * t * (3 - 2 * t);
+          progressByChain[slot] = progress;
+          if (arrived[slot]) return;
+          let count = Math.max(0, visibleCounts[slot]);
+          // Uneven but always forward: character timing is sampled once,
+          // never randomized per frame, so the chain cannot flicker or retreat.
+          while (count < phrase.beats.length && phrase.beats[count] <= progress) count++;
           if (count !== visibleCounts[slot]) {
             thread.textContent = 'il'.repeat(Math.ceil(count / 2)).slice(0, count);
             visibleCounts[slot] = count;
           }
-        });
-        // Begin the shared bubble fade just as the chains approach their ends.
-        if (progress >= 0.88 && !revealed) { reveal(); revealed = true; }
-        if (t === 1) {
-          growing = false;
-          threads.forEach((thread, slot) => {
+          if (t === 1) {
+            arrived[slot] = true;
             thread.textContent = 'il'.repeat(threadCounts[slot]);
             nodes[slot].setAttribute('r', anchors[slot % 4] ? '1.5' : '0');
-          });
+          }
+        });
+        // The first pair brings in the conversation; the later chains finish
+        // their phrase during that shared fade instead of holding up the page.
+        if (Math.min(progressByChain[0], progressByChain[4]) >= 0.88 && !revealed) {
+          reveal();
+          revealed = true;
         }
+        if (arrived.every(Boolean)) growing = false;
       }
       if ((growing || now < until) && !document.hidden) raf = requestAnimationFrame(frame);
     };
@@ -177,6 +195,16 @@ export function PuppetHands() {
     // Hover/resize updates retain the cheaper control-polygon estimate.
     paths.forEach((path, slot) => {
       arrivalCounts[slot] = path.hasAttribute('d') ? Math.ceil(path.getTotalLength() / 3.6) : 0;
+      let beat = 0;
+      const beats = Array.from({ length: arrivalCounts[slot] }, () => {
+        beat += 0.78 + Math.random() * 0.44;
+        return beat;
+      });
+      phrasing[slot] = {
+        delay: Math.max(0, CHAIN_ENTRIES[slot] + (Math.random() - 0.5) * 28),
+        duration: CHAIN_DURATIONS[slot] * (0.96 + Math.random() * 0.08),
+        beats: beats.map(value => value / beat),
+      };
     });
     if (!growing) reveal();
 
