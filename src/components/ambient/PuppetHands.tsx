@@ -57,7 +57,7 @@ function Hand({ side }: { side: 'left' | 'right' }) {
           const x = side === 'left' ? wrap.x : HAND_WIDTH - wrap.x;
           const { y, rx, ry } = wrap;
           return (
-            <g key={finger} data-finger-wrap={finger}>
+            <g key={finger} data-finger-wrap={finger} opacity="0">
               {[-2, 2].map((offset, turn) => {
                 const id = `${wrapId}-${finger}-${turn}`;
                 const front = `M${x - rx},${y + offset} C${x - rx},${y + offset + ry * 1.33} ${x + rx},${y + offset + ry * 1.33} ${x + rx},${y + offset}`;
@@ -104,6 +104,8 @@ export function PuppetHands() {
     const threads = [...root.querySelectorAll<SVGTextPathElement>('.puppet-threads textPath')];
     const nodes = [...root.querySelectorAll<SVGCircleElement>('.puppet-threads circle')];
     const hands = [...root.querySelectorAll<HTMLElement>('[data-puppet-hand]')];
+    // Chains start at the innermost finger, opposite the artwork's wrap order.
+    const wraps = hands.flatMap(hand => [...hand.querySelectorAll<SVGGElement>('[data-finger-wrap]')].reverse());
     let anchors: HTMLElement[] = [];
     let raf = 0;
     let dirty = true;
@@ -131,13 +133,16 @@ export function PuppetHands() {
           const path = paths[slot];
           const thread = threads[slot];
           const node = nodes[slot];
+          const wrap = wraps[slot];
           if (!box) {
             path.removeAttribute('d');
             thread.textContent = '';
             threadCounts[slot] = 0;
             node.setAttribute('r', '0');
+            wrap.setAttribute('opacity', '0');
             continue;
           }
+          if (!growing || arrived[slot]) wrap.setAttribute('opacity', '1');
           const hand = handBoxes[side];
           const tip = HAND_TIPS[3 - index];
           const scale = hand.width / HAND_WIDTH;
@@ -198,6 +203,8 @@ export function PuppetHands() {
           if (count !== visibleCounts[slot]) {
             thread.textContent = '='.repeat(count);
             visibleCounts[slot] = count;
+            // The wrap appears with its first few hanging characters, never alone.
+            wraps[slot].setAttribute('opacity', anchors[slot % 4] ? String(Math.min(1, count / 4)) : '0');
           }
           if (t === 1) {
             arrived[slot] = true;
