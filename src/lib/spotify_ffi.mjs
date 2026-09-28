@@ -4,3 +4,7 @@ import { Result$Ok, Result$Error } from "../gleam.mjs";
 export function new_cell(value) {
   return { value };
 }
+
+export function read_cell(cell) {
+  return cell.value;
+}

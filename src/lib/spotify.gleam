@@ -88,3 +88,6 @@ pub fn track_title(playback: Playback) -> Option(String) {
 /// FFI means "foreign function interface": the body lives in spotify_ffi.mjs.
 @external(javascript, "./spotify_ffi.mjs", "new_cell")
 fn new_cell(value: a) -> Cell(a)
+
+@external(javascript, "./spotify_ffi.mjs", "read_cell")
+fn read_cell(cell: Cell(a)) -> a
