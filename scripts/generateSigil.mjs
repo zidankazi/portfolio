@@ -1,10 +1,7 @@
 // Generates the letter-built cyber-sigilism strip for the side rails.
-// A techno-organic exoskeleton: a barbed spine anchored at every joint by a
-// four-point chrome starburst and a hollow diamond node, throwing recursive
-// tendrils that creep, branch and taper into needle points, with skeletal
-// hollow ribs and barbed-wire webbing slung between joints. Lines are kept
-// razor-thin and forms stay open, so the structure reads as a skeletal frame
-// rather than a solid mass. Strokes rasterize to a pixel canvas, then each
+// A barbed spine of pierced cores and opposing sickle blades, with fine
+// recursive thorns woven through the heavier, needle-ended ink contours.
+// Hollow pockets keep the paired blackwork legible inside the dense detail. Strokes rasterize to a pixel canvas, then each
 // character cell's ink coverage picks a tiny lowercase letter — the ASCII
 // rendering is unchanged, only the geometry it draws.
 // Output: src/components/ambient/sigilStrip.ts
@@ -311,47 +308,62 @@ for (let i = 0; i < JOINTS; i++) {
 for (let i = 0; i < JOINTS; i++) {
   const y = STEP * (i + 0.5);
   const x = spineX(y);
+  const width = 48 + rnd() * 17;
+  const height = 0.85 + rnd() * 0.35;
+  const flip = i % 4 === 1 ? -1 : 1;
+  const bladeWeight = 1.65 + rnd() * 0.8;
 
-  // mechanical anchor
-  diamond(x, y, 5 + rnd() * 3);
-  starburst(x, y, 13 + rnd() * 10);
+  // An elongated pierced core gives each mark a recognizable tattoo axis.
+  // Broad ink shoulders taper to hairlines, rather than uniform vine strokes.
+  for (const side of [-1, 1]) {
+    const skew = (rnd() - 0.5) * 9;
+    const at = (px, py) => [x + side * px, y + flip * (py * height + skew * px / width)];
+    const blade = (points, weight, taper = 'both') =>
+      strokeCubic(points.map(([px, py]) => at(px, py)), weight, { taper });
 
-  // Swept, needle-ended contours weave through the existing branchwork.
-  // These use no random draws, preserving the original arrangement of fans.
-  for (const s of [-1, 1]) {
-    const tip = [x + s * (27 + (i % 3) * 4), y - 48 - (i % 2) * 10];
-    crescent([x, y + 32], tip, s * 0.3, 0.85);
-    crescent([x, y + 32], tip, -s * 0.12, 0.5);
-  }
+    // Long central spear with narrow, pointed negative spaces.
+    blade([[0, -83], [3, -34], [22, -13], [0, 30]], 1.6);
+    blade([[0, -41], [18, -12], [10, 18], [0, 42]], 1.2);
+    blade([[0, 3], [20, 36], [5, 57], [0, 91]], 1.8);
 
-  // asymmetric creeper fans — each side gets its own count
-  for (const s of [-1, 1]) {
-    const n = 1 + Math.floor(rnd() * 3);
-    for (let k = 0; k < n; k++) {
-      const up = rnd() < 0.34;
-      const a = up
-        ? -DN + s * (0.38 + rnd() * 1.0)
-        : DN - s * (0.34 + rnd() * 1.15);
-      tendril(x, y, a, 54 + rnd() * 48, -s * (0.7 + rnd() * 1.05), 0.78, 2);
+    // Opposing sickle blades: sharp outward tips, cinched roots, open pockets.
+    // The second set reverses direction so the silhouette is barbed on both ends.
+    for (const direction of [-1, 1]) {
+      const span = width * (direction < 0 ? 1 : 0.78);
+      const rootY = direction < 0 ? 13 : -9;
+      const tipY = direction * (53 + (i % 3) * 8);
+      const curve = [[0, rootY], [span * 0.52, rootY - direction * 35],
+        [span * 0.5, tipY - direction * 4], [span, tipY]];
+      blade(curve, bladeWeight);
+      blade([[0, rootY], [span * 0.82, rootY + direction * 28],
+        [span * 0.66, tipY + direction * 22], [span, tipY]], 0.8);
+
+      // Recurved barbs grow from the blades, instead of free-floating branches.
+      for (const t of [0.42, 0.68]) {
+        const [bx, by] = cubicPt(curve, t);
+        blade([[bx, by], [bx + 10, by - direction * 6],
+          [bx + 19, by + direction * 14], [bx + 12, by + direction * 27]], 1.1, 'tip');
+      }
+      const branch = at(span * 0.69, tipY * 0.62);
+      tendril(branch[0], branch[1], Math.atan2(flip * direction, side * 0.8),
+        36 + rnd() * 23, -side * flip * direction * 1.25, 0.6, 3);
     }
+
+    // Fine spurs and crossing filaments retain the original dense ASCII detail.
+    blade([[5, -19], [width * 0.72, -8], [width * 0.85, -38], [width + 5, -19]], 0.7);
+    blade([[9, 15], [width * 0.85, 43], [width * 0.72, 57], [width + 3, 39]], 0.65);
+    const shoulder = at(23, -7);
+    tendril(shoulder[0], shoulder[1], Math.atan2(-flip, side * 0.9),
+      45 + rnd() * 22, -side * 1.4, 0.62, 2);
   }
 
-  // skeletal rib
-  if (rnd() < 0.55) {
-    const s = rnd() < 0.5 ? -1 : 1;
-    const L = 46 + rnd() * 32;
-    rib(x, y + 4, DN - s * 0.85, L, -s * 0.9, L * 0.17);
-  }
-
-  // webbing slung toward the next joint
-  if (rnd() < 0.62) {
-    const s = rnd() < 0.5 ? -1 : 1;
-    const y2 = y + STEP;
-    barbWire([x + s * 15, y + 13], [spineX(y2) + s * 23, y2 - 15], s * 0.15, 0.45);
-  }
-
-  if (rnd() < 0.5) {
-    sparkle(x + (rnd() < 0.5 ? -1 : 1) * (26 + rnd() * 32), y - STEP * 0.3, 4 + rnd() * 3);
+  // Uneven fine details keep the paired blackwork from becoming a repeated logo.
+  diamond(x, y, 5 + rnd() * 3);
+  if (i % 3 === 0) starburst(x, y + 62, 10 + rnd() * 8);
+  if (i % 2 === 0) {
+    const side = i % 4 === 0 ? -1 : 1;
+    rib(x + side * 8, y + 20, DN - side * 0.4, STEP * 0.68, -side * 0.8, 9, 0.45);
+    sparkle(x + side * (width + 3), y - 16, 3.5);
   }
 }
 
