@@ -10,30 +10,26 @@ import { HAND_LEFT, HAND_RIGHT, HAND_WIDTH, HAND_HEIGHT, HAND_FONT_SIZE, HAND_TI
 const CHAIN_ENTRIES = [0, 225, 385, 725, 65, 175, 465, 640];
 const CHAIN_DURATIONS = [940, 1070, 1150, 1240, 975, 1030, 1190, 1210];
 
-// Separate gestures, pivoting at the wrists: reach, catch the weight, then
-// correct the grip. Full transforms let the browser composite the entrance.
+// Each wrist reaches in on its own arc, then eases into tension without
+// dropping below its resting position or exposing the cropped forearm.
 const HAND_ENTRANCES = {
   left: {
     frames: [
-      'translate3d(-32px, -300px, 0) rotate(-24deg) scale(0.92)',
-      'translate3d(-22px, -126px, 0) rotate(-16deg) scale(0.96)',
-      'translate3d(12px, 19px, 0) rotate(6deg) scale(1.02)',
-      'translate3d(-5px, -9px, 0) rotate(-2.5deg) scale(0.995)',
-      'translate3d(2px, 3px, 0) rotate(0.8deg) scale(1)',
-      'translate3d(0, 0, 0) rotate(0deg) scale(1)',
+      'translate3d(-9px, -260px, 0) rotate(-7deg)',
+      'translate3d(-3px, -38px, 0) rotate(-2deg)',
+      'translate3d(1px, -3px, 0) rotate(0.6deg)',
+      'translate3d(0, 0, 0) rotate(0deg)',
     ],
-    origin: '32% 0%', duration: 1.38, delay: 0.06,
+    origin: '32% 0%', duration: 1.22, delay: 0.04,
   },
   right: {
     frames: [
-      'translate3d(30px, -320px, 0) rotate(27deg) scale(0.9)',
-      'translate3d(17px, -108px, 0) rotate(13deg) scale(0.97)',
-      'translate3d(-14px, 25px, 0) rotate(-8deg) scale(1.025)',
-      'translate3d(6px, -11px, 0) rotate(3deg) scale(0.99)',
-      'translate3d(-2px, 4px, 0) rotate(-1deg) scale(1.003)',
-      'translate3d(0, 0, 0) rotate(0deg) scale(1)',
+      'translate3d(11px, -275px, 0) rotate(9deg)',
+      'translate3d(4px, -46px, 0) rotate(2.8deg)',
+      'translate3d(-1px, -4px, 0) rotate(-0.7deg)',
+      'translate3d(0, 0, 0) rotate(0deg)',
     ],
-    origin: '68% 0%', duration: 1.51, delay: 0.23,
+    origin: '68% 0%', duration: 1.34, delay: 0.18,
   },
 };
 
@@ -52,12 +48,10 @@ function Hand({ side }: { side: 'left' | 'right' }) {
       transition={reduced ? { duration: 0 } : {
         duration: entrance.duration,
         delay: entrance.delay,
-        times: [0, 0.23, 0.54, 0.73, 0.87, 1],
+        times: [0, 0.52, 0.82, 1],
         ease: [
-          [0.42, 0, 0.8, 0.6],
-          [0.12, 0.72, 0.22, 1],
-          [0.22, 0.6, 0.35, 1],
-          [0.35, 0, 0.3, 1],
+          [0.25, 0.1, 0.3, 1],
+          [0.2, 0.45, 0.3, 1],
           [0.25, 0.1, 0.25, 1],
         ],
       }}
@@ -91,18 +85,18 @@ function Hand({ side }: { side: 'left' | 'right' }) {
                       <path id={id} d={front} />
                       <path id={`${id}-back`} d={back} />
                     </defs>
-                    <text className="font-mono" fontSize="4.5" fill="rgba(161,161,170,0.38)">
-                      <textPath href={`#${id}-back`}>ilililililil</textPath>
+                    <text className="font-mono" fontSize="6" fill="rgba(174,79,76,0.65)">
+                      <textPath href={`#${id}-back`}>------------</textPath>
                     </text>
                     {/* A narrow shadow makes the cord sit in front of the chrome. */}
                     <use href={`#${id}`} fill="none" stroke="#0a0a0a" strokeWidth="3" />
-                    <text className="font-mono" fontSize="4.5" fill="rgba(228,228,231,0.85)">
-                      <textPath href={`#${id}`}>ilililililil</textPath>
+                    <text className="font-mono" fontSize="6" fontWeight="500" fill="#efaaa2" stroke="#efaaa2" strokeWidth="0.25">
+                      <textPath href={`#${id}`}>------------</textPath>
                     </text>
                   </g>
                 );
               })}
-              <text x={x} y={y + ry + 3} textAnchor="middle" className="font-mono" fontSize="5" fill="rgba(228,228,231,0.85)">x</text>
+              <text x={x} y={y + ry + 3} textAnchor="middle" className="font-mono" fontSize="5" fill="#e0a09a">x</text>
             </g>
           );
         })}
@@ -188,7 +182,7 @@ export function PuppetHands() {
               : span * 0.35 + Math.hypot(gutter - sx, span * 0.65 - Math.min(80, span * 0.2)) + Math.hypot(ex - gutter, Math.min(80, span * 0.2));
             const count = Math.ceil(length / 115.2) * 16;
             if (count !== threadCounts[slot]) {
-              if (!growing || arrived[slot]) thread.textContent = 'il'.repeat(count);
+              if (!growing || arrived[slot]) thread.textContent = '='.repeat(count * 2);
               threadCounts[slot] = count;
             }
             node.setAttribute('cx', ex.toFixed(1));
@@ -219,12 +213,12 @@ export function PuppetHands() {
           // never randomized per frame, so the chain cannot flicker or retreat.
           while (count < phrase.beats.length && phrase.beats[count] <= progress) count++;
           if (count !== visibleCounts[slot]) {
-            thread.textContent = 'il'.repeat(Math.ceil(count / 2)).slice(0, count);
+            thread.textContent = '='.repeat(count);
             visibleCounts[slot] = count;
           }
           if (t === 1) {
             arrived[slot] = true;
-            thread.textContent = 'il'.repeat(threadCounts[slot]);
+            thread.textContent = '='.repeat(threadCounts[slot] * 2);
             nodes[slot].setAttribute('r', anchors[slot % 4] ? '1.5' : '0');
           }
         });
@@ -299,10 +293,10 @@ export function PuppetHands() {
           <defs>
             <path id={`${id}-thread-${index}`} />
           </defs>
-          <text className="font-mono" fontSize="6" fill="rgba(212,212,216,0.28)">
+          <text className="font-mono" fontSize="6" fontWeight="500" fill="#cf7773" stroke="#cf7773" strokeWidth="0.2">
             <textPath href={`#${id}-thread-${index}`} />
           </text>
-          <circle r="0" fill="rgba(228,228,231,0.4)" />
+          <circle r="0" fill="rgba(224,160,154,0.8)" />
         </svg>
       ))}
       <Hand side="left" />

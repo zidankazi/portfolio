@@ -192,8 +192,6 @@ h6 {
   .puppet-hand-left { left: max(4px, calc(50% - 240px)); }
   .puppet-hand-right { right: max(4px, calc(50% - 240px)); }
 
-  .puppet-threads text { fill: rgba(212, 212, 216, 0.18); }
-
   .sigil-pose { width: 102px; left: -27px; }
   .sigil-scroll { animation: mobile-sigil-drift 160s linear infinite; }
   [data-sigil-side="right"] .sigil-scroll { animation-direction: reverse; }
