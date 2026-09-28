@@ -289,3 +289,22 @@ fn cached_playback(client: Client) -> Playback {
     None -> NothingPlaying
   }
 }
+
+/// Save only the track metadata; a future fallback must not reuse old progress.
+fn remember_playback(client: Client, playback: Playback) -> Playback {
+  let track = case playback {
+    Playing(track, _)
+    | Paused(track, _)
+    | RecentlyPlayed(track)
+    | Cached(track) -> Some(track)
+    NothingPlaying -> None
+  }
+  case track {
+    Some(track) -> {
+      let cache = read_cell(client.cache)
+      write_cell(client.cache, Cache(..cache, last_good: Some(track)))
+    }
+    None -> Nil
+  }
+  playback
+}
