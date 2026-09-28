@@ -9,3 +9,10 @@ pub type Track {
     duration_ms: Option(Int),
   )
 }
+
+pub type Playback {
+  NothingPlaying
+  Playing(track: Track, progress_ms: Option(Int))
+  Paused(track: Track, progress_ms: Option(Int))
+  RecentlyPlayed(track: Track)
+}
