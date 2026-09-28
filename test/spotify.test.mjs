@@ -237,3 +237,17 @@ test("encodes every playback state as plain JSON for React and existing API cons
   }
   assert.deepEqual(JSON.parse(to_string(spotify.playback_json(empty))), { isPlaying: false, title: null });
 });
+
+test("the server entry point returns JSON with real nulls rather than Gleam Options", async (t) => {
+  mockSpotify(t, [tokenReply, {
+    json: { item: { ...track, album: { images: [] }, duration_ms: null }, is_playing: false },
+  }]);
+  const client = spotify.new_client("client", "secret", "refresh");
+  const data = JSON.parse(await spotify.get_track_json(client));
+  assert.equal(Object.getPrototypeOf(data), Object.prototype);
+  assert.equal(data.isPlaying, false);
+  assert.equal(data.title, track.name);
+  assert.equal(data.albumArt, null);
+  assert.equal(data.progressMs, null);
+  assert.equal(data.durationMs, null);
+});
