@@ -97,3 +97,12 @@ fn write_cell(cell: Cell(a), value: a) -> Nil
 
 @external(javascript, "./spotify_ffi.mjs", "now_ms")
 fn now_ms() -> Int
+
+/// Always resolves to a Result, including network failures and timeouts.
+@external(javascript, "./spotify_ffi.mjs", "request")
+fn request(
+  method: String,
+  url: String,
+  headers: Array(#(String, String)),
+  body: String,
+) -> Promise(Result(#(Int, String), Nil))
