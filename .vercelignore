@@ -1,0 +1,9 @@
+.git
+.next
+node_modules
+.env*
+.DS_Store
+certificates
+.claude
+.vscode
+*.tsbuildinfo
