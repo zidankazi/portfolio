@@ -210,3 +210,40 @@ fn decode_token(body: String, now: Int) -> Result(Token, ApiError) {
     False -> Ok(Token(value, now + int.max(seconds - 60, 0) * 1000))
   }
 }
+
+/// Exchanges the refresh token for a short-lived access token.
+/// Both HTTP failures and invalid JSON become explicit Result errors.
+fn refresh_access_token(client: Client) -> Promise(Result(String, ApiError)) {
+  let authorization =
+    client.client_id
+    <> ":"
+    <> client.client_secret
+    |> bit_array.from_string
+    |> bit_array.base64_encode(True)
+  let headers =
+    array.from_list([
+      #("Content-Type", "application/x-www-form-urlencoded"),
+      #("Authorization", "Basic " <> authorization),
+    ])
+  let body =
+    uri.query_to_string([
+      #("grant_type", "refresh_token"),
+      #("refresh_token", client.refresh_token),
+    ])
+  use response <- promise.map(request(
+    "POST",
+    "https://accounts.spotify.com/api/token",
+    headers,
+    body,
+  ))
+  case response {
+    Error(_) -> Error(NetworkError)
+    Ok(#(status, _)) if status < 200 || status >= 300 -> Error(HttpError(status))
+    Ok(#(_, body)) -> {
+      use token <- result.try(decode_token(body, now_ms()))
+      let cache = read_cell(client.cache)
+      write_cell(client.cache, Cache(..cache, token: Some(token)))
+      Ok(token.value)
+    }
+  }
+}
