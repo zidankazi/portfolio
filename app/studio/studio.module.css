@@ -55,8 +55,8 @@
 
 .stack {
   position: relative;
-  width: min(100%, 760px);
-  height: 410px;
+  width: min(100%, 1140px);
+  height: 610px;
 }
 
 .project {
@@ -75,21 +75,21 @@
 .left {
   --angle: -7deg;
   left: 4%;
-  top: 130px;
+  top: 195px;
   z-index: 1;
 }
 
 .center {
   --angle: 4deg;
   left: 28%;
-  top: 40px;
+  top: 60px;
   z-index: 3;
 }
 
 .right {
   --angle: 10deg;
   left: 52%;
-  top: 155px;
+  top: 230px;
   z-index: 2;
 }
 
@@ -105,7 +105,6 @@
 .artwork {
   object-fit: cover;
   pointer-events: none;
-  filter: saturate(0.95);
 }
 
 .center .artwork {
@@ -122,15 +121,6 @@
   background: linear-gradient(180deg, #0000 50%, #09090935 68%, #090909de 100%);
 }
 
-.texture {
-  position: absolute;
-  inset: 0;
-  border: 1px solid #ffffff0a;
-  border-radius: inherit;
-  background: repeating-linear-gradient(0deg, #ffffff05 0, #ffffff05 1px, transparent 1px, transparent 3px);
-  opacity: 0.45;
-}
-
 .label {
   position: absolute;
   bottom: 14px;
@@ -144,7 +134,7 @@
 .name {
   color: #efefef;
   font-family: var(--font-heading), Georgia, serif;
-  font-size: 24px;
+  font-size: 30px;
   font-style: italic;
   font-weight: 500;
   letter-spacing: -0.6px;
@@ -157,7 +147,7 @@
   white-space: nowrap;
   color: #b6b6b9;
   font-family: var(--font-mono), monospace;
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.5;
 }
 
@@ -254,32 +244,32 @@
   }
 
   .work {
-    min-height: 500px;
+    min-height: 630px;
     padding: 35px 0 20px;
   }
 
   .stack {
     max-width: 370px;
-    height: 435px;
+    height: 565px;
   }
 
   .project {
-    width: 68%;
+    width: 82%;
   }
 
   .left {
-    left: 5%;
-    top: 149px;
+    left: 2%;
+    top: 200px;
   }
 
   .center {
-    left: 23%;
-    top: 34px;
+    left: 14%;
+    top: 40px;
   }
 
   .right {
-    left: 28%;
-    top: 270px;
+    left: 10%;
+    top: 365px;
   }
 
   .name {
