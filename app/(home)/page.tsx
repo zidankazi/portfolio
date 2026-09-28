@@ -24,7 +24,7 @@ export default function HomePage() {
             href="/studio"
             className="group/studio block rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-400"
           >
-            <span>I love the little details that make a website feel right.</span>
+            <span>I make websites.</span>
             <span className="mt-1 flex items-center gap-1 text-zinc-400 transition-colors group-hover/studio:text-zinc-100">
               Come take a look
               <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
