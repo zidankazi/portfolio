@@ -16,3 +16,13 @@ pub type Playback {
   Paused(track: Track, progress_ms: Option(Int))
   RecentlyPlayed(track: Track)
 }
+
+// read playback state
+pub fn playback_label(playback: Playback) -> String {
+  case playback {
+    NothingPlaying -> "nothing playing"
+    Playing(_, _) -> "playing"
+    Paused(_, _) -> "paused"
+    RecentlyPlayed(_) -> "recently played"
+  }
+}
