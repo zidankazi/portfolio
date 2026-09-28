@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { projects } from '@/data/projects.server';
 import { IntroBubble } from '@/components/chat/IntroBubble';
 import { ChatBubble } from '@/components/chat/ChatBubble';
@@ -7,7 +8,7 @@ import { ProjectsSection } from '@/components/chat/ProjectsSection';
 import { Pill } from '@/components/chat/Pill';
 import { SpotifyCard } from '@/components/chat/SpotifyCard';
 import { ScrollCue } from '@/components/chat/ScrollCue';
-import { Github, Twitter, Mail } from 'lucide-react';
+import { ArrowUpRight, Github, Twitter, Mail } from 'lucide-react';
 
 export default function HomePage() {
   return (
@@ -19,7 +20,16 @@ export default function HomePage() {
 
         <SpotifyCard />
         <ChatBubble>
-          Placeholder text.
+          <Link
+            href="/studio"
+            className="group/studio block rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-400"
+          >
+            <span>I also build websites for clients.</span>
+            <span className="mt-1 flex items-center gap-1 text-zinc-400 transition-colors group-hover/studio:text-zinc-100">
+              Visit the studio
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </span>
+          </Link>
         </ChatBubble>
         <ProjectsSection projects={projects} />
         <MapWidget />
