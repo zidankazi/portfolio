@@ -308,3 +308,40 @@ fn remember_playback(client: Client, playback: Playback) -> Playback {
   }
   playback
 }
+
+/// Spotify's history endpoint is cached for one minute to avoid rate limits.
+/// Read the cache again after the request, preserving any intervening updates.
+fn recent_or_cached(client: Client, token: String) -> Promise(Playback) {
+  let now = now_ms()
+  case read_cell(client.cache).recent {
+    Some(#(track, at)) if now >= at && now - at < 60_000 ->
+      promise.resolve(RecentlyPlayed(track))
+    _ -> {
+      use response <- promise.map(fetch_playback(
+        "https://api.spotify.com/v1/me/player/recently-played?limit=1",
+        token,
+        decode_recent,
+      ))
+      case response {
+        Ok(RecentlyPlayed(track)) -> {
+          let cache = read_cell(client.cache)
+          write_cell(
+            client.cache,
+            Cache(
+              ..cache,
+              recent: Some(#(track, now_ms())),
+              last_good: Some(track),
+            ),
+          )
+          RecentlyPlayed(track)
+        }
+        Error(HttpError(401)) -> {
+          let cache = read_cell(client.cache)
+          write_cell(client.cache, Cache(..cache, token: None))
+          cached_playback(client)
+        }
+        _ -> cached_playback(client)
+      }
+    }
+  }
+}
