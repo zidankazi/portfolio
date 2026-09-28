@@ -59,6 +59,8 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
     const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
     const hovered = useRef<string | null>(null);
     const visible = useRef(false);
+    const container = useRef<HTMLDivElement>(null);
+    const pointer = useRef<{ x: number; y: number } | null>(null);
     const x = useSpring(0, { stiffness: 450, damping: 40, mass: 0.6 });
     const y = useSpring(0, { stiffness: 450, damping: 40, mass: 0.6 });
 
@@ -67,39 +69,14 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
         pending.current = null;
         hovered.current = null;
         visible.current = false;
+        pointer.current = null;
         setActive(null);
     }, []);
 
-    useEffect(() => {
-        const media = window.matchMedia(PREVIEW_QUERY);
-        const update = () => {
-            setEnabled(media.matches);
-            dismiss();
-        };
-        const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape' || event.key === 'Tab') dismiss();
-        };
-        update();
-        media.addEventListener('change', update);
-        window.addEventListener('scroll', dismiss, true);
-        window.addEventListener('resize', dismiss);
-        window.addEventListener('blur', dismiss);
-        window.addEventListener('keydown', onKeyDown);
-        return () => {
-            media.removeEventListener('change', update);
-            window.removeEventListener('scroll', dismiss, true);
-            window.removeEventListener('resize', dismiss);
-            window.removeEventListener('blur', dismiss);
-            window.removeEventListener('keydown', onKeyDown);
-            if (pending.current) clearTimeout(pending.current);
-        };
-    }, [dismiss]);
-
-    function move(event: PointerEvent<HTMLDivElement>) {
-        if (!enabled || event.pointerType !== 'mouse') return;
-        const row = (event.target as HTMLElement).closest<HTMLElement>('[data-project-preview]');
+    const updatePreview = useCallback((target: Element | null, clientX: number, clientY: number) => {
+        const row = target?.closest<HTMLElement>('[data-project-preview]');
         const title = row?.dataset.projectPreview;
-        if (!row || !title || !projects.some((project) => project.title === title && project.preview)) {
+        if (!row || !container.current?.contains(row) || !title || !projects.some((project) => project.title === title && project.preview)) {
             dismiss();
             return;
         }
@@ -107,16 +84,16 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
         const rect = row.getBoundingClientRect();
         // Use the page margin when it fits. On smaller desktops, flip away
         // from the pointer and clamp to the viewport so links stay reachable.
-        let left = event.clientX + GAP;
+        let left = clientX + GAP;
         if (rect.right + GAP + WIDTH <= window.innerWidth - INSET) {
-            left = rect.right + GAP + (event.clientX - rect.left) * 0.025;
+            left = rect.right + GAP + (clientX - rect.left) * 0.025;
         } else if (rect.left - GAP - WIDTH >= INSET) {
             left = rect.left - GAP - WIDTH;
         } else if (left + WIDTH > window.innerWidth - INSET) {
-            left = event.clientX - WIDTH - GAP;
+            left = clientX - WIDTH - GAP;
         }
         left = Math.max(INSET, Math.min(left, window.innerWidth - WIDTH - INSET));
-        const top = Math.max(INSET, Math.min(event.clientY - HEIGHT / 2, window.innerHeight - HEIGHT - INSET));
+        const top = Math.max(INSET, Math.min(clientY - HEIGHT / 2, window.innerHeight - HEIGHT - INSET));
 
         if (!visible.current) {
             x.jump(left);
@@ -139,12 +116,56 @@ export function ProjectHoverPreview({ projects, children }: { projects: Project[
                 setActive(title);
             }, HOVER_DELAY);
         }
+    }, [dismiss, projects, x, y]);
+
+    function move(event: PointerEvent<HTMLDivElement>) {
+        if (!enabled || event.pointerType !== 'mouse') return;
+        pointer.current = { x: event.clientX, y: event.clientY };
+        updatePreview(event.target as Element, event.clientX, event.clientY);
     }
+
+    useEffect(() => {
+        const media = window.matchMedia(PREVIEW_QUERY);
+        const update = () => {
+            setEnabled(media.matches);
+            dismiss();
+        };
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' || event.key === 'Tab') dismiss();
+        };
+        let scrollFrame: number | null = null;
+        const onScroll = () => {
+            if (!media.matches || !pointer.current || scrollFrame !== null) return;
+            scrollFrame = requestAnimationFrame(() => {
+                scrollFrame = null;
+                const point = pointer.current;
+                if (!point) return;
+                // Scrolling moves rows beneath a stationary pointer. Refresh
+                // the hovered project without restarting the preview delay.
+                updatePreview(document.elementFromPoint(point.x, point.y), point.x, point.y);
+            });
+        };
+        update();
+        media.addEventListener('change', update);
+        window.addEventListener('scroll', onScroll, { capture: true, passive: true });
+        window.addEventListener('resize', dismiss);
+        window.addEventListener('blur', dismiss);
+        window.addEventListener('keydown', onKeyDown);
+        return () => {
+            media.removeEventListener('change', update);
+            window.removeEventListener('scroll', onScroll, true);
+            if (scrollFrame !== null) cancelAnimationFrame(scrollFrame);
+            window.removeEventListener('resize', dismiss);
+            window.removeEventListener('blur', dismiss);
+            window.removeEventListener('keydown', onKeyDown);
+            if (pending.current) clearTimeout(pending.current);
+        };
+    }, [dismiss, updatePreview]);
 
     const show = active !== null && loaded[active] === true;
 
     return (
-        <div onPointerMove={move} onPointerLeave={dismiss} onPointerCancel={dismiss}>
+        <div ref={container} onPointerMove={move} onPointerLeave={dismiss} onPointerCancel={dismiss}>
             {children}
             {enabled && warmed && createPortal(
                 <motion.div
