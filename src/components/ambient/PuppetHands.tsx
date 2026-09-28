@@ -85,18 +85,18 @@ function Hand({ side }: { side: 'left' | 'right' }) {
                       <path id={id} d={front} />
                       <path id={`${id}-back`} d={back} />
                     </defs>
-                    <text className="font-mono" fontSize="6" fill="rgba(174,79,76,0.65)">
+                    <text className="font-mono" fontSize="6" fill="#781114">
                       <textPath href={`#${id}-back`}>------------</textPath>
                     </text>
                     {/* A narrow shadow makes the cord sit in front of the chrome. */}
                     <use href={`#${id}`} fill="none" stroke="#0a0a0a" strokeWidth="3" />
-                    <text className="font-mono" fontSize="6" fontWeight="500" fill="#efaaa2" stroke="#efaaa2" strokeWidth="0.25">
+                    <text className="font-mono" fontSize="6" fontWeight="500" fill="#c51b20" stroke="#c51b20" strokeWidth="0.25">
                       <textPath href={`#${id}`}>------------</textPath>
                     </text>
                   </g>
                 );
               })}
-              <text x={x} y={y + ry + 3} textAnchor="middle" className="font-mono" fontSize="5" fill="#e0a09a">x</text>
+              <text x={x} y={y + ry + 3} textAnchor="middle" className="font-mono" fontSize="5" fill="#c51b20">x</text>
             </g>
           );
         })}
@@ -293,10 +293,10 @@ export function PuppetHands() {
           <defs>
             <path id={`${id}-thread-${index}`} />
           </defs>
-          <text className="font-mono" fontSize="6" fontWeight="500" fill="#cf7773" stroke="#cf7773" strokeWidth="0.2">
+          <text className="font-mono" fontSize="6" fontWeight="500" fill="#b7191d" stroke="#b7191d" strokeWidth="0.2">
             <textPath href={`#${id}-thread-${index}`} />
           </text>
-          <circle r="0" fill="rgba(224,160,154,0.8)" />
+          <circle r="0" fill="#b7191d" />
         </svg>
       ))}
       <Hand side="left" />
