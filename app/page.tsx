@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { projects } from '@/data/projects.server';
 import { IntroBubble } from '@/components/chat/IntroBubble';
+import { ChatBubble } from '@/components/chat/ChatBubble';
 import { MapWidget } from '@/components/chat/MapWidget';
 import { ProjectsSection } from '@/components/chat/ProjectsSection';
 import { Pill } from '@/components/chat/Pill';
@@ -17,6 +18,9 @@ export default function HomePage() {
         <IntroBubble />
 
         <SpotifyCard />
+        <ChatBubble>
+          Placeholder text.
+        </ChatBubble>
         <ProjectsSection projects={projects} />
         <MapWidget />
 
