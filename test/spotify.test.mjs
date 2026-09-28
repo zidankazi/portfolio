@@ -89,3 +89,20 @@ test("decodes null current playback, empty history, and recent tracks", () => {
   assert.equal(recent[0].track.title, track.name);
   assert.equal(spotify.decode_recent('{"items":[{"track":null}]}').isOk(), false);
 });
+
+test("fetches playback and reuses a token with correctly encoded credentials", async (t) => {
+  const calls = mockSpotify(t, [tokenReply, playingReply, playingReply]);
+  const client = spotify.new_client("client", "secret", "refresh&+= value");
+  assert.ok(await spotify.get_track(client) instanceof spotify.Playing);
+  assert.ok(await spotify.get_track(client) instanceof spotify.Playing);
+  assert.equal(calls.length, 3);
+  assert.equal(calls[0].url, "https://accounts.spotify.com/api/token");
+  assert.equal(calls[0].method, "POST");
+  assert.equal(calls[0].headers.Authorization, "Basic " + Buffer.from("client:secret").toString("base64"));
+  assert.equal(new URLSearchParams(calls[0].body).get("refresh_token"), "refresh&+= value");
+  assert.equal(new URLSearchParams(calls[0].body).get("grant_type"), "refresh_token");
+  assert.equal(calls[1].headers.Authorization, "Bearer test-token");
+  assert.equal(calls[1].body, undefined);
+  assert.equal(calls[1].cache, "no-store");
+  assert.ok(calls[1].signal instanceof AbortSignal);
+});
