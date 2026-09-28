@@ -177,6 +177,7 @@ h6 {
 
 .puppet-scene {
   --hand-size: 240px;
+  view-transition-name: puppet-scene;
   min-height: var(--hand-size);
   overflow-x: clip;
   overflow-y: visible;
@@ -213,6 +214,19 @@ h6 {
   .sigil-scroll { animation: none; }
 }
 
+/* SVG strings get their own capture, outside the outgoing page bitmap. */
+::view-transition-group(puppet-scene) {
+  animation: none;
+}
+
+::view-transition-old(puppet-scene) {
+  display: none;
+}
+
+::view-transition-new(puppet-scene) {
+  animation: conversation-arrive 180ms ease-out both;
+}
+
 /* Keep both pages present while the browser blends between them. */
 ::view-transition-old(root) {
   animation: page-leave 180ms ease-out both;
@@ -234,7 +248,8 @@ h6 {
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(root),
   ::view-transition-new(root),
-  ::view-transition-group(root) {
+  ::view-transition-group(root),
+  ::view-transition-new(puppet-scene) {
     animation: none;
   }
 }
