@@ -26,3 +26,7 @@ pub fn update(model: Model, event: Event) -> Model {
     HoverCapabilityChanged(can_hover) -> Model(..model, can_hover: can_hover)
   }
 }
+
+pub fn is_open(model: Model) -> Bool {
+  model.pinned || model.can_hover && { model.hovered || model.focused }
+}
