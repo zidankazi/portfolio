@@ -33,6 +33,8 @@ function Rail({ text, side }: { text: SigilText; side: 'left' | 'right' }) {
     let last = performance.now();
     let drift = 0;
     let elapsed = 0;
+    let scroll = window.scrollY;
+    let momentum = 0;
     let h = tile.offsetHeight;
 
     const frame = (now: number) => {
@@ -44,14 +46,18 @@ function Rail({ text, side }: { text: SigilText; side: 'left' | 'right' }) {
         elapsed += dt;
         const progress = Math.min(elapsed / 1.1, 1);
         const entrance = progress * progress * (3 - 2 * progress);
-        // Different overlapping periods keep the two streams from looking
-        // like copies on a conveyor belt. Motion runs independently of scroll.
+        // The autonomous phrase continues underneath a damped scroll response.
+        const previousScroll = scroll;
+        scroll += (window.scrollY - scroll) * (1 - Math.exp(-dt / 0.14));
+        const velocity = Math.max(-1, Math.min(1, (scroll - previousScroll) / dt / 1000));
+        momentum += (velocity - momentum) * (1 - Math.exp(-dt / 0.18));
         const phase = elapsed + (side === 'left' ? 0 : 4.7);
         const wave = (Math.sin(phase * 0.62) + 1) / 2;
-        const turn = Math.sin(phase * 0.37) * 0.72 + Math.sin(phase * 0.81) * 0.28;
-        const energy = (Math.sin(phase * 0.93 - 0.8) + 1) / 2;
+        const idleTurn = Math.sin(phase * 0.37) * 0.72 + Math.sin(phase * 0.81) * 0.28;
+        const turn = Math.max(-1, Math.min(1, idleTurn + momentum * 0.55));
+        const energy = Math.min(1, (Math.sin(phase * 0.93 - 0.8) + 1) / 2 + Math.abs(momentum) * 0.25);
         drift += dt * DRIFT_PX_PER_SEC * (0.6 + wave * 1.65) * dir * entrance;
-        const raw = drift;
+        const raw = drift + scroll * 0.42 * dir;
         const y = ((raw % h) - h) % h;
         shift.style.transform = `translate3d(0, ${y.toFixed(2)}px, 0)`;
 
@@ -108,10 +114,10 @@ function Rail({ text, side }: { text: SigilText; side: 'left' | 'right' }) {
         WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 14%, black 86%, transparent)',
       }}
     >
-      <div ref={poseRef} className="absolute inset-0 px-4">
+      <div ref={poseRef} className="absolute inset-0 px-4" style={{ willChange: 'transform' }}>
         <div ref={shiftRef} className="relative" style={{ willChange: 'transform' }}>
           {INK.map(({ key, color }, index) => (
-            <div key={key} data-sigil-depth={key} className={index === 0 ? 'relative' : 'absolute inset-x-0 top-0'}>
+            <div key={key} data-sigil-depth={key} style={{ willChange: 'transform, opacity' }} className={index === 0 ? 'relative' : 'absolute inset-x-0 top-0'}>
               <pre className={`font-mono text-[6px] leading-none ${color}`}>{text[key]}</pre>
               <pre className={`font-mono text-[6px] leading-none ${color}`}>{text[key]}</pre>
             </div>
