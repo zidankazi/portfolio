@@ -58,8 +58,8 @@ export default function HomePage() {
               sizes="32px"
             />
           </div>
-          <Pill href="mailto:zidankazi01@outlook.com" icon={<Mail className="w-3.5 h-3.5" />}>
-            Shoot me an email — zidankazi01 [at] outlook.com
+          <Pill href="mailto:hi@zidankazi.com" icon={<Mail className="w-3.5 h-3.5" />}>
+            Shoot me an email — hi [at] zidankazi [dot] com
           </Pill>
         </div>
 
