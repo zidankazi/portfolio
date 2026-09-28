@@ -57,7 +57,7 @@
 .work {
   width: 100%;
   flex: 1;
-  min-height: 480px;
+  min-height: 520px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -66,8 +66,8 @@
 
 .stack {
   position: relative;
-  width: min(100%, 640px);
-  height: 350px;
+  width: min(100%, 760px);
+  height: 410px;
 }
 
 .project {
@@ -76,7 +76,7 @@
   --zoom: 1;
   position: absolute;
   display: block;
-  width: 40%;
+  width: 43%;
   aspect-ratio: 1.5;
   transform: translateY(var(--lift)) rotate(var(--angle)) scale(var(--zoom));
   transition: transform 240ms cubic-bezier(0.23, 1, 0.32, 1);
@@ -85,14 +85,14 @@
 
 .left {
   --angle: -7deg;
-  left: 7%;
-  top: 115px;
+  left: 4%;
+  top: 130px;
   z-index: 1;
 }
 
 .center {
   --angle: 4deg;
-  left: 30%;
+  left: 28%;
   top: 40px;
   z-index: 3;
 }
@@ -100,7 +100,7 @@
 .right {
   --angle: 10deg;
   left: 52%;
-  top: 135px;
+  top: 155px;
   z-index: 2;
 }
 
@@ -186,6 +186,7 @@
   user-select: none;
   height: auto;
   filter: drop-shadow(0 5px 5px #0007);
+  transition: transform 260ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .left .decoration {
@@ -253,6 +254,11 @@
   transition: none;
 }
 
+.center:focus-visible .decoration {
+  transform: translateY(-34px) rotate(-6deg);
+  transition: none;
+}
+
 .project:active {
   --zoom: 0.98;
 }
@@ -271,6 +277,14 @@
   .project:hover .visit,
   .navLink:hover .tooltip {
     opacity: 1;
+  }
+
+  .left:hover .decoration {
+    transform: translateY(-12px) rotate(9deg);
+  }
+
+  .center:hover .decoration {
+    transform: translateY(-34px) rotate(-6deg);
   }
 
   .navLink:hover,
@@ -295,7 +309,7 @@
   }
 
   .project {
-    width: 64%;
+    width: 68%;
   }
 
   .left {
@@ -333,6 +347,7 @@
   .navLink,
   .tooltip,
   .visit,
+  .decoration,
   .footer a {
     transition: none;
   }
@@ -344,6 +359,15 @@
   }
 
   .navLink:active {
+    transform: none;
+  }
+
+  .left:hover .decoration {
+    transform: rotate(17deg);
+  }
+
+  .center:hover .decoration,
+  .center:focus-visible .decoration {
     transform: none;
   }
 }

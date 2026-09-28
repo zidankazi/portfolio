@@ -70,7 +70,7 @@ export default function StudioPage() {
                   alt=""
                   fill
                   priority
-                  sizes="(max-width: 540px) 290px, 260px"
+                  sizes="(max-width: 540px) 290px, 340px"
                   className={styles.artwork}
                 />
                 <div className={styles.shade} />
