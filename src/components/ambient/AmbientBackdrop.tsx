@@ -2,30 +2,12 @@
 
 import { useSyncExternalStore } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { tame, saturation_of } from '../../../build/dev/javascript/portfolio/lib/palette.mjs';
 import {
     subscribeAmbient,
     getAmbientPalette,
     getAmbientServerSnapshot,
-    type RGB,
 } from './ambient';
-
-/**
- * Rein a palette color into wash territory: pull it toward gray, then pin its
- * brightness to a mid band so dark and neon sleeves alike land as a tint
- * rather than a glare.
- */
-function tame([r, g, b]: RGB): RGB {
-    const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-    const mixed = [r, g, b].map((v) => v + (luma - v) * 0.3);
-    const max = Math.max(...mixed, 1);
-    const k = Math.min(Math.max(155 / max, 0.6), 3.2);
-    return mixed.map((v) => Math.round(Math.min(255, v * k))) as RGB;
-}
-
-function saturationOf([r, g, b]: RGB): number {
-    const max = Math.max(r, g, b);
-    return max === 0 ? 0 : (max - Math.min(r, g, b)) / max;
-}
 
 /**
  * Full-page ambient wash driven by whatever's playing. Sits fixed behind the
@@ -47,8 +29,8 @@ export function AmbientBackdrop() {
         // used to come out as a white glow. Scale the wash with the palette's
         // saturation instead: colorless art means no wash, not a pale one.
         const sat = Math.max(
-            saturationOf(palette.primary),
-            saturationOf(palette.secondary)
+            saturation_of(palette.primary),
+            saturation_of(palette.secondary)
         );
         const s = Math.min(1, Math.max(0, (sat - 0.12) / 0.25));
         if (s > 0.01) {

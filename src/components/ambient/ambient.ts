@@ -1,4 +1,6 @@
-export type RGB = [number, number, number];
+import type { Rgb } from '../../../build/dev/javascript/portfolio/lib/palette.mjs';
+
+export type RGB = Rgb;
 export type AmbientPalette = { primary: RGB; secondary: RGB };
 
 /**

@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "build:gleam": "node scripts/gleam.mjs build --warnings-as-errors",
     "check:gleam": "node scripts/gleam.mjs format --check src && node scripts/gleam.mjs check",
-    "test:gleam": "npm run build:gleam && node --test test/spotify.test.mjs"
+    "test:gleam": "npm run build:gleam && node --test test/*.test.mjs"
   },
   "dependencies": {
     "colorthief": "^2.6.0",

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import { setAmbientPalette, type RGB } from '@/components/ambient/ambient';
 import type { Track } from '@/types/spotify';
+import { brighten } from '../../../build/dev/javascript/portfolio/lib/palette.mjs';
 
 function SpotifyIcon({ className }: { className?: string }) {
     return (
@@ -30,17 +31,6 @@ function Equalizer({ tint }: { tint?: string }) {
             ))}
         </div>
     );
-}
-
-/** Lift a palette color to a bright, readable accent (for the bar/equalizer) */
-function brighten([r, g, b]: RGB, target = 225): RGB {
-    const max = Math.max(r, g, b, 1);
-    const k = Math.max(target / max, 1);
-    return [
-        Math.min(255, Math.round(r * k)),
-        Math.min(255, Math.round(g * k)),
-        Math.min(255, Math.round(b * k)),
-    ];
 }
 
 export function SpotifyTrackCard({ initialData }: { initialData: Track }) {
@@ -143,8 +133,8 @@ export function SpotifyTrackCard({ initialData }: { initialData: Track }) {
 
     const c1 = colors?.primary;
     const c2 = colors?.secondary;
-    const accent = c1 ? brighten(c1) : null;
-    const accent2 = c2 ? brighten(c2) : null;
+    const accent = c1 ? brighten(c1, 225) : null;
+    const accent2 = c2 ? brighten(c2, 225) : null;
     // Bar runs primary → secondary, showing off the whole extracted palette
     const barFill =
         accent && accent2
