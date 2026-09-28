@@ -138,3 +138,21 @@ test("refreshes the access token one minute before expiry", async (t) => {
   await spotify.get_track(client);
   assert.equal(calls.length, 5);
 });
+
+test("rate limits and network failures use cached metadata without old progress", async (t) => {
+  const calls = mockSpotify(t, [
+    tokenReply, playingReply,
+    { status: 429 }, { status: 429 },
+    new Error("network unavailable"), new Error("network unavailable"),
+  ]);
+  const client = spotify.new_client("client", "secret", "refresh");
+  await spotify.get_track(client);
+  for (let index = 0; index < 2; index += 1) {
+    const playback = await spotify.get_track(client);
+    assert.ok(playback instanceof spotify.Cached);
+    assert.equal(playback.track.title, track.name);
+    assert.equal("progress_ms" in playback, false);
+    assert.equal(spotify.playback_label(playback), "last known track");
+  }
+  assert.equal(calls.length, 6);
+});
