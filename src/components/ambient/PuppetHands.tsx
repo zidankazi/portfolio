@@ -96,18 +96,27 @@ function Hand({ side }: { side: 'left' | 'right' }) {
 export function PuppetHands() {
   const { ready, reveal, skip } = useEntrance();
   const rootRef = useRef<HTMLDivElement>(null);
+  const frontRef = useRef<SVGSVGElement>(null);
   const id = useId().replace(/:/g, '');
 
   useLayoutEffect(() => {
     const root = rootRef.current;
+    const front = frontRef.current;
     const main = document.querySelector('main');
-    if (!root || !main || !ready) return;
+    if (!root || !front || !main || !ready) return;
 
     const desktop = window.matchMedia('(min-width: 1024px)');
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
     const paths = [...root.querySelectorAll<SVGPathElement>('.puppet-threads path')];
     const threads = [...root.querySelectorAll<SVGTextPathElement>('.puppet-threads textPath')];
     const nodes = [...root.querySelectorAll<SVGCircleElement>('.puppet-threads circle')];
+    const frontThreads = [...front.querySelectorAll<SVGTextPathElement>('textPath')];
+    const frontClips = [...front.querySelectorAll<SVGRectElement>('clipPath rect')];
+    const writeThread = (slot: number, count: number) => {
+      const text = '='.repeat(count);
+      threads[slot].textContent = text;
+      frontThreads[slot].textContent = text;
+    };
     const hands = [...root.querySelectorAll<HTMLElement>('[data-puppet-hand]')];
     // Chains start at the innermost finger, opposite the artwork's wrap order.
     const wraps = hands.flatMap(hand => [...hand.querySelectorAll<SVGGElement>('[data-finger-wrap]')].reverse());
@@ -153,17 +162,18 @@ export function PuppetHands() {
       // captures a page transition, including when the project list expands.
       const sceneHeight = Math.ceil(Math.max(content.bottom - rootBox.top, window.innerHeight));
       if (sceneHeight !== rootBox.height) root.style.height = `${sceneHeight}px`;
+      front.setAttribute('height', String(sceneHeight));
 
       for (let side = 0; side < 2; side++) {
         for (let index = 0; index < 4; index++) {
           const slot = side * 4 + index;
           const box = anchorBoxes[index];
           const path = paths[slot];
-          const thread = threads[slot];
           const node = nodes[slot];
           if (!box) {
             path.removeAttribute('d');
-            thread.textContent = '';
+            writeThread(slot, 0);
+            frontClips[slot].setAttribute('width', '0');
             threadCounts[slot] = 0;
             node.setAttribute('r', '0');
             wind(slot, 0);
@@ -175,29 +185,76 @@ export function PuppetHands() {
           const scale = hand.width / HAND_WIDTH;
           const sx = hand.left - rootBox.left + (side === 0 ? tip[0] : HAND_WIDTH - tip[0]) * scale;
           const sy = hand.top - rootBox.top + tip[1] * scale;
-          const ex = (side === 0 ? box.left + 3 : box.right - 3) - rootBox.left;
+          // Two strands sling beneath an earlier message, cross its front,
+          // and emerge on the opposite side before reaching their destination.
+          const crossed = slot === 1 || slot === 7 ? anchorBoxes[index - 1] : undefined;
+          const endSide = crossed ? 1 - side : side;
+          const ex = (endSide === 0 ? box.left + 3 : box.right - 3) - rootBox.left;
           const ey = box.top - rootBox.top + 14;
-          // Keep the long strings outside the conversation until their final
-          // approach, including narrow bubbles far down the page.
+          const direction = side === 0 ? 1 : -1;
           const mobile = !desktop.matches;
-          const inset = mobile ? 4 + index * 2.5 : 30;
+          const inset = mobile ? 4 + index * 2.5 : 30 + index * 9;
           const gutter = (side === 0 ? content.left - inset : content.right + inset) - rootBox.left;
           const span = Math.max(0, ey - sy);
           const shoulder = content.top - rootBox.top - 18 + index * 3;
-          const d = mobile
-            ? `M${sx.toFixed(1)},${sy.toFixed(1)} C${sx.toFixed(1)},${(sy + 18).toFixed(1)} ${gutter.toFixed(1)},${(shoulder - 20).toFixed(1)} ${gutter.toFixed(1)},${shoulder.toFixed(1)} L${gutter.toFixed(1)},${(ey - 18).toFixed(1)} Q${gutter.toFixed(1)},${ey.toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)}`
-            : `M${sx.toFixed(1)},${sy.toFixed(1)} C${sx.toFixed(1)},${(sy + span * 0.35).toFixed(1)} ${gutter.toFixed(1)},${(ey - Math.min(80, span * 0.2)).toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)}`;
+          const curves: number[][] = [];
+          if (crossed) {
+            const left = crossed.left - rootBox.left;
+            const right = crossed.right - rootBox.left;
+            const bottom = crossed.bottom - rootBox.top;
+            const top = crossed.top - rootBox.top;
+            const entryX = side === 0 ? left - 7 : right + 7;
+            const exitX = side === 0 ? right + 7 : left - 7;
+            if (slot === 1) {
+              curves.push(
+                [sx, sy + 28, left - (mobile ? 18 : 65), top - 22, entryX, top + crossed.height * 0.22],
+                [left + crossed.width * 0.12, bottom + 5, right - crossed.width * 0.24, bottom + 8, exitX, top + crossed.height * 0.58],
+                [exitX + (mobile ? 7 : 24), bottom + 3, ex + 18, ey - 14, ex, ey],
+              );
+            } else {
+              // Catch only the outer corner, then slip behind the bubble.
+              curves.push(
+                [sx, sy + 44, right + (mobile ? 7 : 44), top - 24, entryX, top + crossed.height * 0.65],
+                [right - crossed.width * 0.12, top + crossed.height * 0.6, right - crossed.width * 0.28, top + 16, right - crossed.width * 0.34, top - 6],
+                [right - crossed.width * 0.34 - 40, top - 14, left - 5, top + 4, exitX, bottom - 11],
+                [exitX - (mobile ? 8 : 24), bottom + 9, ex - 20, ey - 13, ex, ey],
+              );
+            }
+            const clip = frontClips[slot];
+            clip.setAttribute('x', (slot === 1 ? left : right - crossed.width * 0.4).toFixed(1));
+            clip.setAttribute('y', (crossed.top - rootBox.top).toFixed(1));
+            clip.setAttribute('width', (crossed.width * (slot === 1 ? 1 : 0.4)).toFixed(1));
+            clip.setAttribute('height', crossed.height.toFixed(1));
+          } else {
+            frontClips[slot].setAttribute('width', '0');
+            if (mobile) {
+              const bow = 10 + index * 7;
+              curves.push(
+                [sx, sy + 18, gutter, shoulder - 20, gutter, shoulder],
+                [gutter + direction * bow, shoulder + span * 0.42, gutter + direction * bow, ey - 32, ex, ey],
+              );
+            } else {
+              curves.push([sx, sy + span * 0.35, gutter, ey - Math.min(80, span * 0.2), ex, ey]);
+            }
+          }
+          // The control polygon safely overestimates the cord length without
+          // forcing SVG layout on every frame of an expanding message.
+          let length = 0;
+          let px = sx;
+          let py = sy;
+          const d = `M${sx.toFixed(1)},${sy.toFixed(1)}` + curves.map(curve => {
+            for (let point = 0; point < 6; point += 2) {
+              length += Math.hypot(curve[point] - px, curve[point + 1] - py);
+              px = curve[point];
+              py = curve[point + 1];
+            }
+            return ` C${curve.map(value => value.toFixed(1)).join(' ')}`;
+          }).join('');
           if (path.getAttribute('d') !== d) {
             path.setAttribute('d', d);
-            // Letters run along the thread, preserving the ASCII material.
-            // A conservative control-polygon length avoids synchronous SVG
-            // path measurement; reuse text while the panel animates.
-            const length = mobile
-              ? 56 + Math.hypot(gutter - sx, shoulder - sy - 38) + Math.abs(ey - 18 - shoulder) + Math.abs(ex - gutter)
-              : span * 0.35 + Math.hypot(gutter - sx, span * 0.65 - Math.min(80, span * 0.2)) + Math.hypot(ex - gutter, Math.min(80, span * 0.2));
             const count = Math.ceil(length / 115.2) * 16;
             if (count !== threadCounts[slot]) {
-              if (!growing || arrived[slot]) thread.textContent = '='.repeat(count * 2);
+              if (!growing || arrived[slot]) writeThread(slot, count * 2);
               threadCounts[slot] = count;
             }
             node.setAttribute('cx', ex.toFixed(1));
@@ -217,7 +274,7 @@ export function PuppetHands() {
       if (growing) {
         const skip = reduced.matches;
         const progressByChain: number[] = [];
-        threads.forEach((thread, slot) => {
+        threads.forEach((_, slot) => {
           const phrase = phrasing[slot];
           const elapsed = now - started - phrase.delay;
           const winding = skip ? 1 : Math.max(0, Math.min(elapsed / WRAP_DURATION, 1));
@@ -231,12 +288,12 @@ export function PuppetHands() {
           // never randomized per frame, so the chain cannot flicker or retreat.
           while (count < phrase.beats.length && phrase.beats[count] <= progress) count++;
           if (count !== visibleCounts[slot]) {
-            thread.textContent = '='.repeat(count);
+            writeThread(slot, count);
             visibleCounts[slot] = count;
           }
           if (t === 1) {
             arrived[slot] = true;
-            thread.textContent = '='.repeat(threadCounts[slot] * 2);
+            writeThread(slot, threadCounts[slot] * 2);
             nodes[slot].setAttribute('r', anchors[slot % 4] ? '1.5' : '0');
           }
         });
@@ -303,24 +360,40 @@ export function PuppetHands() {
   }, [ready, reveal, skip]);
 
   return (
-    <div ref={rootRef} aria-hidden="true" className="pointer-events-none select-none puppet-scene absolute inset-x-0 top-0 -z-10">
-      {/* Separate SVGs keep a moving chain from relaying out every text path.
-          Full-height canvases also keep page-transition snapshots bounded. */}
-      {Array.from({ length: 8 }, (_, index) => (
-        <svg key={index} height="100%" className="puppet-threads absolute inset-x-0 top-0 w-full overflow-hidden" focusable="false">
-          <defs>
-            <path id={`${id}-thread-${index}`} />
-          </defs>
-          <text className="font-mono" fontSize="6" fontWeight="500" fill="#b7191d" stroke="#b7191d" strokeWidth="0.2">
-            <textPath href={`#${id}-thread-${index}`} />
-          </text>
-          <circle r="0" fill="#b7191d" />
-        </svg>
-      ))}
-      <div className="puppet-hand-stage absolute inset-x-0 top-0">
-        <Hand side="left" />
-        <Hand side="right" />
+    <>
+      <div ref={rootRef} aria-hidden="true" className="pointer-events-none select-none puppet-scene absolute inset-x-0 top-0 -z-10">
+        {/* Separate SVGs keep a moving chain from relaying out every text path.
+            Full-height canvases also keep page-transition snapshots bounded. */}
+        {Array.from({ length: 8 }, (_, index) => (
+          <svg key={index} height="100%" className="puppet-threads absolute inset-x-0 top-0 w-full overflow-hidden" focusable="false">
+            <defs>
+              <path id={`${id}-thread-${index}`} />
+            </defs>
+            <text className="font-mono" fontSize="6" fontWeight="500" fill="#b7191d" stroke="#b7191d" strokeWidth="0.2">
+              <textPath href={`#${id}-thread-${index}`} />
+            </text>
+            <circle r="0" fill="#b7191d" />
+          </svg>
+        ))}
+        <div className="puppet-hand-stage absolute inset-x-0 top-0">
+          <Hand side="left" />
+          <Hand side="right" />
+        </div>
       </div>
-    </div>
+      <svg ref={frontRef} aria-hidden="true" focusable="false" height="1" className="pointer-events-none absolute inset-x-0 top-0 z-10 w-full overflow-hidden">
+        {Array.from({ length: 8 }, (_, slot) => (
+          <g key={slot} clipPath={`url(#${id}-front-${slot})`}>
+            <defs>
+              <clipPath id={`${id}-front-${slot}`} clipPathUnits="userSpaceOnUse">
+                <rect width="0" height="0" rx="20" />
+              </clipPath>
+            </defs>
+            <text className="font-mono" fontSize="6" fontWeight="500" fill="#b7191d" stroke="#0a0a0a" strokeWidth="1.2" paintOrder="stroke">
+              <textPath href={`#${id}-thread-${slot}`} />
+            </text>
+          </g>
+        ))}
+      </svg>
+    </>
   );
 }
