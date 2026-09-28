@@ -109,7 +109,7 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
                     className="w-full text-left px-4 pt-3 pb-3 border-b border-white/10 flex items-center justify-between gap-3"
                 >
                     <span>
-                        A few things I&apos;ve made.{' '}
+                        Some projects I’ve built for the love of the game.{' '}
                         {/* Both rendered; CSS shows one by hover capability — no hydration flash */}
                         <span className="hint-hover text-zinc-500">Hover your mouse here to see the list.</span>
                         <span className="hint-tap text-zinc-500">{isOpen ? 'Tap to collapse.' : 'Tap to explore.'}</span>
