@@ -191,3 +191,15 @@ test("invalid token payloads are never cached or used for playback requests", as
   }
   assert.equal(calls.length, replies.length);
 });
+
+test("a refresh failure keeps the last track without claiming it is still playing", async (t) => {
+  let now = 100_000;
+  t.mock.method(Date, "now", () => now);
+  mockSpotify(t, [tokenReply, playingReply, { status: 400 }]);
+  const client = spotify.new_client("client", "secret", "refresh");
+  await spotify.get_track(client);
+  now += 3_540_000;
+  const playback = await spotify.get_track(client);
+  assert.ok(playback instanceof spotify.Cached);
+  assert.equal(playback.track.title, track.name);
+});
