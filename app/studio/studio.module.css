@@ -104,7 +104,7 @@
 .artwork {
   object-fit: cover;
   pointer-events: none;
-  filter: saturate(0.82) brightness(0.9);
+  filter: saturate(0.95);
 }
 
 .center .artwork {
@@ -118,7 +118,7 @@
 .shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, #0000 35%, #09090955 57%, #090909ed 100%);
+  background: linear-gradient(180deg, #0000 50%, #09090935 68%, #090909de 100%);
 }
 
 .texture {

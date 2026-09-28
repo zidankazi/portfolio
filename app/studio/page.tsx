@@ -23,7 +23,7 @@ const sites = [
     name: 'Relic',
     domain: 'tryrelic.io',
     href: 'https://tryrelic.io/',
-    image: '/projects/relic-loop-poster.webp',
+    image: '/studio/relic.webp',
     decoration: '/studio/binderclip.webp',
     position: 'center',
   },
