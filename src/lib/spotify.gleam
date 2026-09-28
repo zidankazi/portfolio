@@ -91,3 +91,6 @@ fn new_cell(value: a) -> Cell(a)
 
 @external(javascript, "./spotify_ffi.mjs", "read_cell")
 fn read_cell(cell: Cell(a)) -> a
+
+@external(javascript, "./spotify_ffi.mjs", "write_cell")
+fn write_cell(cell: Cell(a), value: a) -> Nil
