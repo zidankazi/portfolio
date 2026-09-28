@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useReducer } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { ChevronDown } from 'lucide-react';
 import type { Project } from '@/types/project';
 import { ProjectHoverPreview } from './ProjectHoverPreview';
+import * as projectState from '../../../build/dev/javascript/portfolio/lib/projects_state.mjs';
 
 // Links a phrase inside the description, leaving the rest as plain text
 function Description({ project }: { project: Project }) {
@@ -68,33 +69,26 @@ interface ProjectsSectionProps {
 export function ProjectsSection({ projects }: ProjectsSectionProps) {
     const listId = useId();
 
-    // Open when: tapped/clicked open (pinned), or — on real hover devices —
-    // hovered or keyboard-focused. Gating hover/focus behind canHover keeps a
-    // touch tap (which can synthesize a mouseenter/focus) from fighting the
-    // pinned toggle, so tap-to-open / tap-to-close stays clean.
-    const [pinned, setPinned] = useState(false);
-    const [hovered, setHovered] = useState(false);
-    const [focused, setFocused] = useState(false);
-    const [canHover, setCanHover] = useState(true);
+    const [model, dispatch] = useReducer(projectState.update, undefined, projectState.init);
 
     useEffect(() => {
         const mq = window.matchMedia('(min-width: 768px) and (hover: hover) and (pointer: fine)');
-        const update = () => setCanHover(mq.matches);
+        const update = () => dispatch(new projectState.HoverCapabilityChanged(mq.matches));
         update();
         mq.addEventListener('change', update);
         return () => mq.removeEventListener('change', update);
     }, []);
 
-    const isOpen = pinned || (canHover && (hovered || focused));
+    const isOpen = projectState.is_open(model);
 
     return (
         <div
             className="flex gap-2 sm:gap-3 items-start w-full"
-            onMouseEnter={canHover ? () => setHovered(true) : undefined}
-            onMouseLeave={canHover ? () => setHovered(false) : undefined}
-            onFocusCapture={() => setFocused(true)}
+            onMouseEnter={() => dispatch(new projectState.MouseEntered())}
+            onMouseLeave={() => dispatch(new projectState.MouseLeft())}
+            onFocusCapture={() => dispatch(new projectState.FocusEntered())}
             onBlurCapture={(e) => {
-                if (!e.currentTarget.contains(e.relatedTarget as Node)) setFocused(false);
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) dispatch(new projectState.FocusLeft());
             }}
         >
             {/* Avatar */}
@@ -109,7 +103,7 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
                 {/* Header — a real button so tap + keyboard work, not just hover */}
                 <button
                     type="button"
-                    onClick={() => setPinned((p) => !p)}
+                    onClick={() => dispatch(new projectState.TogglePinned())}
                     aria-expanded={isOpen}
                     aria-controls={listId}
                     className="w-full text-left px-4 pt-3 pb-3 border-b border-white/10 flex items-center justify-between gap-3"
