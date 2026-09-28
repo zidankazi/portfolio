@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import * as spotify from "../build/dev/javascript/portfolio/lib/spotify.mjs";
-import { None, Some } from "../build/dev/javascript/gleam_stdlib/gleam/option.mjs";
+import { None } from "../build/dev/javascript/gleam_stdlib/gleam/option.mjs";
 
 // Synthetic Spotify responses; these tests never use credentials or the network.
 const track = {

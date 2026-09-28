@@ -7,3 +7,4 @@ certificates
 .claude
 .vscode
 *.tsbuildinfo
+/build/

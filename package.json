@@ -7,7 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "check:gleam": "gleam format --check src && gleam check --warnings-as-errors",
+    "test:gleam": "gleam build --warnings-as-errors && node --test test/spotify.test.mjs"
   },
   "dependencies": {
     "colorthief": "^2.6.0",
