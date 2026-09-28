@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import { setAmbientPalette, type RGB } from '@/components/ambient/ambient';
-import type { Track } from '@/lib/spotify';
+import type { Track } from '@/types/spotify';
 
 function SpotifyIcon({ className }: { className?: string }) {
     return (

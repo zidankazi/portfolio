@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getTrack } from '@/lib/spotify';
+import { getTrack } from '@/lib/spotify.server';
 
 export const revalidate = 0; // no caching
 
