@@ -30,7 +30,7 @@ export function ChatBubble({ children, showAvatar = true, compact = false }: Cha
             </div>
 
             {/* Bubble */}
-            <div data-puppet-anchor="bubble" className={`bg-[#161618] text-[#d4d4d4] rounded-[20px] rounded-tl-sm px-4 py-3 text-[14px] leading-[1.6] border border-white/5 shadow-sm ${compact ? 'w-fit' : 'w-full'}`}>
+            <div data-puppet-anchor="bubble" className={`min-w-0 bg-[#161618] text-[#d4d4d4] rounded-[20px] rounded-tl-sm px-4 py-3 text-[14px] leading-[1.6] border border-white/5 shadow-sm ${compact ? 'w-fit' : 'w-full'}`}>
                 {children}
             </div>
         </div>

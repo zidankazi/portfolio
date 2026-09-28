@@ -1,14 +1,26 @@
 'use client';
 
-import { useEffect, useId, useRef } from 'react';
+import { useLayoutEffect, useId, useRef } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { useEntrance } from '@/components/motion/Entrance';
 import { HAND_LEFT, HAND_RIGHT, HAND_WIDTH, HAND_HEIGHT, HAND_FONT_SIZE, HAND_TIPS } from './puppetHandArt';
 
 function Hand({ side }: { side: 'left' | 'right' }) {
   const art = side === 'left' ? HAND_LEFT : HAND_RIGHT;
+  const { settle } = useEntrance();
+  const reduced = useReducedMotion();
   return (
-    <div
+    <motion.div
       data-puppet-hand={side}
       className="absolute -top-3"
+      initial={{ y: -HAND_HEIGHT - 40 }}
+      animate={{ y: 0 }}
+      transition={reduced ? { duration: 0 } : {
+        type: 'spring', stiffness: 150, damping: 17, mass: 1.2,
+        delay: side === 'left' ? 0.08 : 0.16,
+        restDelta: 0.5, restSpeed: 2,
+      }}
+      onAnimationComplete={() => settle(side)}
       style={{
         width: HAND_WIDTH,
         height: HAND_HEIGHT,
@@ -22,19 +34,20 @@ function Hand({ side }: { side: 'left' | 'right' }) {
       <pre className="font-mono text-zinc-500/25">{art.detail}</pre>
       <pre className="absolute inset-0 font-mono text-zinc-300/65">{art.body}</pre>
       <pre className="absolute inset-0 font-mono text-zinc-100">{art.highlights}</pre>
-    </div>
+    </motion.div>
   );
 }
 
 export function PuppetHands() {
+  const { ready } = useEntrance();
   const rootRef = useRef<HTMLDivElement>(null);
   const id = useId().replace(/:/g, '');
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = rootRef.current;
     const main = document.querySelector('main');
     const svg = root?.querySelector('svg');
-    if (!root || !main || !svg) return;
+    if (!root || !main || !svg || !ready) return;
 
     const desktop = window.matchMedia('(min-width: 1024px)');
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -45,31 +58,36 @@ export function PuppetHands() {
     let anchors: HTMLElement[] = [];
     let raf = 0;
     let until = 0;
+    let previousHeight = 0;
+    const threadCounts = new Array<number>(8).fill(0);
 
     const draw = () => {
       if (!desktop.matches || document.hidden) return;
       const rootBox = root.getBoundingClientRect();
-      const width = rootBox.width;
       const height = document.body.offsetHeight;
-      svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-      svg.setAttribute('height', String(height));
       const handBoxes = hands.map(hand => hand.getBoundingClientRect());
       const content = main.getBoundingClientRect();
+      // Batch geometry reads before changing any SVG attributes.
+      const anchorBoxes = anchors.map(anchor => anchor.getBoundingClientRect());
+      if (height !== previousHeight) {
+        svg.setAttribute('height', String(height));
+        previousHeight = height;
+      }
 
       for (let side = 0; side < 2; side++) {
         for (let index = 0; index < 4; index++) {
           const slot = side * 4 + index;
-          const anchor = anchors[index];
+          const box = anchorBoxes[index];
           const path = paths[slot];
           const thread = threads[slot];
           const node = nodes[slot];
-          if (!anchor) {
+          if (!box) {
             path.removeAttribute('d');
             thread.textContent = '';
+            threadCounts[slot] = 0;
             node.setAttribute('r', '0');
             continue;
           }
-          const box = anchor.getBoundingClientRect();
           const hand = handBoxes[side];
           const tip = HAND_TIPS[3 - index];
           const sx = hand.left - rootBox.left + (side === 0 ? tip[0] : HAND_WIDTH - tip[0]);
@@ -84,8 +102,14 @@ export function PuppetHands() {
           if (path.getAttribute('d') !== d) {
             path.setAttribute('d', d);
             // Letters run along the thread, preserving the ASCII material.
-            const length = path.getTotalLength();
-            thread.textContent = 'il'.repeat(Math.ceil(length / 7.2));
+            // A conservative control-polygon length avoids synchronous SVG
+            // path measurement; reuse text while the panel animates.
+            const length = span * 0.35 + Math.hypot(gutter - sx, span * 0.65 - Math.min(80, span * 0.2)) + Math.hypot(ex - gutter, Math.min(80, span * 0.2));
+            const count = Math.ceil(length / 115.2) * 16;
+            if (count !== threadCounts[slot]) {
+              thread.textContent = 'il'.repeat(count);
+              threadCounts[slot] = count;
+            }
             node.setAttribute('cx', ex.toFixed(1));
             node.setAttribute('cy', ey.toFixed(1));
             node.setAttribute('r', '1.5');
@@ -102,7 +126,7 @@ export function PuppetHands() {
     // Track the existing bubble entrance/expansion animations, then go idle.
     // No extra idle animation is introduced, including under reduced motion.
     const schedule = () => {
-      until = performance.now() + (reduced.matches ? 80 : 1200);
+      until = performance.now() + (reduced.matches ? 80 : 450);
       if (!raf) raf = requestAnimationFrame(frame);
     };
     const resize = new ResizeObserver(schedule);
@@ -123,7 +147,7 @@ export function PuppetHands() {
     // a refresh also covers mobile browser viewport changes and scroll reveals.
     window.addEventListener('scroll', schedule, { passive: true });
     discover();
-    until = performance.now() + 3500;
+    draw();
 
     return () => {
       cancelAnimationFrame(raf);
@@ -135,11 +159,11 @@ export function PuppetHands() {
       window.removeEventListener('resize', schedule);
       window.removeEventListener('scroll', schedule);
     };
-  }, []);
+  }, [ready]);
 
   return (
     <div ref={rootRef} aria-hidden="true" className="pointer-events-none select-none absolute inset-x-0 top-0 -z-10 hidden lg:block">
-      <svg className="absolute inset-x-0 top-0 w-full overflow-visible" focusable="false">
+      <svg className="puppet-threads absolute inset-x-0 top-0 w-full overflow-visible" focusable="false">
         <defs>
           {Array.from({ length: 8 }, (_, index) => <path key={index} id={`${id}-thread-${index}`} />)}
         </defs>

@@ -121,7 +121,39 @@ h6 {
   animation: sigil-ink 1.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+@keyframes conversation-arrive {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  [data-puppet-stage='dropping'] main {
+    visibility: hidden;
+  }
+
+  [data-puppet-stage='ready'] main,
+  [data-puppet-stage='ready'] .puppet-threads {
+    animation: conversation-arrive 0.32s cubic-bezier(0.2, 0.65, 0.3, 1) both;
+  }
+
+  [data-puppet-stage='dropping'] .sigil-ink {
+    animation-play-state: paused;
+  }
+
+  [data-puppet-stage='dropping'] .puppet-threads {
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+
+  [data-puppet-hand] {
+    transform: none !important;
+  }
+
+  .puppet-threads {
+    transition: none;
+  }
 
   .ambient-drift,
   .blob-drift {

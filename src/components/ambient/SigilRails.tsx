@@ -45,6 +45,9 @@ function Rail({ text, side }: { text: SigilText; side: 'left' | 'right' }) {
     let raf = 0;
     let last = performance.now();
     let drift = 0;
+    let h = tile.offsetHeight;
+    const resize = new ResizeObserver(() => { h = tile.offsetHeight; });
+    resize.observe(tile);
 
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
@@ -52,7 +55,6 @@ function Rail({ text, side }: { text: SigilText; side: 'left' | 'right' }) {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
 
-      const h = tile.offsetHeight;
       if (h <= 0) return; // rails are hidden at this breakpoint
 
       drift += dt * DRIFT_PX_PER_SEC * dir;
@@ -63,7 +65,10 @@ function Rail({ text, side }: { text: SigilText; side: 'left' | 'right' }) {
     };
 
     raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      resize.disconnect();
+    };
   }, [side]);
 
   return (
