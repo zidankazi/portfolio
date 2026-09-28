@@ -106,3 +106,21 @@ test("fetches playback and reuses a token with correctly encoded credentials", a
   assert.equal(calls[1].cache, "no-store");
   assert.ok(calls[1].signal instanceof AbortSignal);
 });
+
+test("uses recent history for 204 responses and expires its cache after one minute", async (t) => {
+  let now = 100_000;
+  t.mock.method(Date, "now", () => now);
+  const calls = mockSpotify(t, [
+    tokenReply, { status: 204 }, recentReply,
+    { status: 204 },
+    { status: 204 }, recentReply,
+  ]);
+  const client = spotify.new_client("client", "secret", "refresh");
+  assert.ok(await spotify.get_track(client) instanceof spotify.RecentlyPlayed);
+  now += 59_999;
+  assert.ok(await spotify.get_track(client) instanceof spotify.RecentlyPlayed);
+  assert.equal(calls.length, 4);
+  now += 1;
+  assert.ok(await spotify.get_track(client) instanceof spotify.RecentlyPlayed);
+  assert.equal(calls.length, 6);
+});
