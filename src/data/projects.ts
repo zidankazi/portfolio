@@ -26,8 +26,8 @@ export const projects: Project[] = [
   },
   {
     title: 'roster',
-    preview: '/projects/roster.webp',
-    previewMotion: { src: '/projects/roster.mp4', type: 'video' },
+    preview: '/projects/roster-demo-poster.webp',
+    previewMotion: { src: '/projects/roster-demo.mp4', type: 'video' },
     description: 'terminal multiplexer for claude code agents. run several in real panes and see which one is blocked, working, or done — plus the exact prompt each one is waiting on.',
     links: [
       { label: 'github', href: 'https://github.com/zidankazi/roster' },
@@ -67,8 +67,8 @@ export const projects: Project[] = [
   },
   {
     title: 'sage',
-    preview: '/projects/sage-video-poster.webp',
-    previewMotion: { src: '/projects/sage.mp4', type: 'video' },
+    preview: '/projects/sage-demo-poster.webp',
+    previewMotion: { src: '/projects/sage-demo.mp4', type: 'video' },
     previewSize: { width: 220, height: 360 },
     description: 'iMessage supercharged with xAI\'s Grok, bringing live internet access to your group chats.',
     links: [
