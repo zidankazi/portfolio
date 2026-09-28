@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import { ArrowUpRight } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowUpRight, Undo2 } from 'lucide-react';
 import { AmbientBackdrop } from '@/components/ambient/AmbientBackdrop';
 import styles from './studio.module.css';
 
@@ -40,6 +41,10 @@ export default function StudioPage() {
   return (
     <main className={styles.studio}>
       <AmbientBackdrop />
+      <Link href="/" className={styles.back}>
+        <Undo2 size={16} aria-hidden="true" />
+        back to the conversation
+      </Link>
       <h1 className="sr-only">Studio, websites by Zidan Kazi</h1>
 
       <section className={styles.work} aria-label="Selected websites">
@@ -84,7 +89,6 @@ export default function StudioPage() {
           ))}
         </div>
       </section>
-
     </main>
   );
 }
