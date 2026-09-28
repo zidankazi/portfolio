@@ -67,8 +67,8 @@ export const projects: Project[] = [
   },
   {
     title: 'sage',
-    preview: '/projects/sage-demo-poster.webp',
-    previewMotion: { src: '/projects/sage-demo.mp4', type: 'video' },
+    preview: '/projects/sage-answer-poster.webp',
+    previewMotion: { src: '/projects/sage-answer.mp4', type: 'video' },
     previewSize: { width: 220, height: 360 },
     description: 'iMessage supercharged with xAI\'s Grok, bringing live internet access to your group chats.',
     links: [
