@@ -32,3 +32,16 @@ function mockSpotify(t, replies) {
   t.after(() => assert.equal(replies.length, 0, "Expected requests did not run"));
   return calls;
 }
+
+test("decodes a playing track, artist names, artwork, and zero progress", () => {
+  const result = spotify.decode_current(JSON.stringify(playingReply.json));
+  assert.ok(result.isOk());
+  const playback = result[0];
+  assert.ok(playback instanceof spotify.Playing);
+  assert.equal(playback.track.title, track.name);
+  assert.equal(playback.track.artist, "First artist, Second artist");
+  assert.equal(playback.track.album_art[0], track.album.images[0].url);
+  assert.equal(playback.track.duration_ms[0], 180_000);
+  assert.equal(playback.progress_ms[0], 0);
+  assert.equal(spotify.track_title(playback)[0], track.name);
+});
