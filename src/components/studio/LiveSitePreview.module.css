@@ -27,6 +27,6 @@
   opacity: 1;
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (max-width: 767px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
   .frame { display: none; transition: none; }
 }

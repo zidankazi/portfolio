@@ -67,7 +67,6 @@ export default function StudioPage() {
                   alt=""
                   fill
                   priority
-                  unoptimized
                   sizes="(max-width: 540px) 82vw, 500px"
                   className={styles.artwork}
                 />}

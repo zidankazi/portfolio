@@ -2,7 +2,6 @@
 
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
-import { useReducedMotion } from 'framer-motion';
 import styles from './LiveSitePreview.module.css';
 
 export function LiveSitePreview({ src, poster, name }: { src: string; poster: string; name: string }) {
@@ -10,15 +9,27 @@ export function LiveSitePreview({ src, poster, name }: { src: string; poster: st
   const revealTimer = useRef<ReturnType<typeof setTimeout>>();
   const [width, setWidth] = useState(0);
   const [ready, setReady] = useState(false);
-  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     const element = container.current;
     if (!element) return;
-    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    // Touch devices use the poster so opening a project does not keep two
+    // full desktop sites running inside the studio page as well.
+    const livePreview = window.matchMedia('(min-width: 768px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)');
+    const update = () => {
+      setWidth(livePreview.matches ? element.clientWidth : 0);
+      if (!livePreview.matches) {
+        clearTimeout(revealTimer.current);
+        setReady(false);
+      }
+    };
+    const observer = new ResizeObserver(update);
     observer.observe(element);
+    livePreview.addEventListener('change', update);
+    update();
     return () => {
       observer.disconnect();
+      livePreview.removeEventListener('change', update);
       clearTimeout(revealTimer.current);
     };
   }, []);
@@ -31,8 +42,8 @@ export function LiveSitePreview({ src, poster, name }: { src: string; poster: st
 
   return (
     <div ref={container} className={styles.preview} aria-hidden="true">
-      <Image src={poster} alt="" fill priority unoptimized className={styles.poster} />
-      {width > 0 && reducedMotion === false && (
+      <Image src={poster} alt="" fill priority sizes="(max-width: 540px) 82vw, 500px" className={styles.poster} />
+      {width > 0 && (
         <iframe
           src={src}
           title={`${name} live preview`}
