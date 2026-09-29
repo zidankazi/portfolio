@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { projects } from '@/data/projects.server';
 import { IntroBubble } from '@/components/chat/IntroBubble';
 import { ChatBubble } from '@/components/chat/ChatBubble';
+import { GitHubActivity } from '@/components/chat/GitHubActivity';
 import { MapWidget } from '@/components/chat/MapWidget';
 import { ProjectsSection } from '@/components/chat/ProjectsSection';
 import { Pill } from '@/components/chat/Pill';
@@ -32,6 +33,9 @@ export default function HomePage() {
           </Link>
         </ChatBubble>
         <ProjectsSection projects={projects} />
+        <div className="ml-8 sm:ml-11">
+          <GitHubActivity username="zidankazi" />
+        </div>
         <MapWidget />
 
         {/* Links */}
