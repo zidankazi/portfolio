@@ -45,15 +45,23 @@ function Hand({ side }: { side: 'left' | 'right' }) {
       style={{
         width: 'var(--hand-size)',
         height: `calc(var(--hand-size) * ${HAND_HEIGHT / HAND_WIDTH})`,
-        fontSize: `calc(var(--hand-size) / ${HAND_WIDTH / HAND_FONT_SIZE})`,
-        lineHeight: `calc(var(--hand-size) / ${HAND_WIDTH / HAND_FONT_SIZE})`,
         transformOrigin: entrance.origin,
       }}
     >
-      <pre className="font-mono text-zinc-500/25">{art.detail}</pre>
-      <pre className="absolute inset-0 font-mono text-zinc-300/65">{art.body}</pre>
-      <pre className="absolute inset-0 font-mono text-zinc-100">{art.highlights}</pre>
       <svg className="absolute inset-0 h-full w-full overflow-visible" viewBox={`0 0 ${HAND_WIDTH} ${HAND_HEIGHT}`} focusable="false">
+        {/* Keep the lettering and coils in one coordinate system. Safari can
+            round fractional HTML line heights and shorten the fingers. */}
+        {([
+          ['detail', 'text-zinc-500/25'],
+          ['body', 'text-zinc-300/65'],
+          ['highlights', 'text-zinc-100'],
+        ] as const).map(([layer, color]) => (
+          <text key={layer} data-hand-art={layer} className={`font-mono ${color}`} fill="currentColor" fontSize={HAND_FONT_SIZE} style={{ whiteSpace: 'pre' }}>
+            {art[layer].split('\n').map((line, row) => (
+              <tspan key={row} x="0" y={(row + 0.8) * HAND_FONT_SIZE}>{line}</tspan>
+            ))}
+          </text>
+        ))}
         {HAND_WRAPS.map((wrap, finger) => {
           const x = side === 'left' ? wrap.x : HAND_WIDTH - wrap.x;
           const { y, rx, ry } = wrap;
