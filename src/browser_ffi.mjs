@@ -135,6 +135,10 @@ export function listen(dispatch) {
   const observer=new ResizeObserver(cue);
   observer.observe(document.documentElement);
   cue();
+  document.addEventListener('loadeddata',event => {
+    const media=event.target;
+    if(media.matches?.('video.preview-motion')) { media.muted=true; media.play().catch(() => {}); }
+  },true);
   document.addEventListener('playing',event => { if(event.target.matches('.preview-motion')) event.target.classList.add('media-ready'); },true);
   document.addEventListener('load',event => { if(event.target.matches?.('.preview-motion')) event.target.classList.add('media-ready'); },true);
   document.addEventListener('error',event => { if(event.target.matches?.('.preview-motion')) event.target.classList.remove('media-ready'); },true);

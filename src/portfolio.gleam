@@ -100,7 +100,7 @@ fn init(_flags: Nil) -> #(Model, Effect(Message)) {
     True -> "dropping"
     False -> "ready"
   }
-  let model = Model(..model, stage: stage)
+  let model = Model(..model, stage: stage, last_poll: clock())
   #(
     model,
     effect.batch([
