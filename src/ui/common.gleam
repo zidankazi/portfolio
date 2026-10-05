@@ -99,18 +99,14 @@ pub fn icon(name: String, classes: String) -> Element(msg) {
 }
 
 pub fn pill(href: String, label: String, icon_name: String) -> Element(msg) {
-  let classes =
-    "inline-flex items-center gap-1.5 w-fit rounded-full border border-white/10 bg-[#161618] px-3 py-1.5 text-[12px] text-zinc-400 hover:text-zinc-200 hover:border-white/20 transition-colors"
-  h.a(
+  external(
+    href,
+    "flex min-w-0 max-w-full min-h-11 sm:min-h-0 items-center gap-2 bg-[#1C1C1E] hover:bg-[#2C2C2E] border border-white/5 hover:border-white/10 text-zinc-300 transition-colors text-[14px] px-4 py-2 rounded-[22px] sm:rounded-full w-fit",
     [
-      a.href(href),
-      a.class(classes),
-      a.target(case href {
-        "mailto:hi@zidankazi.com" -> "_self"
-        _ -> "_blank"
-      }),
-      a.rel("noreferrer"),
+      h.span([a.class("min-w-0 break-words")], [text(label)]),
+      h.span([a.class("shrink-0 text-zinc-500")], [
+        icon(icon_name, "w-3.5 h-3.5"),
+      ]),
     ],
-    [icon(icon_name, "w-3.5 h-3.5"), text(label)],
   )
 }
