@@ -1,6 +1,6 @@
 import gleam/list
 import lustre/attribute as a
-import lustre/element.{type Element, element, text}
+import lustre/element.{type Element, text}
 import lustre/element/html as h
 
 pub fn div(classes: String, children: List(Element(msg))) -> Element(msg) {
@@ -80,7 +80,7 @@ pub fn icon(name: String, classes: String) -> Element(msg) {
     ]
     _ -> []
   }
-  element(
+  svg_element(
     "svg",
     [
       a.class(classes),
@@ -93,7 +93,9 @@ pub fn icon(name: String, classes: String) -> Element(msg) {
       a.attribute("aria-hidden", "true"),
     ],
     {
-      list.map(paths, fn(path) { element("path", [a.attribute("d", path)], []) })
+      list.map(paths, fn(path) {
+        svg_element("path", [a.attribute("d", path)], [])
+      })
     },
   )
 }
@@ -109,4 +111,12 @@ pub fn pill(href: String, label: String, icon_name: String) -> Element(msg) {
       ]),
     ],
   )
+}
+
+fn svg_element(
+  tag: String,
+  attrs: List(a.Attribute(msg)),
+  children: List(Element(msg)),
+) -> Element(msg) {
+  element.namespaced("http://www.w3.org/2000/svg", tag, attrs, children)
 }

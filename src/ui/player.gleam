@@ -5,7 +5,7 @@ import lib/palette
 import lib/playback_progress.{Active, Finished, Unavailable}
 import lib/player
 import lustre/attribute as a
-import lustre/element.{type Element, element, text}
+import lustre/element.{type Element, text}
 import lustre/element/html as h
 import ui/common as c
 
@@ -195,7 +195,7 @@ fn bar_view(delay: String, color: String) -> Element(msg) {
 }
 
 fn spotify_icon() -> Element(msg) {
-  element(
+  svg_element(
     "svg",
     [
       a.class("w-5 h-5 text-white/25"),
@@ -204,7 +204,7 @@ fn spotify_icon() -> Element(msg) {
       a.attribute("aria-hidden", "true"),
     ],
     [
-      element(
+      svg_element(
         "path",
         [
           a.attribute(
@@ -275,4 +275,12 @@ pub fn ambient(colors: Option(#(palette.Rgb, palette.Rgb))) -> Element(msg) {
     ],
     [wash, grain("absolute inset-0 opacity-[0.045]")],
   )
+}
+
+fn svg_element(
+  tag: String,
+  attrs: List(a.Attribute(msg)),
+  children: List(Element(msg)),
+) -> Element(msg) {
+  element.namespaced("http://www.w3.org/2000/svg", tag, attrs, children)
 }

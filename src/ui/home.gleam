@@ -47,8 +47,8 @@ pub fn view(
           },
         ],
         [
-          art.rails(),
-          art.scene(),
+          element.memo([], art.rails),
+          element.memo([], art.scene),
           c.div("w-full max-w-[520px] flex flex-col", [
             h.main([a.class("w-full flex justify-center pb-6 font-body mt-2")], [
               c.div("flex flex-col gap-5 w-full", [

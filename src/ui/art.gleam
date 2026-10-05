@@ -4,7 +4,7 @@ import gleam/int
 import gleam/list
 import gleam/string
 import lustre/attribute as a
-import lustre/element.{type Element, element, text}
+import lustre/element.{type Element, text}
 import lustre/element/html as h
 import ui/common as c
 
@@ -24,7 +24,7 @@ pub fn scene() -> Element(msg) {
         ]),
       ]),
     ),
-    element(
+    svg_element(
       "svg",
       [
         a.attribute("data-puppet-front", ""),
@@ -37,13 +37,13 @@ pub fn scene() -> Element(msg) {
       ],
       list.map([0, 1, 2, 3, 4, 5, 6, 7], fn(slot) {
         let id = "puppet-front-" <> int.to_string(slot)
-        element("g", [a.attribute("clip-path", "url(#" <> id <> ")")], [
-          element("defs", [], [
-            element(
+        svg_element("g", [a.attribute("clip-path", "url(#" <> id <> ")")], [
+          svg_element("defs", [], [
+            svg_element(
               "clipPath",
               [a.id(id), a.attribute("clipPathUnits", "userSpaceOnUse")],
               [
-                element(
+                svg_element(
                   "rect",
                   [
                     a.attribute("width", "0"),
@@ -55,7 +55,7 @@ pub fn scene() -> Element(msg) {
               ],
             ),
           ]),
-          element(
+          svg_element(
             "text",
             [
               a.class("font-mono"),
@@ -67,7 +67,7 @@ pub fn scene() -> Element(msg) {
               a.attribute("paint-order", "stroke"),
             ],
             [
-              element(
+              svg_element(
                 "textPath",
                 [a.href("#puppet-thread-" <> int.to_string(slot))],
                 [],
@@ -82,7 +82,7 @@ pub fn scene() -> Element(msg) {
 
 fn thread(slot: Int) -> Element(msg) {
   let id = "puppet-thread-" <> int.to_string(slot)
-  element(
+  svg_element(
     "svg",
     [
       a.attribute("height", "100%"),
@@ -90,8 +90,8 @@ fn thread(slot: Int) -> Element(msg) {
       a.attribute("focusable", "false"),
     ],
     [
-      element("defs", [], [element("path", [a.id(id)], [])]),
-      element(
+      svg_element("defs", [], [svg_element("path", [a.id(id)], [])]),
+      svg_element(
         "text",
         [
           a.class("font-mono"),
@@ -101,9 +101,9 @@ fn thread(slot: Int) -> Element(msg) {
           a.attribute("stroke", "#ce272d"),
           a.attribute("stroke-width", "0.3"),
         ],
-        [element("textPath", [a.href("#" <> id)], [])],
+        [svg_element("textPath", [a.href("#" <> id)], [])],
       ),
-      element(
+      svg_element(
         "circle",
         [a.attribute("r", "0"), a.attribute("fill", "#ce272d")],
         [],
@@ -125,7 +125,7 @@ fn hand(side: String, layers: art.Layers) -> Element(msg) {
       }),
     ],
     [
-      element(
+      svg_element(
         "svg",
         [
           a.class("absolute inset-0 h-full w-full overflow-visible"),
@@ -140,7 +140,7 @@ fn hand(side: String, layers: art.Layers) -> Element(msg) {
               #("highlights", layers.highlights, "text-zinc-100"),
             ],
             fn(layer) {
-              element(
+              svg_element(
                 "text",
                 [
                   a.attribute("data-hand-art", layer.0),
@@ -150,7 +150,7 @@ fn hand(side: String, layers: art.Layers) -> Element(msg) {
                   a.style("white-space", "pre"),
                 ],
                 list.index_map(string.split(layer.1, "\n"), fn(line, row) {
-                  element(
+                  svg_element(
                     "tspan",
                     [
                       a.attribute("x", "0"),
@@ -226,7 +226,7 @@ fn coil(side: String, wrap: art.Wrap, finger: Int) -> Element(msg) {
           <> point(x, wrap.tip_y),
       ),
     ])
-  element(
+  svg_element(
     "g",
     [
       a.attribute("data-finger-wrap", int.to_string(finger)),
@@ -240,10 +240,10 @@ fn coil(side: String, wrap: art.Wrap, finger: Int) -> Element(msg) {
         <> int.to_string(finger)
         <> "-"
         <> int.to_string(index)
-      element("g", [], [
-        element("defs", [], [
-          element("path", [a.id(id), a.attribute("d", segment.1)], []),
-          element(
+      svg_element("g", [], [
+        svg_element("defs", [], [
+          svg_element("path", [a.id(id), a.attribute("d", segment.1)], []),
+          svg_element(
             "mask",
             [
               a.id(id <> "-reveal"),
@@ -254,7 +254,7 @@ fn coil(side: String, wrap: art.Wrap, finger: Int) -> Element(msg) {
               a.attribute("height", "240"),
             ],
             [
-              element(
+              svg_element(
                 "path",
                 [
                   a.attribute("data-wrap-reveal", ""),
@@ -271,11 +271,11 @@ fn coil(side: String, wrap: art.Wrap, finger: Int) -> Element(msg) {
             ],
           ),
         ]),
-        element("g", [a.attribute("mask", "url(#" <> id <> "-reveal)")], [
+        svg_element("g", [a.attribute("mask", "url(#" <> id <> "-reveal)")], [
           case segment.0 {
             True -> element.none()
             False ->
-              element(
+              svg_element(
                 "use",
                 [
                   a.href("#" <> id),
@@ -286,7 +286,7 @@ fn coil(side: String, wrap: art.Wrap, finger: Int) -> Element(msg) {
                 [],
               )
           },
-          element(
+          svg_element(
             "text",
             [
               a.class("font-mono"),
@@ -302,7 +302,11 @@ fn coil(side: String, wrap: art.Wrap, finger: Int) -> Element(msg) {
               }),
               a.attribute("stroke-width", "0.25"),
             ],
-            [element("textPath", [a.href("#" <> id)], [text("------------")])],
+            [
+              svg_element("textPath", [a.href("#" <> id)], [
+                text("------------"),
+              ]),
+            ],
           ),
         ]),
       ])
@@ -371,4 +375,12 @@ fn rail(side: String, layers: art.Layers) -> Element(msg) {
       ]),
     ],
   )
+}
+
+fn svg_element(
+  tag: String,
+  attrs: List(a.Attribute(msg)),
+  children: List(Element(msg)),
+) -> Element(msg) {
+  element.namespaced("http://www.w3.org/2000/svg", tag, attrs, children)
 }
