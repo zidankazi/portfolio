@@ -25,7 +25,6 @@ pub fn view(
           h.video(
             [
               a.src(src),
-              a.attribute("autoplay", ""),
               a.attribute("loop", ""),
               a.attribute("muted", ""),
               a.attribute("playsinline", ""),

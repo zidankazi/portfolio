@@ -8,6 +8,10 @@ pub fn div(classes: String, children: List(Element(msg))) -> Element(msg) {
 }
 
 pub fn image(src: String, alt: String, classes: String) -> Element(msg) {
+  let src = case src {
+    "/avatar.jpeg" -> "/avatar-small.webp"
+    _ -> src
+  }
   h.img([
     a.src(src),
     a.alt(alt),

@@ -1,9 +1,8 @@
 import { Rect, chain } from './lib/chain_geometry.mjs';
-import { init as rail_init, frame as rail_frame, smooth } from './lib/rail_motion.mjs';
+import { init as rail_init, frame as rail_frame } from './lib/rail_motion.mjs';
+import { phrase as make_phrase, progress as chain_progress, visible_count } from './lib/chain_motion.mjs';
+import { toList } from './gleam.mjs';
 import { Some, Option$None$const } from '../gleam_stdlib/gleam/option.mjs';
-const WRAP_DURATION = 360;
-const CHAIN_ENTRIES = [0,225,385,725,65,175,465,640];
-const CHAIN_DURATIONS = [940,1070,1150,1240,975,1030,1190,1210];
 const rect = r => new Rect(r.left,r.top,r.right,r.bottom,r.width,r.height);
 export function mount_rail(rail, side) {
     const pose = rail.querySelector('.sigil-pose');
@@ -175,21 +174,16 @@ export function mount_threads(root, front, skip, reveal) {
             threads.forEach((_, slot) => {
                 const phrase = phrasing[slot];
                 const elapsed = now - started - phrase.delay;
-                const winding = skip ? 1 : Math.max(0, Math.min(elapsed / WRAP_DURATION, 1));
-                wind(slot, anchors[slot % 4] ? winding : 0);
-                const t = skip ? 1 : Math.max(0, Math.min((elapsed - WRAP_DURATION) / phrase.duration, 1));
-                const progress = smooth(t);
-                progressByChain[slot] = progress;
-                if (arrived[slot])
-                    return;
-                let count = Math.max(0, visibleCounts[slot]);
-                while (count < phrase.beats.length && phrase.beats[count] <= progress)
-                    count++;
+                const timing=chain_progress(elapsed,phrase.duration,skip);
+                wind(slot, anchors[slot % 4] ? timing.winding : 0);
+                progressByChain[slot] = timing.progress;
+                if(arrived[slot]) return;
+                const count=visible_count(phrase.beats,timing.progress,Math.max(0,visibleCounts[slot]));
                 if (count !== visibleCounts[slot]) {
                     writeThread(slot, count);
                     visibleCounts[slot] = count;
                 }
-                if (t === 1) {
+                if (timing.complete) {
                     arrived[slot] = true;
                     writeThread(slot, threadCounts[slot] * 2);
                     nodes[slot].setAttribute('r', anchors[slot % 4] ? '1.5' : '0');
@@ -231,16 +225,8 @@ export function mount_threads(root, front, skip, reveal) {
     draw();
     paths.forEach((path, slot) => {
         arrivalCounts[slot] = path.hasAttribute('d') ? Math.ceil(path.getTotalLength() / 3.6) : 0;
-        let beat = 0;
-        const beats = Array.from({ length: arrivalCounts[slot] }, () => {
-            beat += 0.78 + Math.random() * 0.44;
-            return beat;
-        });
-        phrasing[slot] = {
-            delay: Math.max(0, CHAIN_ENTRIES[slot] + (Math.random() - 0.5) * 28),
-            duration: CHAIN_DURATIONS[slot] * (0.96 + Math.random() * 0.08),
-            beats: beats.map(value => value / beat),
-        };
+        const samples=Array.from({length:arrivalCounts[slot]},()=>Math.random());
+        phrasing[slot]=make_phrase(slot,toList(samples),Math.random(),Math.random());
     });
     if (!growing)
         reveal();
