@@ -56,7 +56,7 @@ const buildTracks = async () => {
   let files = [];
   try {
     files = await walk(AUDIO_ROOT);
-  } catch (error) {
+  } catch {
     return [];
   }
 

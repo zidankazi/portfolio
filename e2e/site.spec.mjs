@@ -43,7 +43,7 @@ test('conversation, live widgets, SVG entrance, and navigation',async({page},inf
   expect(errors).toEqual([]);
 });
 
-test('calendar retry, keyboard navigation, reduced motion and progressive HTML',async({page,request},info)=>{
+test('calendar retry, keyboard navigation, reduced motion and progressive HTML',async({page,request})=>{
   await page.emulateMedia({reducedMotion:'reduce'});
   await page.route('**/github-contributions-api.jogruber.de/**',route=>route.fulfill({status:503,body:'Unavailable'}));
   await page.goto('/');
@@ -59,4 +59,22 @@ test('calendar retry, keyboard navigation, reduced motion and progressive HTML',
   const html=await request.get('/');expect(html.status()).toBe(200);expect(await html.text()).toContain('Stevens Institute of Technology');
   const manifest=await request.get('/manifest.webmanifest');expect((await manifest.json()).name).toBe('Zidan Kazi');
   expect((await request.get('/missing-page')).status()).toBe(404);
+});
+
+test('Spotify recovers from an empty response and keeps its last track through failures',async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:{title:null,isPlaying:false}}));
+  await page.goto('/');
+  await expect(page.getByText('I listen to a lot of music.',{exact:true})).toBeVisible();
+  await page.clock.install();
+  await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:track}));
+  await page.clock.fastForward(31000);
+  await expect(page.getByText('Test track',{exact:true})).toBeVisible();
+  await page.route('**/api/spotify/now-playing',route=>route.fulfill({status:503,body:'Unavailable'}));
+  await page.clock.fastForward(31000);
+  await expect(page.getByText('Test track',{exact:true})).toBeVisible();
+  await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:{...track,title:'Next track',isPlaying:false,progressMs:null}}));
+  await page.clock.fastForward(31000);
+  await expect(page.getByText('Next track',{exact:true})).toBeVisible();
+  await expect(page.locator('[data-playback-progress]')).toHaveCount(0);
 });

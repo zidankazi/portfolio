@@ -32,3 +32,16 @@ test('chains terminate at their message edge and clip the two crossing strands',
   assert.equal((cross.path.match(/ C/g)||[]).length,4);
   assert.ok(cross.count>0);
 });
+
+test('chain phrasing always advances and reduced motion completes immediately',async()=>{
+  const {phrase,progress,visible_count}=await import('../build/dev/javascript/portfolio/lib/chain_motion.mjs');
+  const {toList}=await import('../build/dev/javascript/portfolio/gleam.mjs');
+  const sampled=phrase(0,toList([0,0.2,0.9,1]),0.5,0.5);
+  const beats=sampled.beats.toArray();
+  assert.equal(beats.at(-1),1);assert.ok(beats.every((beat,index)=>index===0||beat>beats[index-1]));
+  assert.equal(progress(0,sampled.duration,false).winding,0);
+  assert.equal(progress(360+sampled.duration,sampled.duration,false).complete,true);
+  assert.equal(progress(-1000,sampled.duration,true).complete,true);
+  assert.equal(visible_count(sampled.beats,0,2),2);
+  assert.equal(visible_count(sampled.beats,1,0),4);
+});
