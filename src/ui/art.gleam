@@ -147,13 +147,16 @@ fn hand(side: String, layers: art.Layers) -> Element(msg) {
                   a.class("font-mono " <> layer.2),
                   a.attribute("fill", "currentColor"),
                   a.attribute("font-size", "4"),
+                  a.attribute("text-anchor", "middle"),
                   a.style("white-space", "pre"),
+                  a.style("font-kerning", "none"),
+                  a.style("font-variant-ligatures", "none"),
                 ],
                 list.index_map(string.split(layer.1, "\n"), fn(line, row) {
                   svg_element(
                     "tspan",
                     [
-                      a.attribute("x", "0"),
+                      a.attribute("x", columns(line)),
                       a.attribute(
                         "y",
                         float.to_string({ int.to_float(row) +. 0.8 } *. 4.0),
@@ -172,6 +175,17 @@ fn hand(side: String, layers: art.Layers) -> Element(msg) {
       ),
     ],
   )
+}
+
+// Match the generator's 2.4-unit cells regardless of the font's glyph advances.
+// Centering each letter also keeps the mirrored hands registered during swaps.
+fn columns(line: String) -> String {
+  line
+  |> string.to_graphemes
+  |> list.index_map(fn(_, column) {
+    float.to_string(float.to_precision(int.to_float(column) *. 2.4 +. 1.2, 1))
+  })
+  |> string.join(" ")
 }
 
 fn n(value: Float) -> String {
