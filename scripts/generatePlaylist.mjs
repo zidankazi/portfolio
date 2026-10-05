@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 const AUDIO_ROOT = path.join(process.cwd(), 'public', 'audio', 'daft-punk');
-const OUTPUT_PATH = path.join(process.cwd(), 'src', 'data', 'daftpunk.generated.ts');
+const OUTPUT_PATH = path.join(process.cwd(), 'src', 'data', 'daftpunk.gleam');
 const R2_BASE_URL = 'https://pub-68e8e0bfadb945e8a0d92af506b24ea1.r2.dev/daft-punk';
 
 const isMp3 = (file) => file.toLowerCase().endsWith('.mp3');
@@ -85,18 +85,19 @@ const buildTracks = async () => {
 };
 
 const writeOutput = async (tracks) => {
-  const lines = [];
-  lines.push('export type Track = {');
-  lines.push('  id: string;');
-  lines.push('  title: string;');
-  lines.push('  artist: string;');
-  lines.push('  album: string;');
-  lines.push('  src: string;');
-  lines.push('  coverSrc?: string;');
-  lines.push('};');
-  lines.push('');
-  lines.push(`export const DAFT_PUNK_TRACKS: Track[] = ${JSON.stringify(tracks, null, 2)};`);
-  lines.push('');
+  const quote = value => JSON.stringify(value);
+  const lines = [
+    'import gleam/option.{type Option, None, Some}',
+    '',
+    'pub type Track { Track(id: String, title: String, artist: String, album: String, src: String, cover: Option(String)) }',
+    '',
+    'pub fn tracks() -> List(Track) {',
+    '  [',
+    ...tracks.map(track => `    Track(${[track.id, track.title, track.artist, track.album, track.src].map(quote).join(', ')}, ${track.coverSrc ? `Some(${quote(track.coverSrc)})` : 'None'}),`),
+    '  ]',
+    '}',
+    '',
+  ];
   await fs.writeFile(OUTPUT_PATH, lines.join('\n'), 'utf8');
 };
 
