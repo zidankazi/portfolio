@@ -1,9 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 const config = {
-  content: [
-    './app/**/*.{ts,tsx}',
-    './src/**/*.{ts,tsx,gleam}'
-  ],
+  content: ['./src/**/*.gleam'],
   theme: {
     extend: {
       fontFamily: {

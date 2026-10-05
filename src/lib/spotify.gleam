@@ -376,7 +376,7 @@ pub fn get_track(client: Client) -> Promise(Playback) {
 }
 
 /// Encode the existing UI/API shape. JSON removes Gleam constructors and Options
-/// before the value crosses Next.js's server-to-client component boundary.
+/// before returning the response to the browser.
 pub fn playback_json(playback: Playback) -> json.Json {
   let details = case playback {
     NothingPlaying -> None

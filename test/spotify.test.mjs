@@ -217,7 +217,7 @@ test("a malformed current response falls back to history, and caches stay per cl
   assert.equal(calls.length, 6);
 });
 
-test("encodes every playback state as plain JSON for React and existing API consumers", () => {
+test("encodes every playback state as plain JSON for existing API consumers", () => {
   const playing = spotify.decode_current(JSON.stringify(playingReply.json))[0];
   const paused = spotify.decode_current(JSON.stringify({ ...playingReply.json, is_playing: false }))[0];
   const recent = spotify.decode_recent(JSON.stringify(recentReply.json))[0];

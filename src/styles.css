@@ -153,8 +153,7 @@ h6 {
   display: none;
 }
 
-/* Hide immediately when input or motion preferences change, before React
-   handles the media-query event. Previews never intercept project links. */
+/* Previews follow input and motion preferences immediately. */
 @media (hover: none), (pointer: coarse), (max-width: 767px), (prefers-reduced-motion: reduce) {
   .project-hover-preview {
     display: none;
