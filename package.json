@@ -4,37 +4,30 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "npm run build:gleam && next dev",
-    "build": "npm run build:gleam && next build --webpack",
-    "start": "next start",
-    "lint": "eslint .",
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run build:gleam && node scripts/build.mjs && node scripts/build-vercel.mjs",
+    "start": "node dist/server.mjs",
+    "lint": "eslint scripts runtime src/*.mjs src/lib/*.mjs e2e *.mjs",
     "build:gleam": "node scripts/gleam.mjs build --warnings-as-errors",
     "check:gleam": "node scripts/gleam.mjs format --check src && node scripts/gleam.mjs check",
-    "test:gleam": "npm run build:gleam && node --test test/*.test.mjs"
+    "test:gleam": "npm run build:gleam && node --test test/*.test.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
-    "colorthief": "^2.6.0",
-    "fast-average-color": "^9.5.0",
-    "framer-motion": "^11.3.12",
-    "lucide-react": "^0.469.0",
-    "next": "^16.1.6",
-    "next-view-transitions": "^0.3.5",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "server-only": "^0.0.1"
+    "colorthief": "^2.6.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.63.0",
-    "@types/node": "^20.14.10",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.19",
     "esbuild": "^0.28.2",
     "eslint": "^9.39.5",
-    "eslint-config-next": "^16.2.10",
+    "globals": "^17.13.0",
     "postcss": "^8.4.39",
     "sharp": "0.34.5",
-    "tailwindcss": "^3.4.4",
-    "typescript": "^5.5.3"
+    "tailwindcss": "^3.4.4"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
