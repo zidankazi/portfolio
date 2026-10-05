@@ -150,6 +150,13 @@ export function mount_scene(path, skip, dispatch) {
   disposeScene=() => { disposed=true; disposals.forEach(dispose => dispose()); };
   if(path==='/studio') { mountStudio(disposals); return; }
   measure_calendar();
+  const rows=document.getElementById('project-rows');
+  const list=document.querySelector('.project-list');
+  if(rows && list) {
+    const measure=() => list.style.setProperty('--project-list-height',rows.scrollHeight+'px');
+    const observer=new ResizeObserver(measure); observer.observe(rows); measure();
+    disposals.push(() => observer.disconnect());
+  }
   document.querySelectorAll('[data-sigil-side]').forEach(rail => disposals.push(mount_rail(rail,rail.dataset.sigilSide)));
   const root=document.querySelector('.puppet-scene');
   const front=document.querySelector('[data-puppet-front]');

@@ -2,7 +2,7 @@
 const config = {
   content: [
     './app/**/*.{ts,tsx}',
-    './src/**/*.{ts,tsx}'
+    './src/**/*.{ts,tsx,gleam}'
   ],
   theme: {
     extend: {

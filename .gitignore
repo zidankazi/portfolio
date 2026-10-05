@@ -8,3 +8,8 @@ certificates
 
 # Gleam build output and downloaded dependencies
 /build/
+
+/dist/
+/.vercel/
+/test-results/
+/playwright-report/

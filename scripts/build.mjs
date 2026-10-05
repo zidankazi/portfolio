@@ -1,0 +1,21 @@
+import {build} from 'esbuild';
+import {createHash} from 'node:crypto';
+import {spawnSync} from 'node:child_process';
+import {mkdir,readFile,writeFile,rm} from 'node:fs/promises';
+
+await rm('dist',{recursive:true,force:true});
+await mkdir('dist/assets',{recursive:true});
+const client=await build({stdin:{contents:"import { main } from './build/dev/javascript/portfolio/portfolio.mjs'; main();",resolveDir:process.cwd(),sourcefile:'entry.mjs'},bundle:true,format:'esm',platform:'browser',target:['es2022'],outdir:'dist/assets',entryNames:'site-[hash]',chunkNames:'chunk-[hash]',splitting:true,minify:true,metafile:true});
+const script='/assets/'+Object.keys(client.metafile.outputs).find(path=>client.metafile.outputs[path].entryPoint).split('/').pop();
+const styles=(await Promise.all(['src/fonts.css','src/styles.css','src/studio.css','src/live_preview.css'].map(path=>readFile(path,'utf8')))).join('\n');
+await writeFile('dist/styles.input.css',styles);
+const css=spawnSync('node_modules/.bin/tailwindcss',['-i','dist/styles.input.css','-o','dist/assets/site.css','--minify'],{stdio:'inherit'});
+if(css.status!==0) process.exit(css.status??1);
+await rm('dist/styles.input.css');
+const cssName='site-'+createHash('sha256').update(await readFile('dist/assets/site.css')).digest('hex').slice(0,12)+'.css';
+await writeFile('dist/assets/'+cssName,await readFile('dist/assets/site.css'));
+await rm('dist/assets/site.css');
+const stylesheet='/assets/'+cssName;
+await writeFile('dist/assets.json',JSON.stringify({script,stylesheet}));
+await build({entryPoints:['runtime/server.mjs'],outfile:'dist/server.mjs',bundle:true,format:'esm',platform:'node',target:'node22',packages:'external'});
+console.log('Built Gleam site');

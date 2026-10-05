@@ -1,0 +1,238 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+a {
+  text-decoration: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  letter-spacing: -0.02em;
+}
+
+@keyframes char-float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-2.5px);
+  }
+}
+
+@keyframes equalizer {
+
+  0%,
+  100% {
+    height: 20%;
+  }
+
+  25% {
+    height: 80%;
+  }
+
+  50% {
+    height: 40%;
+  }
+
+  75% {
+    height: 100%;
+  }
+}
+
+/* Ambient music wash — the page-level layer breathes on a slow loop, the
+   card's blobs wander a touch faster. Both sit out under reduced motion. */
+@keyframes ambient-drift {
+
+  0%,
+  100% {
+    transform: translate3d(-1.5%, -1%, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(1.5%, 1%, 0) scale(1.05);
+  }
+}
+
+.ambient-drift {
+  animation: ambient-drift 60s ease-in-out infinite;
+}
+
+@keyframes blob-drift {
+  0% {
+    transform: translate3d(0%, 0%, 0) rotate(0deg);
+  }
+
+  33% {
+    transform: translate3d(2%, -1.5%, 0) rotate(2deg);
+  }
+
+  66% {
+    transform: translate3d(-1.5%, 1%, 0) rotate(-1.5deg);
+  }
+
+  100% {
+    transform: translate3d(0%, 0%, 0) rotate(0deg);
+  }
+}
+
+.blob-drift {
+  animation: blob-drift 26s ease-in-out infinite;
+}
+
+/* The chains type toward stationary anchors, then the conversation fades in. */
+@keyframes conversation-arrive {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-puppet-stage='dropping'] main,
+  [data-puppet-stage='threading'] main {
+    visibility: hidden;
+  }
+
+  [data-puppet-stage='ready']:not([data-puppet-skip]) main,
+  [data-puppet-stage]:not([data-puppet-stage='dropping']):not([data-puppet-skip]) .sigil-ink {
+    animation: conversation-arrive 0.95s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  [data-puppet-stage='dropping'] .sigil-ink,
+  [data-puppet-stage='dropping'] .puppet-threads {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  [data-puppet-hand] {
+    transform: none !important;
+  }
+
+  .puppet-threads {
+    transition: none;
+  }
+
+  .ambient-drift,
+  .blob-drift {
+    animation: none;
+  }
+
+  /* Keep the rails still and fully visible under reduced motion. */
+  .sigil-ink {
+    animation: none;
+  }
+}
+
+/* Projects header affordance — resolved by the device's hover capability at
+   first paint, so the hint copy and chevron never flash on hydration. Default
+   is the hover treatment; touch devices swap to the tap treatment. */
+.hint-tap,
+.tap-chevron {
+  display: none;
+}
+
+/* Hide immediately when input or motion preferences change, before React
+   handles the media-query event. Previews never intercept project links. */
+@media (hover: none), (pointer: coarse), (max-width: 767px), (prefers-reduced-motion: reduce) {
+  .project-hover-preview {
+    display: none;
+  }
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 767px) {
+  .hint-hover {
+    display: none;
+  }
+
+  .hint-tap {
+    display: inline;
+  }
+
+  .tap-chevron {
+    display: flex;
+  }
+}
+
+.puppet-scene {
+  --hand-size: 240px;
+  min-height: var(--hand-size);
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+.puppet-hand-stage {
+  height: calc(var(--hand-size) + 24px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 34px);
+  mask-image: linear-gradient(to bottom, transparent, black 34px);
+}
+
+.puppet-hand-left { left: calc(50% - 480px); }
+.puppet-hand-right { right: calc(50% - 480px); }
+
+@media (max-width: 1023px) {
+  .puppet-scene {
+    --hand-size: clamp(134px, 40vw, 192px);
+  }
+
+  .puppet-hand-left { left: max(4px, calc(50% - 240px)); }
+  .puppet-hand-right { right: max(4px, calc(50% - 240px)); }
+
+  .sigil-pose { width: 102px; left: -27px; }
+  .sigil-scroll { animation: mobile-sigil-drift 160s linear infinite; }
+  [data-sigil-side="right"] .sigil-scroll { animation-direction: reverse; }
+}
+
+@keyframes mobile-sigil-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, -50%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sigil-scroll { animation: none; }
+}
+
+/* Fade the live page without rasterizing the SVG strings into a snapshot. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-page-navigation] main {
+    animation: conversation-arrive 240ms ease-out both;
+  }
+}
+
+.project-list { height: 140px; transition: height 300ms cubic-bezier(0,0,0.2,1); }
+.project-list[data-open="true"] { height: var(--project-list-height, 800px); }
+.project-fade { transition: opacity 150ms ease; }
+.project-hover-preview { transition: transform 80ms ease-out, opacity 150ms ease; }
+.preview-motion { opacity: 0; transition: opacity 150ms ease; }
+.preview-motion.media-ready { opacity: 1; }
+.scroll-cue svg { animation: cue-bob 1.8s ease-in-out infinite; }
+@keyframes cue-bob { 50% { transform: translateY(2px); } }
+@keyframes calendar-arrive { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: scale(1); } }
+.calendar-day { animation: calendar-arrive 200ms cubic-bezier(.22,1,.36,1) var(--cell-delay) backwards; }
+@media (prefers-reduced-motion: reduce) {
+  .project-list, .project-fade, .project-hover-preview, .preview-motion { transition: none; }
+  .calendar-day, .scroll-cue svg, [class*="animate-"] { animation: none; }
+}
+.visit { width: 17px; height: 17px; }
+.right .poster { object-position: center 52%; }
