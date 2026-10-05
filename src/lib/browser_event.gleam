@@ -2,6 +2,7 @@ import gleam/dynamic/decode
 import gleam/json
 
 pub type Event {
+  StudioSize(name: String, width: Int)
   Tick(now: Int)
   Poll
   Capability(hover: Bool)
@@ -30,6 +31,11 @@ pub fn parse(body: String) -> Result(Event, Nil) {
   let decoder = {
     use kind <- decode.field("kind", decode.string)
     case kind {
+      "studio-size" -> {
+        use name <- decode.field("name", decode.string)
+        use width <- decode.field("width", decode.int)
+        decode.success(StudioSize(name, width))
+      }
       "tick" -> {
         use now <- decode.field("now", decode.int)
         decode.success(Tick(now))

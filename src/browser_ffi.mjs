@@ -148,7 +148,7 @@ export function mount_scene(path, skip, dispatch) {
   const disposals=[];
   let disposed=false;
   disposeScene=() => { disposed=true; disposals.forEach(dispose => dispose()); };
-  if(path==='/studio') { mountStudio(disposals); return; }
+  if(path==='/studio') { mountStudio(disposals, emit); return; }
   measure_calendar();
   const rows=document.getElementById('project-rows');
   const list=document.querySelector('.project-list');
@@ -183,27 +183,13 @@ export function mount_scene(path, skip, dispatch) {
   Promise.all(animations.map(animation=>animation.finished.catch(()=>{}))).then(finish);
 }
 
-function mountStudio(disposals) {
+function mountStudio(disposals, emit) {
   const media=matchMedia('(min-width: 768px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)');
   document.querySelectorAll('[data-live-src]').forEach(container => {
-    const src=container.dataset.liveSrc;
-    if(!src) return;
-    let frame;
-    let timer;
-    const update=() => {
-      if(!media.matches) { clearTimeout(timer); frame?.remove(); frame=undefined; return; }
-      if(!frame) {
-        frame=document.createElement('iframe');
-        frame.src=src; frame.title=container.dataset.liveName+' live preview';
-        frame.tabIndex=-1; frame.loading='eager'; frame.allow='autoplay';
-        frame.sandbox='allow-scripts allow-same-origin'; frame.className='frame';
-        frame.onload=() => { clearTimeout(timer); timer=setTimeout(()=>frame?.classList.add('ready'),5000); };
-        container.append(frame);
-      }
-      frame.style.transform=`scale(${container.clientWidth/1440})`;
-    };
+    if(!container.dataset.liveSrc) return;
+    const update=() => emit({kind:'studio-size',name:container.dataset.liveName,width:media.matches?container.clientWidth:0});
     const observer=new ResizeObserver(update); observer.observe(container);
     media.addEventListener('change',update); update();
-    disposals.push(() => { observer.disconnect(); media.removeEventListener('change',update); clearTimeout(timer); frame?.remove(); });
+    disposals.push(() => { observer.disconnect(); media.removeEventListener('change',update); });
   });
 }

@@ -23,6 +23,8 @@ import ui/studio
 
 pub type Model {
   Model(
+    studio_widths: List(#(String, Int)),
+    studio_ready: List(String),
     path: String,
     track: Option(player.Track),
     colors: Option(#(palette.Rgb, palette.Rgb)),
@@ -47,6 +49,8 @@ pub type Model {
 }
 
 pub type Message {
+  StudioLoaded(name: String)
+  StudioReady(name: String)
   Browser(body: String)
   Project(event: projects_state.Event)
   TrackReturned(result: Result(String, Nil))
@@ -60,6 +64,8 @@ pub type Message {
 
 pub fn initial(path: String, wire: String, skip: Bool) -> Model {
   Model(
+    studio_widths: [],
+    studio_ready: [],
     path: path,
     track: result.unwrap(player.decode_track(wire), None),
     colors: None,
@@ -138,6 +144,16 @@ fn extract_palette(track: Option(player.Track)) -> Effect(Message) {
 
 pub fn update(model: Model, message: Message) -> #(Model, Effect(Message)) {
   case message {
+    StudioLoaded(name) -> #(
+      model,
+      effect.from(fn(dispatch) {
+        delay(5000, fn() { dispatch(StudioReady(name)) })
+      }),
+    )
+    StudioReady(name) -> #(
+      Model(..model, studio_ready: [name, ..model.studio_ready]),
+      effect.none(),
+    )
     Browser(body) ->
       case browser.parse(body) {
         Ok(event) -> browser_update(model, event)
@@ -230,6 +246,20 @@ fn browser_update(
   event: browser.Event,
 ) -> #(Model, Effect(Message)) {
   case event {
+    browser.StudioSize(name, width) -> {
+      let widths = [
+        #(name, width),
+        ..list.filter(model.studio_widths, fn(item) { item.0 != name })
+      ]
+      let ready = case width {
+        0 -> list.filter(model.studio_ready, fn(item) { item != name })
+        _ -> model.studio_ready
+      }
+      #(
+        Model(..model, studio_widths: widths, studio_ready: ready),
+        effect.none(),
+      )
+    }
     browser.Tick(now) -> {
       let poll = now - model.last_poll >= 30_000
       let finished = case model.track {
@@ -380,6 +410,8 @@ fn browser_update(
         Model(
           ..model,
           path: path,
+          studio_widths: [],
+          studio_ready: [],
           skip: True,
           stage: "ready",
           preview: None,
@@ -400,7 +432,8 @@ fn browser_update(
 pub fn view(model: Model) -> Element(Message) {
   element.fragment([
     case model.path {
-      "/studio" -> studio.view()
+      "/studio" ->
+        studio.view(model.studio_widths, model.studio_ready, StudioLoaded)
       _ ->
         home.view(
           model.track,
