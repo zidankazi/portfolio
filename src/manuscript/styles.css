@@ -38,3 +38,7 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--link);outline-offse
 .calendar-error button{background:none;border:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;white-space:nowrap}
 @media(max-width:600px){body{font-size:18px;line-height:28px}main{margin:44px auto 44px;width:calc(100% - 44px)}.intro-copy{font-size:21px;line-height:32px}#spotify,.contact-copy{font-size:16px;line-height:25px}}
 @media print{#manuscript{display:none}body{background:white}main{margin:0 auto}.flow-copy{break-inside:avoid}}
+.flow-link{position:absolute;left:0;top:0;z-index:1;pointer-events:none;cursor:pointer;text-decoration:none}
+.flow-link .text-word{pointer-events:auto;text-decoration:underline;text-decoration-color:#2b282266;text-underline-offset:4px;text-decoration-thickness:1px}
+.project-title .text-word{text-decoration:none}
+.flow-link:hover .text-word{text-decoration:underline;text-decoration-color:currentColor}
