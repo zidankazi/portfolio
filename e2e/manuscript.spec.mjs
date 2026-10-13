@@ -49,6 +49,25 @@ test('dragon follows the whole viewport and reflows project paragraphs',async({p
   await expect.poll(()=>lastProject.evaluate(visibleText)).toContain('livesgp4mechanics.');
 });
 
+test('reflow moves persistent words through intermediate positions',async({page},info)=>{
+  test.skip(info.project.name==='mobile','Pointer-driven reflow is a desktop interaction');
+  await page.clock.install();await page.goto('/');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  const paragraph=page.locator('.project-row').first();
+  const before=await paragraph.locator('.text-word').evaluateAll(nodes=>nodes.map(node=>({id:node.dataset.wordId,text:node.textContent,x:node.getBoundingClientRect().x,y:node.getBoundingClientRect().y})));
+  const box=await paragraph.boundingBox();await page.mouse.move(box.x+box.width*.58,box.y+50);
+  let previous=before,largestStep=0,changed=false;
+  for(let frame=0;frame<24;frame++) {
+    await page.clock.runFor(16);
+    const current=await paragraph.locator('.text-word').evaluateAll(nodes=>nodes.map(node=>({id:node.dataset.wordId,text:node.textContent,x:node.getBoundingClientRect().x,y:node.getBoundingClientRect().y})));
+    expect(current.map(word=>[word.id,word.text])).toEqual(before.map(word=>[word.id,word.text]));
+    for(let i=0;i<current.length;i++) {const step=Math.hypot(current[i].x-previous[i].x,current[i].y-previous[i].y);largestStep=Math.max(largestStep,step);if(step>.2) changed=true;}
+    previous=current;
+  }
+  expect(changed).toBe(true);expect(largestStep).toBeLessThan(110);
+});
+
 test('reduced motion keeps a static dragon without a visible control',async({page})=>{
   await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
@@ -70,6 +89,22 @@ test('hovering and focusing a link holds its position while the dragon is nearby
   const focused=await project.boundingBox();await page.clock.runFor(350);
   expect(await project.boundingBox()).toEqual(focused);
   await expect(project).toBeFocused();await expect(project).toHaveAttribute('href','https://tryrelic.io');
+});
+
+test('every project title and secondary link opens after cursor movement',async({page,context},info)=>{
+  test.setTimeout(60_000);
+  await context.route(/^https:\/\/(tryrelic\.io|github\.com|roster-dev\.vercel\.app|sponge-alpha\.vercel\.app|zilean\.app|youtu\.be|x\.com|arxiv\.org)(?:\/.*)?$/,route=>route.fulfill({contentType:'text/html',body:'<p>Project destination</p>'}));
+  await page.goto('/');await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  const links=page.locator('.project-row a');await expect(links).toHaveCount(12);
+  for(let index=0;index<12;index++) {
+    const link=links.nth(index);await link.scrollIntoViewIfNeeded();
+    const glyph=link.locator('.text-word').first();const box=await glyph.boundingBox();
+    await page.mouse.move(box.x+280,box.y+120);await page.mouse.move(box.x+box.width/2,box.y+box.height/2,{steps:8});
+    const expected=new URL(await link.getAttribute('href')).href;
+    const opened=page.waitForEvent('popup');
+    if(info.project.name==='mobile') await glyph.tap({timeout:4000});else await glyph.click({timeout:4000});
+    const popup=await opened;await expect(popup).toHaveURL(expected);await popup.close();
+  }
 });
 
 test('selected project text remains readable and does not move during copying',async({page})=>{
