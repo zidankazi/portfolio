@@ -1,6 +1,6 @@
 // Canvas composition adapted from Illustrated Manuscript (ISC).
 // The portfolio below this surface uses ordinary browser layout and links.
-import {prepareRichInline,layoutNextRichInlineLineRange,materializeRichInlineLineRange} from '@chenglou/pretext/rich-inline';
+import {prepareRichInline,layoutNextRichInlineLineRange,materializeRichInlineLineRange,measureRichInlineStats} from '@chenglou/pretext/rich-inline';
 import {biographyBlocks,biographyInline,type BioTrack,type BioImage} from './bio.ts';
 import {BG_COLOR, TEXT_COLOR, MOUSE_IDLE_TIMEOUT, getResponsiveLayout, getPageOffset, getPageScale} from './reference/config.js';
 import {loadDragonSprites, createDragon, updateDragonScale, updateDragon, getDragonExclusions, getFireExclusions, getFireInfluence, spawnFire, hasActiveFire, updateFire, drawDragon, drawFire} from './reference/dragon.js';
@@ -51,12 +51,12 @@ export async function mountScene():Promise<void> {
   await Promise.all([document.fonts.load('21px "Furia"'), loadDragonSprites(), dropCap.decode()]);
   const motion=matchMedia('(prefers-reduced-motion: reduce)');
   let width=surface.clientWidth, height=surface.clientHeight;
-  let layout=getResponsiveLayout(width,height);
+  let layout=sceneLayout();
   let offset=getPageOffset(layout,width,height);
   let scale=getPageScale(width);
   const media=new Map<string,HTMLCanvasElement>();
   const mediaRequests=new Set<string>();
-  let prepared=prepareBio();
+  let prepared=fitBio();
   let lines:Line[]=[];
   let pictures:Picture[]=[];
   let dirty=true, frame=0, frames=0, visible=true;
@@ -67,34 +67,59 @@ export async function mountScene():Promise<void> {
   refreshText=()=>{
     const active=new Set(biographyBlocks(track).flatMap(block=>block.image ? [block.image.src] : []));
     for (const src of media.keys()) if (!active.has(src)) {media.delete(src);mediaRequests.delete(src);}
-    prepared=prepareBio();dirty=true;schedule();
+    prepared=fitBio();glyphWidths.clear();dirty=true;schedule();
   };
 
-  function prepareBio() {
-    const bodySize=Math.max(17,layout.fontSize);
+  function sceneLayout() {
+    const next=getResponsiveLayout(width,height);
+    return {...next,pageWidth:Math.min(760,width-24),pageHeight:height-24,margin:width<=600 ? 10 : 24};
+  }
+  function pictureSize(image:BioImage,bodySize:number) {
+    return image.kind==='album' ? Math.round(Math.max(40,Math.min(56,bodySize*2.6))) : Math.round(Math.max(24,Math.min(32,bodySize*1.45)));
+  }
+  // Fit only when the viewport or song changes, keeping type stable during motion.
+  function fitBio() {
+    const maximum=width<=600 ? 17 : 21;
+    let bodySize=maximum;
+    let candidate=prepareBio(bodySize);
+    while (bodySize>12) {
+      const estimated=candidate.reduce((height,block)=>{
+        const stats=measureRichInlineStats(block.prepared,layout.pageWidth-2*layout.margin);
+        return height+stats.lineCount*block.lineHeight+Math.max(0,block.imageSize-block.lineHeight)+block.gap;
+      },0);
+      // Leave room for the illuminated initial and the dragon crossing the text.
+      if (estimated<=layout.pageHeight-2*layout.margin-52) break;
+      bodySize-=.5;candidate=prepareBio(bodySize);
+    }
+    layout.fontSize=bodySize;layout.lineHeight=Math.round(bodySize*1.35);
+    surface!.dataset.bodySize=String(bodySize);
+    if (fallback) {fallback.style.fontSize=bodySize+'px';fallback.style.lineHeight='1.35';}
+    return candidate;
+  }
+  function prepareBio(bodySize:number) {
     return biographyBlocks(track).map((block,index)=>{
       let fontSize=bodySize;
-      if (block.kind==='name') fontSize=Math.max(34,bodySize*1.85);
-      else if (block.kind==='song') fontSize=Math.max(24,bodySize*(block.text.length>48 ? 1 : 1.3));
-      else if (block.kind==='clients') fontSize=Math.max(17,bodySize*.9);
-      else if (block.kind==='artist') fontSize=Math.max(15,bodySize*.8);
-      else if (block.kind==='label' || block.kind==='cue') fontSize=Math.max(14,bodySize*.72);
-      const lineHeight=Math.round(fontSize*1.5);
+      if (block.kind==='name') fontSize=Math.max(26,bodySize*1.7);
+      else if (block.kind==='song') fontSize=Math.max(17,bodySize*(block.text.length>48 ? 1 : 1.15));
+      else if (block.kind==='artist') fontSize=Math.max(12,bodySize*.85);
+      else if (block.kind==='label' || block.kind==='cue') fontSize=Math.max(12,bodySize*.8);
+      const lineHeight=Math.round(fontSize*1.35);
       const font=`${fontSize}px "Furia", Georgia, serif`;
       const color=block.accent ? '#744338' : ['artist','label','cue'].includes(block.kind) ? '#6c665a' : TEXT_COLOR;
+      const imageSize=block.image ? pictureSize(block.image,bodySize) : 0;
       const parts=biographyInline(index===0 ? {...block,text:block.text.slice(1)} : block).flatMap(part=>{
         if (part.image?.kind!=='album') return [part];
         // A very long first word must not block the entire remaining biography.
         ctx!.font=font;
-        const limit=layout.pageWidth-2*layout.margin-72;
+        const limit=layout.pageWidth-2*layout.margin-imageSize-8;
         const characters=Array.from(part.text);
         let end=characters.length;
         while (end>1 && ctx!.measureText(characters.slice(0,end).join('')).width>limit) end--;
         return end===characters.length ? [part] : [{...part,text:characters.slice(0,end).join('')},{text:characters.slice(end).join('')}];
       });
-      const items=parts.map(part=>({text:part.text,font,...(part.image ? {break:'never' as const,extraWidth:(part.image.kind==='album' ? 64 : 32)+8} : {})}));
+      const items=parts.map(part=>({text:part.text,font,...(part.image ? {break:'never' as const,extraWidth:imageSize+8} : {})}));
       const imageIndex=parts.findIndex(part=>part.image);
-      return {prepared:prepareRichInline(items),itemCount:items.length,font,fontSize,lineHeight,color,gap:block.gap*bodySize/21,image:block.image,imageIndex};
+      return {prepared:prepareRichInline(items),itemCount:items.length,font,fontSize,lineHeight,color,gap:block.gap*bodySize/21*.65,image:block.image,imageSize,imageIndex};
     });
   }
   function loadPicture(image:BioImage) {
@@ -121,12 +146,12 @@ export async function mountScene():Promise<void> {
     bitmap.src=image.src;
   }
   function dropCapSize() {
-    const height=layout.lineHeight*3;
+    const height=layout.lineHeight*2.5;
     const drawWidth=dropCap.naturalWidth*height/dropCap.naturalHeight;
     return {width:drawWidth+12,height,drawWidth};
   }
   function restPosition() {
-    return {x:offset.x+layout.margin+dropCapSize().width*.8,y:offset.y+layout.margin-70*scale};
+    return {x:width<=600 ? width*.72 : offset.x+layout.margin+dropCapSize().width*.8-115*scale,y:offset.y+layout.margin+24*scale};
   }
   function placeDragon() {
     const rest=restPosition();
@@ -144,9 +169,9 @@ export async function mountScene():Promise<void> {
     const dpr=Math.min(devicePixelRatio || 1,2);
     canvas!.width=Math.round(width*dpr); canvas!.height=Math.round(height*dpr);
     ctx!.setTransform(dpr,0,0,dpr,0,0);
-    layout=getResponsiveLayout(width,height); offset=getPageOffset(layout,width,height);
+    layout=sceneLayout(); offset=getPageOffset(layout,width,height);
     scale=getPageScale(width); updateDragonScale(dragon,scale);
-    prepared=prepareBio(); glyphWidths.clear();
+    prepared=fitBio(); glyphWidths.clear();
     if (changed) placeDragon();
     dirty=true; schedule();
   }
@@ -158,7 +183,7 @@ export async function mountScene():Promise<void> {
     while (paragraphIndex<prepared.length) {
       const block=prepared[paragraphIndex];
       const {fontSize,font,color,gap}=block;
-      const imageSize=block.image?.kind==='album' ? 64 : 32;
+      const imageSize=block.imageSize;
       const lineHeight=block.image && cursor.itemIndex<=block.imageIndex ? Math.max(block.lineHeight,imageSize) : block.lineHeight;
       if (y+lineHeight>layout.pageHeight-layout.margin) break;
       const baselineOffset=(lineHeight-fontSize*.857)/2;
