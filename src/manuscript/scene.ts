@@ -72,7 +72,7 @@ export async function mountScene():Promise<void> {
 
   function sceneLayout() {
     const next=getResponsiveLayout(width,height);
-    return {...next,pageWidth:Math.min(760,width-24),pageHeight:height-24,margin:width<=600 ? 10 : 24};
+    return {...next,pageWidth:Math.min(760,width-16),pageHeight:height-24,margin:width<=600 ? 6 : 24};
   }
   function pictureSize(image:BioImage,bodySize:number) {
     return image.kind==='album' ? Math.round(Math.max(40,Math.min(56,bodySize*2.6))) : Math.round(Math.max(24,Math.min(32,bodySize*1.45)));
@@ -88,14 +88,16 @@ export async function mountScene():Promise<void> {
         return height+stats.lineCount*block.lineHeight+Math.max(0,block.imageSize-block.lineHeight)+block.gap;
       },0);
       // Leave room for the illuminated initial and the dragon crossing the text.
-      if (estimated<=layout.pageHeight-2*layout.margin-52) break;
+      if (estimated<=layout.pageHeight-2*layout.margin-(width<=600 ? 110 : 52)) break;
       bodySize-=.5;candidate=prepareBio(bodySize);
     }
-    layout.fontSize=bodySize;layout.lineHeight=Math.round(bodySize*1.35);
+    layout.fontSize=bodySize;layout.lineHeight=Math.round(bodySize*lineSpacing());
     surface!.dataset.bodySize=String(bodySize);
-    if (fallback) {fallback.style.fontSize=bodySize+'px';fallback.style.lineHeight='1.35';}
+    if (fallback) {fallback.style.fontSize=bodySize+'px';fallback.style.lineHeight=String(lineSpacing());}
     return candidate;
   }
+  function lineSpacing() {return width<=600 && height<700 ? 1.25 : 1.35;}
+  function paragraphSpacing() {return width<=600 ? (height<700 ? .3 : .45) : .65;}
   function prepareBio(bodySize:number) {
     return biographyBlocks(track).map((block,index)=>{
       let fontSize=bodySize;
@@ -103,7 +105,7 @@ export async function mountScene():Promise<void> {
       else if (block.kind==='song') fontSize=Math.max(17,bodySize*(block.text.length>48 ? 1 : 1.15));
       else if (block.kind==='artist') fontSize=Math.max(12,bodySize*.85);
       else if (block.kind==='label' || block.kind==='cue') fontSize=Math.max(12,bodySize*.8);
-      const lineHeight=Math.round(fontSize*1.35);
+      const lineHeight=Math.round(fontSize*lineSpacing());
       const font=`${fontSize}px "Furia", Georgia, serif`;
       const color=block.accent ? '#744338' : ['artist','label','cue'].includes(block.kind) ? '#6c665a' : TEXT_COLOR;
       const imageSize=block.image ? pictureSize(block.image,bodySize) : 0;
@@ -119,7 +121,7 @@ export async function mountScene():Promise<void> {
       });
       const items=parts.map(part=>({text:part.text,font,...(part.image ? {break:'never' as const,extraWidth:imageSize+8} : {})}));
       const imageIndex=parts.findIndex(part=>part.image);
-      return {prepared:prepareRichInline(items),itemCount:items.length,font,fontSize,lineHeight,color,gap:block.gap*bodySize/21*.65,image:block.image,imageSize,imageIndex};
+      return {prepared:prepareRichInline(items),itemCount:items.length,font,fontSize,lineHeight,color,gap:block.gap*bodySize/21*paragraphSpacing(),image:block.image,imageSize,imageIndex};
     });
   }
   function loadPicture(image:BioImage) {
