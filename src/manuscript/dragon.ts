@@ -1,5 +1,6 @@
 // Sprite artwork and articulated chain adapted from Illustrated Manuscript.
 // See public/manuscript/NOTICE.txt for the upstream ISC license and credits.
+import {convexHull,polygonRange,type Point} from './geometry.ts';
 export type Segment = {x: number; y: number; angle: number; width: number};
 type Spark = {x: number; y: number; vx: number; vy: number; life: number; size: number};
 export type Range = {left: number; right: number};
@@ -9,6 +10,8 @@ export class Dragon {
   segments: Segment[] = [];
   sparks: Spark[] = [];
   private sprites = new Map<string, HTMLImageElement>();
+  private outlines = new Map<string,Point[]>();
+  private collision:Point[][] | null=null;
   private previous = 0;
   scale = 1;
   static async load(): Promise<Dragon> {
@@ -16,7 +19,24 @@ export class Dragon {
     const names = ['head', 'tongue', 'wing-front', 'wing-back', ...Array.from({length: 19}, (_, i) => 'body-'+(i+1))];
     await Promise.all(names.map(name => new Promise<void>((resolve, reject) => {
       const image = new Image();
-      image.onload = () => {dragon.sprites.set(name, image); resolve();};
+      image.onload = () => {
+        dragon.sprites.set(name, image);
+        const mask=document.createElement('canvas');
+        mask.width=image.naturalWidth; mask.height=image.naturalHeight;
+        const ctx=mask.getContext('2d',{willReadFrequently:true});
+        if (ctx) {
+          ctx.drawImage(image,0,0);
+          const pixels=ctx.getImageData(0,0,mask.width,mask.height).data;
+          const points:Point[]=[];
+          for (let y=0;y<mask.height;y+=4) {
+            let left=mask.width, right=-1;
+            for (let x=0;x<mask.width;x++) if (pixels[(y*mask.width+x)*4+3]>16) {left=Math.min(left,x); right=x;}
+            if (right>=0) points.push({x:left,y},{x:right,y});
+          }
+          dragon.outlines.set(name,convexHull(points));
+        }
+        resolve();
+      };
       image.onerror = () => reject(new Error('Dragon artwork unavailable'));
       image.src = '/manuscript/'+name+'.webp';
     })));
@@ -25,6 +45,8 @@ export class Dragon {
   rest(x: number, y: number, scale: number) {
     this.scale = scale;
     this.segments = this.restPose(x, y);
+    this.collision=null;
+    this.previous=0;
   }
   private restPose(x: number, y: number): Segment[] {
     const positions: Segment[] = [{x, y, angle: 0, width: widths[0] * .24 * this.scale}];
@@ -36,39 +58,58 @@ export class Dragon {
     return positions;
   }
   update(time: number, target: {x: number; y: number} | null, restX: number, restY: number): boolean {
-    if (time-this.previous < 40) return false;
+    const elapsed=Math.max(0,Math.min((time-this.previous)/1000, .05));
     this.previous = time;
+    const follow=1-Math.exp(-10*elapsed);
+    const turn=1-Math.exp(-13*elapsed);
+    const settle=1-Math.exp(-5*elapsed);
+    let moved=false;
     if (!target) {
       const rest = this.restPose(restX, restY);
       this.segments.forEach((segment, i) => {
-        segment.x += (rest[i].x-segment.x)*.1;
-        segment.y += (rest[i].y-segment.y)*.1;
+        const dx=rest[i].x-segment.x, dy=rest[i].y-segment.y;
         const difference = Math.atan2(Math.sin(rest[i].angle-segment.angle), Math.cos(rest[i].angle-segment.angle));
-        segment.angle += difference*.1;
+        if (Math.hypot(dx,dy)>.08 || Math.abs(difference)>.002) moved=true;
+        segment.x += dx*settle;
+        segment.y += dy*settle;
+        segment.angle += difference*settle;
       });
     } else {
       const head = this.segments[0];
       const dx = target.x-head.x, dy = target.y-head.y;
       const distance = Math.hypot(dx, dy);
-      if (distance > 3) {
-        head.x += dx*.15; head.y += dy*.15;
-        head.angle = Math.atan2(dy, dx);
+      if (distance > .3) {
+        head.x += dx*follow; head.y += dy*follow;
+        if (distance>4) {
+          const difference=Math.atan2(Math.sin(Math.atan2(dy,dx)-head.angle),Math.cos(Math.atan2(dy,dx)-head.angle));
+          head.angle+=difference*turn;
+        }
+        moved=true;
       }
       for (let i = 1; i < this.segments.length; i++) {
         const previous = this.segments[i-1], segment = this.segments[i];
         let angle = Math.atan2(previous.y-segment.y, previous.x-segment.x);
         const difference = Math.atan2(Math.sin(angle-previous.angle), Math.cos(angle-previous.angle));
         angle = previous.angle+Math.max(-.25, Math.min(.25, difference));
-        segment.angle = angle;
-        segment.x = previous.x-Math.cos(angle)*22*this.scale;
-        segment.y = previous.y-Math.sin(angle)*22*this.scale;
+        const turnDifference=Math.atan2(Math.sin(angle-segment.angle),Math.cos(angle-segment.angle));
+        segment.angle+=turnDifference*turn;
+        const nextX=previous.x-Math.cos(segment.angle)*22*this.scale;
+        const nextY=previous.y-Math.sin(segment.angle)*22*this.scale;
+        if (Math.hypot(nextX-segment.x,nextY-segment.y)>.08 || Math.abs(turnDifference)>.002) moved=true;
+        segment.x=nextX; segment.y=nextY;
       }
     }
-    this.sparks.forEach(spark => {spark.x+=spark.vx; spark.y+=spark.vy; spark.vx*=.96; spark.vy-=.2; spark.life-=.045;});
+    const fireStep=elapsed*25;
+    if (this.sparks.length) moved=true;
+    this.sparks.forEach(spark => {spark.x+=spark.vx*fireStep; spark.y+=spark.vy*fireStep; spark.vx*=.96**fireStep; spark.vy-=.2*fireStep; spark.life-=.045*fireStep;});
     this.sparks = this.sparks.filter(spark => spark.life > 0);
-    return true;
+    if (moved) this.collision=null;
+    return moved;
   }
+  stopFire() {this.sparks=[]; this.collision=null;}
+  hold(time:number) {this.previous=time;}
   breathe() {
+    this.collision=null;
     const head = this.segments[0];
     for (let i = 0; i < 9; i++) {
       const angle = head.angle+(Math.random()-.5)*.6;
@@ -76,31 +117,39 @@ export class Dragon {
     }
   }
   exclusions(top: number, bottom: number): Range[] {
-    const circles = [...this.segments.map(segment => ({...segment, radius: segment.width/2+12*this.scale})), ...this.sparks.map(spark => ({...spark, radius: spark.size+8}))];
+    const circles = this.sparks.map(spark => ({...spark,radius:spark.size+8}));
     const ranges = circles.flatMap(circle => {
       const gap = Math.max(0, Math.abs(circle.y-(top+bottom)/2)-(bottom-top)/2);
       if (gap >= circle.radius) return [];
       const half = Math.sqrt(circle.radius**2-gap**2);
       return [{left: circle.x-half, right: circle.x+half}];
     });
-    // Reserve the transformed sprite bounds, including the full wing-flap arc.
-    const wing = this.segments[5];
-    const sprites: {name: string; segment: Segment; ox: number; oy: number; angle: number}[] = [
-      {name:'wing-front',segment:wing,ox:-1,oy:-1,angle:-.18},
-      {name:'wing-front',segment:wing,ox:-1,oy:-1,angle:.18},
-      {name:'wing-back',segment:wing,ox:-1,oy:-1,angle:-.18},
-      {name:'wing-back',segment:wing,ox:-1,oy:-1,angle:.18},
-      {name:'head',segment:this.segments[0],ox:-.45,oy:-.5,angle:0},
-    ];
-    for (const {name,segment,ox,oy,angle} of sprites) {
-      const image=this.sprites.get(name)!;
-      const width=image.naturalWidth*.24*this.scale, height=image.naturalHeight*.24*this.scale;
-      const rotation=segment.angle+angle;
-      const points=[[ox*width,oy*height],[(ox+1)*width,oy*height],[ox*width,(oy+1)*height],[(ox+1)*width,(oy+1)*height]].map(([x,y])=>({x:segment.x+x*Math.cos(rotation)-y*Math.sin(rotation),y:segment.y+x*Math.sin(rotation)+y*Math.cos(rotation)}));
-      const padding=10*this.scale;
-      if (bottom > Math.min(...points.map(point=>point.y))-padding && top < Math.max(...points.map(point=>point.y))+padding) ranges.push({left:Math.min(...points.map(point=>point.x))-padding,right:Math.max(...points.map(point=>point.x))+padding});
+    if (!this.collision) this.collision=this.buildCollision();
+    for (const points of this.collision) {
+      const range=polygonRange(points,top,bottom,9*this.scale);
+      if (range) ranges.push(range);
     }
     return ranges;
+  }
+  private buildCollision():Point[][] {
+    const polygons:Point[][]=[];
+    const add=(name:string,segment:Segment,ox:number,oy:number,angle=0)=>{
+      const image=this.sprites.get(name);
+      if (!image) return;
+      const outline=this.outlines.get(name) ?? [{x:0,y:0},{x:image.naturalWidth,y:0},{x:image.naturalWidth,y:image.naturalHeight},{x:0,y:image.naturalHeight}];
+      const rotation=segment.angle+angle;
+      polygons.push(outline.map(point=>{
+        const x=(point.x+image.naturalWidth*ox)*.24*this.scale;
+        const y=(point.y+image.naturalHeight*oy)*.24*this.scale;
+        return {x:segment.x+x*Math.cos(rotation)-y*Math.sin(rotation),y:segment.y+x*Math.sin(rotation)+y*Math.cos(rotation)};
+      }));
+    };
+    const head=this.segments[0];
+    add('head',head,-.45,-.5);
+    add('tongue',{...head,x:head.x+Math.cos(head.angle)*32*this.scale,y:head.y+Math.sin(head.angle)*32*this.scale},0,-.5);
+    for (let i=1;i<20;i++) add('body-'+i,this.segments[i],-.5,-.5);
+    for (const name of ['wing-front','wing-back']) for (const angle of [-.18,0,.18]) add(name,this.segments[5],-1,-1,angle);
+    return polygons;
   }
   draw(ctx: CanvasRenderingContext2D, time: number, animate: boolean) {
     const wing = this.segments[5];
