@@ -4,11 +4,13 @@ The active portfolio is a TypeScript page, bundled with esbuild. Pretext
 lays out plain text and links around a dragon that follows the cursor across
 the entire viewport. Spotify appears as a sentence and GitHub activity retains
 its contribution chart. There is no navigation, decorative heading, or visible
-animation control; reduced motion follows the system preference. Movement is
-time based, and cached artwork outlines keep the text close to the dragon.
-Hovering links, keyboard focus, and text selection hold the layout still so
-reading, clicking, and copying remain predictable. The page is server rendered, so its content and
-links remain available without JavaScript.
+animation control; reduced motion follows the system preference. The dragon uses
+the reference’s original tracking, body constraints, and wing motion. Pretext computes the layout around
+cached artwork outlines; persistent words ease toward their new positions.
+Links remain native anchors, and approaching a link, keyboard focus, or text
+selection holds the layout still so reading, clicking, and copying remain
+predictable. The page is server rendered, so its content and links remain
+available without JavaScript.
 
 `npm run dev` starts the site on port 3000. `npm run build` creates the Node
 server and Vercel Build Output. `npm run check`, `npm run lint`, and `npm test`
