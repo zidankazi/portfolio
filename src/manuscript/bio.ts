@@ -9,7 +9,7 @@ export function biographyBlocks(track:BioTrack | null=null):BioBlock[] {
   return [
     {kind:'name',text:"I'm Zidan Kazi",gap:12},
     {kind:'body',text:"I'm a junior at Stevens Institute of Technology studying Computer Science & Math. I'm currently in Hoboken, New Jersey.",gap:20},
-    {kind:'body',text:"I design and build websites for clients, and make software for the love of the game. I've built AI tools and terminal apps, and made Sponge, a coding interview practice app, in 24 hours at QuackHacks '26.",gap:24},
+    {kind:'body',text:"Right now I'm building Mavri. It helps brands make campaign visuals with fine-tuned diffusion models and manage production, feedback, and approvals. Before that, I interned at Trenchant Analytics, where I built military drone software that brought real-time computer vision, tactical maps, and augmented reality into HoloLens headsets.",gap:24},
     {kind:'label',text:'Outside of coding',gap:8},
     {kind:'hobby',text:'I like trying new foods.',gap:12},
     {kind:'hobby',text:'I play League of Legends. I used to be Challenger.',gap:12,accent:true,image:{src:'/manuscript/league.png',alt:'League of Legends logo',kind:'league'}},
