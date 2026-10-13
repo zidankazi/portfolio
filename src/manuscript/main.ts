@@ -30,7 +30,6 @@ function mountSpotify() {
       parts.push(document.createTextNode(' on Spotify.'));
     }
     container!.replaceChildren(...parts);
-    document.dispatchEvent(new CustomEvent('flow-content-changed',{detail:'spotify'}));
   }
   async function poll() {
     if (loading || document.hidden) return;

@@ -1,3 +1,4 @@
+@font-face{font-family:"Pirata One";src:url('/fonts/pirata-one.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
 @font-face{font-family:"IM Fell English";src:url('/fonts/im-fell-english.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
 @font-face{font-family:"IM Fell English";src:url('/fonts/im-fell-english-italic.ttf') format('truetype');font-weight:400;font-style:italic;font-display:swap}
 :root{--paper:#f4eee0;--ink:#2b2822;--muted:#6c665a;--link:#744338;color-scheme:light}
@@ -19,10 +20,12 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--link);outline-offse
 #spotify{margin-bottom:32px}
 #spotify a,.contact-copy a{color:var(--ink)}
 .contact-copy{margin-bottom:0}
-#manuscript{position:fixed;inset:0;z-index:2;pointer-events:none}
-.flow-ready{position:relative}
-.text-fragment{position:absolute;left:0;top:0;white-space:pre}
-.text-fragment[hidden]{display:none}
+.manuscript-surface{position:relative;height:100svh;min-height:560px;overflow:hidden;isolation:isolate;user-select:none;-webkit-user-select:none}
+#manuscript{display:block;position:absolute;inset:0;width:100%;height:100%;touch-action:pan-y}
+.manuscript-fallback{font-family:"Pirata One",serif;font-size:21px;line-height:34px;max-width:610px;margin:75px auto;padding:0 24px}
+.manuscript-surface[data-ready="true"] .manuscript-fallback{visibility:hidden}
+.manuscript-credit{position:absolute;bottom:24px;left:0;right:0;text-align:center;font:14px "Pirata One",serif;color:#2a1a0a;pointer-events:none;margin:0}
+.manuscript-surface + main{margin-top:80px}
 #github-activity{padding-top:10px;margin:0 0 28px;font-size:13px;line-height:20px}
 .calendar-status{margin:0;color:var(--muted);min-height:130px;display:flex;align-items:center}
 .calendar-scroll{overflow-x:auto;scrollbar-width:thin;scrollbar-color:#c6baa1 transparent;padding:0 2px 8px;overscroll-behavior-x:contain}
@@ -37,8 +40,4 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--link);outline-offse
 .calendar-error p{margin:0;color:var(--muted)}
 .calendar-error button{background:none;border:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;white-space:nowrap}
 @media(max-width:600px){body{font-size:18px;line-height:28px}main{margin:44px auto 44px;width:calc(100% - 44px)}.intro-copy{font-size:21px;line-height:32px}#spotify,.contact-copy{font-size:16px;line-height:25px}}
-@media print{#manuscript{display:none}body{background:white}main{margin:0 auto}.flow-copy{break-inside:avoid}}
-.flow-link{position:absolute;left:0;top:0;z-index:1;pointer-events:none;cursor:pointer;text-decoration:none}
-.flow-link .text-word{pointer-events:auto;text-decoration:underline;text-decoration-color:#2b282266;text-underline-offset:4px;text-decoration-thickness:1px}
-.project-title .text-word{text-decoration:none}
-.flow-link:hover .text-word{text-decoration:underline;text-decoration-color:currentColor}
+@media print{.manuscript-surface{display:none}body{background:white}main{margin:0 auto}p{break-inside:avoid}}
