@@ -2,13 +2,13 @@ import {fileURLToPath} from 'node:url';
 import {createServer} from 'node:http';
 import {readFile,stat} from 'node:fs/promises';
 import {resolve,extname,sep} from 'node:path';
-import {response} from '../build/dev/javascript/portfolio/server.mjs';
+import {response} from '../src/manuscript/server.ts';
 import assets from '../dist/assets.json' with {type:'json'};
-import {new_client} from '../build/dev/javascript/portfolio/lib/spotify.mjs';
+import {SpotifyClient} from '../src/manuscript/spotify.ts';
 
-const client=new_client(process.env.SPOTIFY_CLIENT_ID??'',process.env.SPOTIFY_CLIENT_SECRET??'',process.env.SPOTIFY_REFRESH_TOKEN??'');
+const client=new SpotifyClient({id:process.env.SPOTIFY_CLIENT_ID??'',secret:process.env.SPOTIFY_CLIENT_SECRET??'',refresh:process.env.SPOTIFY_REFRESH_TOKEN??''});
 
-const types={'.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.gif':'image/gif','.mp4':'video/mp4','.svg':'image/svg+xml','.ico':'image/x-icon','.woff2':'font/woff2','.txt':'text/plain; charset=utf-8'};
+const types={'.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.gif':'image/gif','.mp4':'video/mp4','.svg':'image/svg+xml','.ico':'image/x-icon','.woff2':'font/woff2','.ttf':'font/ttf','.txt':'text/plain; charset=utf-8'};
 
 async function serveFile(req,res,path) {
   const root=resolve(path.startsWith('/assets/')?'dist':'public');
