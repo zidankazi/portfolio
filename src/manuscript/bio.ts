@@ -2,16 +2,14 @@ import type {Track} from './spotify.ts';
 
 export type BioTrack = Pick<Track,'title' | 'artist' | 'isPlaying' | 'albumArt'>;
 export type BioImage = {src:string; alt:string; kind:'league' | 'cs2' | 'album'};
-export type BioBlock = {kind:'name' | 'body' | 'label' | 'clients' | 'hobby' | 'song' | 'artist' | 'cue'; text:string; gap:number; accent?:boolean; image?:BioImage};
+export type BioBlock = {kind:'name' | 'body' | 'label' | 'hobby' | 'song' | 'artist' | 'cue'; text:string; gap:number; accent?:boolean; image?:BioImage};
 
 export function biographyBlocks(track:BioTrack | null=null):BioBlock[] {
   const album=track?.albumArt?.startsWith('https://i.scdn.co/image/') ? track.albumArt : null;
   return [
     {kind:'name',text:"I'm Zidan Kazi",gap:12},
     {kind:'body',text:"I'm a junior at Stevens Institute of Technology studying Computer Science & Math. I'm currently in Hoboken, New Jersey.",gap:20},
-    {kind:'body',text:"Right now I'm building Mavri. It helps brands make campaign visuals with fine-tuned diffusion models and manage production, feedback, and approvals.",gap:12},
-    {kind:'label',text:'Some of our clients',gap:4},
-    {kind:'clients',text:'Four Seasons · Nespresso · Sephora · Tiffany & Co.',gap:24,accent:true},
+    {kind:'body',text:"Right now I'm building Mavri. We use fine-tuned diffusion models to make campaign visuals for brands, with tools for production, feedback, and approvals. Some of our clients include Four Seasons, Nespresso, Sephora, and Tiffany & Co.",gap:20},
     {kind:'body',text:"Before that, I interned at Trenchant Analytics, where I built military drone software that brought real-time computer vision, tactical maps, and augmented reality into HoloLens headsets.",gap:24},
     {kind:'label',text:'Outside of coding',gap:8},
     {kind:'hobby',text:'I like trying new foods.',gap:12},
