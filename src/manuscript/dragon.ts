@@ -1,6 +1,7 @@
 // Sprite artwork and articulated chain adapted from Illustrated Manuscript.
 // See public/manuscript/NOTICE.txt for the upstream ISC license and credits.
 import {convexHull,polygonRange,type Point} from './geometry.ts';
+import {angleDifference} from './text-motion.ts';
 export type Segment = {x: number; y: number; angle: number; width: number};
 type Spark = {x: number; y: number; vx: number; vy: number; life: number; size: number};
 export type Range = {left: number; right: number};
@@ -14,6 +15,7 @@ export class Dragon {
   private collision:Point[][] | null=null;
   private previous = 0;
   scale = 1;
+  private jitterSeed=Math.random()*1000;
   static async load(): Promise<Dragon> {
     const dragon = new Dragon();
     const names = ['head', 'tongue', 'wing-front', 'wing-back', ...Array.from({length: 19}, (_, i) => 'body-'+(i+1))];
@@ -49,62 +51,49 @@ export class Dragon {
     this.previous=0;
   }
   private restPose(x: number, y: number): Segment[] {
-    const positions: Segment[] = [{x, y, angle: 0, width: widths[0] * .24 * this.scale}];
+    const positions: Segment[] = [{x, y:y-2, angle: 0, width: widths[0] * .24 * this.scale}];
     for (let i = 1; i < 20; i++) {
-      const angle = -(i / 19) * Math.PI * .72;
+      const angle = -(i / 19) * Math.PI * .7;
       const previous = positions[i-1];
-      positions.push({x: previous.x - Math.cos(angle)*22*this.scale, y: previous.y - Math.sin(angle)*22*this.scale, angle, width: widths[i]*.24*this.scale});
+      positions.push({x: previous.x - Math.cos(angle)*30*this.scale, y: previous.y - Math.sin(angle)*30*this.scale, angle, width: widths[i]*.24*this.scale});
     }
     return positions;
   }
   update(time: number, target: {x: number; y: number} | null, restX: number, restY: number): boolean {
-    const elapsed=Math.max(0,Math.min((time-this.previous)/1000, .05));
-    this.previous = time;
-    const follow=1-Math.exp(-10*elapsed);
-    const turn=1-Math.exp(-13*elapsed);
-    const settle=1-Math.exp(-5*elapsed);
-    let moved=false;
+    // Preserve the reference's deliberate 80ms cadence and articulated chain.
+    if (time-this.previous<80) return false;
+    this.previous=time;
+    this.jitterSeed=Math.random()*1000;
     if (!target) {
-      const rest = this.restPose(restX, restY);
-      this.segments.forEach((segment, i) => {
-        const dx=rest[i].x-segment.x, dy=rest[i].y-segment.y;
-        const difference = Math.atan2(Math.sin(rest[i].angle-segment.angle), Math.cos(rest[i].angle-segment.angle));
-        if (Math.hypot(dx,dy)>.08 || Math.abs(difference)>.002) moved=true;
-        segment.x += dx*settle;
-        segment.y += dy*settle;
-        segment.angle += difference*settle;
+      const rest=this.restPose(restX,restY);
+      this.segments.forEach((segment,index)=>{
+        segment.x+=(rest[index].x-segment.x)*.12;
+        segment.y+=(rest[index].y-segment.y)*.12;
+        segment.angle+=angleDifference(rest[index].angle,segment.angle)*.12;
       });
     } else {
-      const head = this.segments[0];
-      const dx = target.x-head.x, dy = target.y-head.y;
-      const distance = Math.hypot(dx, dy);
-      if (distance > .3) {
-        head.x += dx*follow; head.y += dy*follow;
-        if (distance>4) {
-          const difference=Math.atan2(Math.sin(Math.atan2(dy,dx)-head.angle),Math.cos(Math.atan2(dy,dx)-head.angle));
-          head.angle+=difference*turn;
-        }
-        moved=true;
+      const head=this.segments[0];
+      const dx=target.x-head.x,dy=target.y-head.y,distance=Math.hypot(dx,dy);
+      if (distance>4) {
+        const speed=Math.min(distance,Math.max(12,distance*.15));
+        head.x+=dx/distance*speed;head.y+=dy/distance*speed;
+        head.angle=Math.atan2(dy,dx);
       }
-      for (let i = 1; i < this.segments.length; i++) {
-        const previous = this.segments[i-1], segment = this.segments[i];
-        let angle = Math.atan2(previous.y-segment.y, previous.x-segment.x);
-        const difference = Math.atan2(Math.sin(angle-previous.angle), Math.cos(angle-previous.angle));
-        angle = previous.angle+Math.max(-.25, Math.min(.25, difference));
-        const turnDifference=Math.atan2(Math.sin(angle-segment.angle),Math.cos(angle-segment.angle));
-        segment.angle+=turnDifference*turn;
-        const nextX=previous.x-Math.cos(segment.angle)*22*this.scale;
-        const nextY=previous.y-Math.sin(segment.angle)*22*this.scale;
-        if (Math.hypot(nextX-segment.x,nextY-segment.y)>.08 || Math.abs(turnDifference)>.002) moved=true;
-        segment.x=nextX; segment.y=nextY;
+      for (let i=1;i<this.segments.length;i++) {
+        const previous=this.segments[i-1],segment=this.segments[i];
+        let angle=Math.atan2(previous.y-segment.y,previous.x-segment.x);
+        const difference=angleDifference(angle,previous.angle);
+        if (difference>.25) angle=previous.angle+.25;
+        else if (difference<-.25) angle=previous.angle-.25;
+        segment.angle=angle;
+        segment.x=previous.x-Math.cos(angle)*30*this.scale;
+        segment.y=previous.y-Math.sin(angle)*30*this.scale;
       }
     }
-    const fireStep=elapsed*25;
-    if (this.sparks.length) moved=true;
-    this.sparks.forEach(spark => {spark.x+=spark.vx*fireStep; spark.y+=spark.vy*fireStep; spark.vx*=.96**fireStep; spark.vy-=.2*fireStep; spark.life-=.045*fireStep;});
-    this.sparks = this.sparks.filter(spark => spark.life > 0);
-    if (moved) this.collision=null;
-    return moved;
+    this.sparks.forEach(spark=>{spark.x+=spark.vx*2;spark.y+=spark.vy*2;spark.vx*=.96**2;spark.vy-=.4;spark.life-=.09;});
+    this.sparks=this.sparks.filter(spark=>spark.life>0);
+    this.collision=null;
+    return true;
   }
   stopFire() {this.sparks=[]; this.collision=null;}
   hold(time:number) {this.previous=time;}
@@ -126,7 +115,7 @@ export class Dragon {
     });
     if (!this.collision) this.collision=this.buildCollision();
     for (const points of this.collision) {
-      const range=polygonRange(points,top,bottom,9*this.scale);
+      const range=polygonRange(points,top,bottom,10*this.scale+2);
       if (range) ranges.push(range);
     }
     return ranges;
@@ -146,22 +135,29 @@ export class Dragon {
     };
     const head=this.segments[0];
     add('head',head,-.45,-.5);
-    add('tongue',{...head,x:head.x+Math.cos(head.angle)*32*this.scale,y:head.y+Math.sin(head.angle)*32*this.scale},0,-.5);
+    add('tongue',{...head,x:head.x+Math.cos(head.angle)*(this.sprites.get('head')?.naturalWidth ?? 477)*.24*.3*this.scale,y:head.y+Math.sin(head.angle)*(this.sprites.get('head')?.naturalWidth ?? 477)*.24*.3*this.scale},0,-.5);
     for (let i=1;i<20;i++) add('body-'+i,this.segments[i],-.5,-.5);
-    for (const name of ['wing-front','wing-back']) for (const angle of [-.18,0,.18]) add(name,this.segments[5],-1,-1,angle);
+    for (const name of ['wing-front','wing-back']) for (const angle of [-.4,0,.4]) add(name,this.segments[5],-1,-1,angle);
     return polygons;
   }
   draw(ctx: CanvasRenderingContext2D, time: number, animate: boolean) {
-    const wing = this.segments[5];
-    const flap = animate ? Math.sin(time/550)*.18 : 0;
-    this.drawSprite(ctx, 'wing-back', wing, -1, -1, flap);
-    for (let i = 19; i >= 0; i--) {
-      const segment = this.segments[i];
-      if (i === 0) {
-        this.drawSprite(ctx, 'tongue', {...segment, x: segment.x+Math.cos(segment.angle)*32*this.scale, y: segment.y+Math.sin(segment.angle)*32*this.scale}, 0, -.5);
-        this.drawSprite(ctx, 'head', segment, -.45, -.5);
-      } else this.drawSprite(ctx, 'body-'+i, segment, -.5, -.5);
-      if (i === 5) this.drawSprite(ctx, 'wing-front', segment, -1, -1, -flap);
+    const pose=(index:number):Segment=>{
+      const segment=this.segments[index];
+      if (!animate) return segment;
+      const hash=(seed:number)=>{const value=Math.sin(seed*12.9898+78.233)*43758.5453;return value-Math.floor(value);};
+      const seed=this.jitterSeed+index*37;
+      return {...segment,x:segment.x+(hash(seed)-.5)*1.5,y:segment.y+(hash(seed+100)-.5)*1.5,angle:segment.angle+(hash(seed+200)-.5)*.04};
+    };
+    const seconds=time/1000;
+    this.drawSprite(ctx,'wing-back',pose(5),-1,-1,animate ? Math.sin(seconds*3)*.4 : 0);
+    for (let i=19;i>=0;i--) {
+      const segment=pose(i);
+      if (i===0) {
+        const tongueOffset=(this.sprites.get('head')?.naturalWidth ?? 477)*.24*.3*this.scale;
+        this.drawSprite(ctx,'tongue',{...segment,x:segment.x+Math.cos(segment.angle)*tongueOffset,y:segment.y+Math.sin(segment.angle)*tongueOffset},0,-.5);
+        this.drawSprite(ctx,'head',segment,-.45,-.5);
+      } else this.drawSprite(ctx,'body-'+i,segment,-.5,-.5);
+      if (i===5) this.drawSprite(ctx,'wing-front',segment,-1,-1,animate ? -Math.sin(seconds*3+.5)*.4 : 0);
     }
     for (const spark of this.sparks) {
       ctx.save(); ctx.translate(spark.x, spark.y); ctx.rotate(Math.atan2(spark.vy, spark.vx));
