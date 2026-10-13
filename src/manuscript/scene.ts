@@ -1,6 +1,14 @@
-import {prepareWithSegments, layoutNextLine, type LayoutCursor} from '@chenglou/pretext';
+import {prepareRichInline, layoutNextRichInlineLineRange, materializeRichInlineLineRange, type PreparedRichInline, type RichInlineCursor} from '@chenglou/pretext/rich-inline';
 import {Dragon, type Range} from './dragon.js';
-import {introduction} from './data.js';
+
+type Item = {text: string; href?: string; target?: string; rel?: string};
+type Paragraph = {
+  node: HTMLElement;
+  items: Item[];
+  prepared: PreparedRichInline;
+  groups: HTMLElement[];
+  fragments: Map<number, HTMLElement[]>;
+};
 
 export function subtractRanges(ranges: Range[], exclusion: Range): Range[] {
   return ranges.flatMap(range => {
@@ -12,113 +20,156 @@ export function subtractRanges(ranges: Range[], exclusion: Range): Range[] {
   });
 }
 
+function readItems(node: HTMLElement): Item[] {
+  return [...node.childNodes].flatMap(child => {
+    if (child instanceof HTMLElement && child.hasAttribute('data-ignore-flow')) return [];
+    const text=child.textContent ?? '';
+    if (!text) return [];
+    if (child instanceof HTMLAnchorElement) return [{text,href:child.getAttribute('href') ?? '',target:child.target,rel:child.rel}];
+    return [{text}];
+  });
+}
+
 export async function mountScene(): Promise<void> {
-  const scene = document.querySelector<HTMLElement>('#manuscript-scene');
-  const canvas = document.querySelector<HTMLCanvasElement>('#manuscript');
-  const flow = document.querySelector<HTMLElement>('#flow-text');
-  const toggle = document.querySelector<HTMLButtonElement>('#motion-toggle');
-  const ctx = canvas?.getContext('2d');
-  if (!scene || !canvas || !flow || !toggle || !ctx) return;
-  await document.fonts.load('21px "IM Fell English"');
-  const dragon = await Dragon.load();
-  const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
-  let paused = motionPreference.matches;
-  let visible = true;
-  let width = 0, height = 0, fontSize = 21, lineHeight = 33;
-  let restX = 0, restY = 0;
-  let target: {x: number; y: number} | null = null;
-  let lastMove = 0;
-  let scheduled = 0;
-  let dirty = true;
-  let prepared = introduction.map(text => prepareWithSegments(text, '21px "IM Fell English"'));
-  const spans: HTMLSpanElement[] = [];
+  const page=document.querySelector<HTMLElement>('#manuscript-scene');
+  const canvas=document.querySelector<HTMLCanvasElement>('#manuscript');
+  const ctx=canvas?.getContext('2d');
+  if (!page || !canvas || !ctx) return;
+  await document.fonts.load('22px "IM Fell English"');
+  const dragon=await Dragon.load();
+  const motion=matchMedia('(prefers-reduced-motion: reduce)');
+  const coarse=matchMedia('(pointer: coarse)');
+  const paragraphs=new Map<HTMLElement, Paragraph>();
+  const blocks=[...page.children] as HTMLElement[];
+  let width=0, left=0, top=0, fontSize=22, lineHeight=34;
+  let viewportWidth=0, viewportHeight=0, chartHeight=140;
+  let restX=0, restY=0;
+  let target: {x:number; y:number} | null=null;
+  let lastMove=0, frame=0, lastScroll=scrollY;
+  let dirty=true;
+
+  function prepare(node: HTMLElement, items: Item[]) {
+    const prepared=prepareRichInline(items.map(item=>({text:item.text,font:`${fontSize}px "IM Fell English"`})));
+    node.replaceChildren();
+    const groups=items.map(()=>{const group=document.createElement('span'); group.className='flow-item'; node.append(group); return group;});
+    paragraphs.set(node,{node,items,prepared,groups,fragments:new Map()});
+    node.classList.add('flow-ready');
+  }
 
   function layout() {
-    let y = 4, used = 0;
-    for (let paragraph = 0; paragraph < prepared.length; paragraph++) {
-      let cursor: LayoutCursor = {segmentIndex: 0, graphemeIndex: 0};
-      let done = false;
-      for (let attempts = 0; attempts < 100 && !done; attempts++) {
-        const rowStart = used;
-        let ranges: Range[] = [{left: 0, right: width}];
-        if (paragraph === 0 && y < (width < 500 ? 112 : 138)) ranges = subtractRanges(ranges, {left: 0, right: width < 500 ? 64 : 94});
-        for (const exclusion of dragon.exclusions(y, y+lineHeight)) ranges = subtractRanges(ranges, exclusion);
-        if (width < 500 && ranges.length > 1) ranges = [ranges.reduce((largest, range) => range.right-range.left > largest.right-largest.left ? range : largest)];
-        for (const range of ranges.filter(range => range.right-range.left >= Math.max(fontSize*4, width*.24))) {
-          const line = layoutNextLine(prepared[paragraph], cursor, range.right-range.left);
-          if (!line) {done = true; break;}
-          if (line.end.segmentIndex === cursor.segmentIndex && line.end.graphemeIndex === cursor.graphemeIndex) continue;
-          const span = spans[used] ?? document.createElement('span');
-          if (!spans[used]) {spans.push(span); flow!.append(span);}
-          span.hidden = false;
-          if (span.textContent !== line.text) span.textContent = line.text;
-          span.style.transform = `translate(${Math.round(range.left)}px, ${Math.round(y)}px)`;
-          cursor = line.end; used++;
+    let blockY=0;
+    const currentScroll=scrollY;
+    for (const block of blocks) {
+      const paragraph=paragraphs.get(block);
+      if (!paragraph) {blockY+=chartHeight+28; continue;}
+      let y=0;
+      let cursor: RichInlineCursor={itemIndex:0,segmentIndex:0,graphemeIndex:0};
+      const used=new Map<number,number>();
+      let done=false;
+      for (let attempts=0; attempts<120 && !done; attempts++) {
+        const viewportY=top+blockY+y-currentScroll;
+        let ranges: Range[]=[{left:0,right:width}];
+        for (const exclusion of dragon.exclusions(viewportY,viewportY+lineHeight)) ranges=subtractRanges(ranges,{left:exclusion.left-left,right:exclusion.right-left});
+        ranges=ranges.filter(range=>range.right-range.left >= Math.max(fontSize*4,width*.2));
+        if (width<450 && ranges.length>1) ranges=[ranges.reduce((largest,range)=>range.right-range.left>largest.right-largest.left ? range : largest)];
+        let rowUsed=false;
+        for (const range of ranges) {
+          const next=layoutNextRichInlineLineRange(paragraph.prepared,range.right-range.left,cursor);
+          if (!next) {done=true; break;}
+          const line=materializeRichInlineLineRange(paragraph.prepared,next);
+          let x=range.left;
+          for (const fragment of line.fragments) {
+            const item=paragraph.items[fragment.itemIndex];
+            const index=used.get(fragment.itemIndex) ?? 0;
+            const pool=paragraph.fragments.get(fragment.itemIndex) ?? [];
+            let node=pool[index];
+            if (!node) {
+              node=document.createElement(item.href ? 'a' : 'span');
+              if (node instanceof HTMLAnchorElement) {node.href=item.href!; node.target=item.target ?? ''; node.rel=item.rel ?? '';}
+              node.className='text-fragment';
+              pool.push(node); paragraph.fragments.set(fragment.itemIndex,pool); paragraph.groups[fragment.itemIndex].append(node);
+            }
+            node.hidden=false;
+            if (node.textContent !== fragment.text) node.textContent=fragment.text;
+            x+=fragment.gapBefore;
+            node.style.transform=`translate(${Math.round(x)}px,${Math.round(y)}px)`;
+            node.style.height=lineHeight+'px';
+            node.style.lineHeight=lineHeight+'px';
+            x+=fragment.occupiedWidth;
+            used.set(fragment.itemIndex,index+1);
+          }
+          cursor=line.end; rowUsed=true;
         }
-        if (!done || used > rowStart) y += lineHeight;
+        if (rowUsed || !done) y+=lineHeight;
       }
-      y += lineHeight*.65;
+      for (const [itemIndex,pool] of paragraph.fragments) pool.forEach((node,index)=>{node.hidden=index >= (used.get(itemIndex) ?? 0);});
+      paragraph.node.style.height=Math.max(lineHeight,y)+'px';
+      blockY+=Math.max(lineHeight,y)+28;
     }
-    for (let i = used; i < spans.length; i++) spans[i].hidden = true;
-    // Reserve enough room for even a fully obstructed paragraph; never cut off copy.
-    const needed = Math.max(width < 500 ? 390 : 340, Math.ceil(y+lineHeight));
-    if (needed > height) resizeCanvas(needed);
-    flow!.dataset.lineCount = String(used);
+    page!.dataset.ready='true';
+    lastScroll=currentScroll;
+    dirty=false;
   }
-  function resizeCanvas(nextHeight: number) {
-    height = nextHeight;
-    scene!.style.height = height+'px';
-    const dpr = Math.min(devicePixelRatio || 1, 2);
-    canvas!.width = Math.round(width*dpr); canvas!.height = Math.round(height*dpr);
-    canvas!.style.width = width+'px'; canvas!.style.height = height+'px';
-    ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  function render(time:number) {
+    frame=0;
+    if (document.hidden) return;
+    const animated=!motion.matches;
+    const moved=animated && dragon.update(time,time-lastMove<1800 ? target : null,restX,restY);
+    ctx!.clearRect(0,0,viewportWidth,viewportHeight);
+    if (dirty || moved || scrollY!==lastScroll) layout();
+    dragon.draw(ctx!,time,animated);
+    // Expose only geometry for verification; rendering still belongs to this module.
+    canvas!.dataset.headX=String(Math.round(dragon.segments[0].x));
+    canvas!.dataset.headY=String(Math.round(dragon.segments[0].y));
+    if (animated) schedule();
   }
-  function render(time: number) {
-    scheduled = 0;
-    if (!visible || document.hidden) return;
-    const moved = !paused && dragon.update(time, time-lastMove < 1700 ? target : null, restX, restY);
-    ctx!.clearRect(0, 0, width, height);
-    if (dirty || moved) {layout(); dirty=false;}
-    dragon.draw(ctx!, time, !paused);
-    scene!.dataset.ready = 'true';
-    if (!paused) schedule();
-  }
-  function schedule() {if (!scheduled && visible && !document.hidden) scheduled = requestAnimationFrame(render);}
+  function schedule() {if (!frame && !document.hidden) frame=requestAnimationFrame(render);}
   function resize() {
-    width = scene!.clientWidth;
-    fontSize = width < 500 ? 19 : 22;
-    lineHeight = width < 500 ? 30 : 35;
-    flow!.style.fontSize = fontSize+'px'; flow!.style.lineHeight = lineHeight+'px';
-    prepared = introduction.map((text, i) => prepareWithSegments(i === 0 ? text.slice(1) : text, `${fontSize}px "IM Fell English"`));
-    const scale = width < 500 ? .44 : .92;
-    restX = width-90*scale; restY = width < 500 ? 130 : 98;
-    dragon.rest(restX, restY, scale);
-    target = null;
-    dirty = true;
-    resizeCanvas(width < 500 ? 390 : 340);
-    schedule();
+    viewportWidth=innerWidth; viewportHeight=innerHeight;
+    width=page!.clientWidth;
+    const bounds=page!.getBoundingClientRect(); left=bounds.left; top=bounds.top+scrollY;
+    fontSize=viewportWidth<600 ? 19 : 22;
+    lineHeight=viewportWidth<600 ? 30 : 34;
+    const dpr=Math.min(devicePixelRatio || 1,2);
+    canvas!.width=Math.round(viewportWidth*dpr); canvas!.height=Math.round(viewportHeight*dpr);
+    canvas!.style.width=viewportWidth+'px'; canvas!.style.height=viewportHeight+'px';
+    ctx!.setTransform(dpr,0,0,dpr,0,0);
+    const scale=viewportWidth<600 ? .48 : .9;
+    restX=viewportWidth<600 ? viewportWidth-42 : left+width+90;
+    restY=viewportWidth<600 ? 95 : 110;
+    dragon.rest(restX,restY,scale); target=null;
+    for (const block of blocks) {
+      if (!block.classList.contains('flow-copy')) continue;
+      const items=paragraphs.get(block)?.items ?? readItems(block);
+      prepare(block,items);
+    }
+    dirty=true; schedule();
   }
-  function updateToggle() {
-    dirty = true;
-    toggle!.textContent = paused ? 'Wake dragon' : 'Pause dragon';
-    toggle!.setAttribute('aria-pressed', String(paused));
-    scene!.dataset.paused = String(paused);
-  }
-  toggle.addEventListener('click', () => {paused=!paused; dragon.sparks=[]; updateToggle(); schedule();});
-  motionPreference.addEventListener('change', event => {paused=event.matches; target=null; updateToggle(); schedule();});
-  scene.addEventListener('pointermove', event => {
-    if (paused || event.pointerType !== 'mouse') return;
-    const bounds = scene.getBoundingClientRect();
-    target={x: Math.max(30, Math.min(width-30, event.clientX-bounds.left)), y: Math.max(35, Math.min(height-50, event.clientY-bounds.top))};
-    lastMove=performance.now(); schedule();
+
+  document.addEventListener('pointermove',event=>{
+    if (motion.matches || event.pointerType!=='mouse') return;
+    target={x:event.clientX,y:event.clientY}; lastMove=performance.now(); schedule();
   });
-  scene.addEventListener('pointerleave', () => {target=null;});
-  scene.addEventListener('pointerdown', event => {
-    if (paused || event.button !== 0 || event.pointerType !== 'mouse') return;
-    dragon.breathe(); schedule();
+  document.addEventListener('pointerdown',event=>{
+    if (motion.matches || event.button!==0 || event.pointerType!=='mouse' || (event.target as HTMLElement).closest('a,button')) return;
+    dragon.breathe(); dirty=true; schedule();
   });
-  new ResizeObserver(() => {if (scene.clientWidth !== width) resize();}).observe(scene);
-  new IntersectionObserver(entries => {visible=entries[0].isIntersecting; if (visible) schedule(); else {cancelAnimationFrame(scheduled); scheduled=0;}}, {rootMargin:'100px'}).observe(scene);
-  document.addEventListener('visibilitychange', () => {if (!document.hidden) schedule();});
-  updateToggle(); resize();
+  document.documentElement.addEventListener('pointerleave',()=>{target=null;});
+  document.addEventListener('scroll',()=>{dirty=true; schedule();},{passive:true});
+  document.addEventListener('visibilitychange',()=>{if (!document.hidden) schedule();});
+  motion.addEventListener('change',()=>{dragon.sparks=[]; dirty=true; page!.dataset.paused=String(motion.matches); schedule();});
+  document.addEventListener('flow-content-changed',event=>{
+    const id=(event as CustomEvent<string>).detail;
+    const node=document.getElementById(id);
+    if (node && node.classList.contains('flow-copy')) {prepare(node,readItems(node)); dirty=true; schedule();}
+  });
+  new ResizeObserver(()=>{if (page.clientWidth!==width) resize();}).observe(page);
+  const chart=document.getElementById('github-activity');
+  if (chart) new ResizeObserver(entries=>{chartHeight=entries[0].borderBoxSize[0]?.blockSize ?? entries[0].contentRect.height; dirty=true; schedule();}).observe(chart);
+  window.addEventListener('resize',resize);
+  // Touch scrolls the page naturally; the dragon stays in the margin.
+  coarse.addEventListener('change',()=>{target=null; dirty=true; schedule();});
+  page.dataset.paused=String(motion.matches);
+  resize();
 }
