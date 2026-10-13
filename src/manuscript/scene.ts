@@ -25,7 +25,7 @@ export async function mountScene():Promise<void> {
   if (!surface || !canvas || !ctx) return;
   const dropCap=new Image();
   dropCap.src='/manuscript/dropcap.webp';
-  await Promise.all([document.fonts.load('21px "Pirata One"'), loadDragonSprites(), dropCap.decode()]);
+  await Promise.all([document.fonts.load('21px "Furia"'), loadDragonSprites(), dropCap.decode()]);
   const motion=matchMedia('(prefers-reduced-motion: reduce)');
   let width=surface.clientWidth, height=surface.clientHeight;
   let layout=getResponsiveLayout(width,height);

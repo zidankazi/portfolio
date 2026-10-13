@@ -3,7 +3,7 @@ export const BASE_PAGE_WIDTH = 700;
 export const BASE_MARGIN = 45;
 export const BASE_FONT_SIZE = 21;
 export const BASE_LINE_HEIGHT = 34;
-export const FONT_STACK = '"Pirata One", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, "Georgia", serif';
+export const FONT_STACK = '"Furia", "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, "Georgia", serif';
 export const TEXT_COLOR = '#2a1a0a';
 export const BG_COLOR = '#f4eee0';
 

@@ -1,0 +1,14 @@
+Furia III webfont
+
+Source: https://illustrated-manuscript.vercel.app/furia-iii.ttf
+Font family: FURIA Handrawn Blackletter by AROKA
+Product: https://creativemarket.com/AROKA/291514726-FURIA-Handrawn-Blackletter
+
+This is the exact webfont served by the user’s reference demo.
+The embedded font name is "furia-iii WebFont". Its embedded notice states:
+"Desktop use is strictly prohibited."
+
+Furia is commercial font software, not an ISC or SIL Open Font License asset.
+The reference demo’s license does not grant a license to this font. No purchase
+or license transfer has been performed. Confirm the portfolio’s own webfont
+license before publishing or redistributing the file.
