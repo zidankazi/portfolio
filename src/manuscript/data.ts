@@ -16,11 +16,6 @@ export const projects: Project[] = [
   {title: 'orbital', description: 'real-time satellite tracker for the terminal. renders earth as a 3d ascii globe and tracks satellites utilizing live sgp4 mechanics.', links: [{label: 'github', href: 'https://github.com/zidankazi/orbital'}], preview: '/projects/orbital.webp', motion: {type: 'gif', src: '/projects/orbital.gif'}},
 ];
 
-export const introduction = [
-  "I'm Zidan, a junior at Stevens Institute of Technology studying Computer Science & Math. I build tools for working with AI agents, experiment with reinforcement learning, and design and build websites for clients.",
-  "Below are a few things I've made, what I'm listening to, and a record of the work along the way. You can find me in Hoboken, NJ, or somewhere between the browser and the terminal.",
-];
-
 export const studioSites = [
   {name: 'OMU', href: 'https://omu.food/', image: '/studio/omu-page.webp'},
   {name: 'Relic', href: 'https://tryrelic.io/', image: '/studio/relic.webp'},
