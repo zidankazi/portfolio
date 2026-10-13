@@ -12,10 +12,12 @@ below the manuscript in ordinary server-rendered HTML. They use normal browser
 layout and selection; no canvas or animated text covers their hit areas. The
 studio page uses the same plain portfolio typography without the manuscript.
 
-The live reference uses Furia, which is excluded from its public repository.
-The manuscript uses locally hosted Pirata One blackletter under the SIL Open Font
-License. Portfolio text retains IM Fell English. Source and artwork credits are
-in `public/manuscript/NOTICE.txt`; font licenses are in `public/fonts/`.
+The manuscript uses the same Furia III webfont as the live reference. The local
+font file comes from the demo’s `/furia-iii.ttf` asset. Furia is a commercial font
+with separate licensing; confirm the site’s webfont license before publishing.
+It is not covered by the reference’s ISC license. Portfolio text retains
+IM Fell English. Source and artwork credits are in `public/manuscript/NOTICE.txt`;
+font notices are in `public/fonts/`.
 
 `npm run dev` starts the site on port 3000. `npm run build` creates the Node server
 and Vercel Build Output. `npm run check`, `npm run lint`, and `npm test` check the
