@@ -4,13 +4,13 @@ export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, char => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[char]!));
 }
 
-const external = (href: string, label: string) => `<a href="${escapeHtml(href)}" ${href.startsWith('https://') ? 'target="_blank" rel="noopener noreferrer"' : ''}>${escapeHtml(label)}</a>`;
+const external = (href: string, label: string, className = '') => `<a class="${className}" href="${escapeHtml(href)}" ${href.startsWith('https://') ? 'target="_blank" rel="noopener noreferrer"' : ''}>${escapeHtml(label)}</a>`;
 
 function home(): string {
-  return `<p class="flow-copy">I'm <a href="mailto:hi@zidankazi.com">Zidan Kazi</a>, a junior at ${external('https://www.stevens.edu/', 'Stevens Institute of Technology')} studying Computer Science & Math.</p>
+  return `<p class="flow-copy intro-copy">I'm <a class="person-name" href="mailto:hi@zidankazi.com">Zidan Kazi</a>, a junior at ${external('https://www.stevens.edu/', 'Stevens Institute of Technology')} studying Computer Science & Math.</p>
     <p id="spotify" class="flow-copy" aria-live="polite">I listen to a lot of music.</p>
     <p class="flow-copy">I design and build ${external('/studio', 'websites for clients')}. Here are some projects I've worked on:</p>
-    ${projects.map((project, index) => `<p class="flow-copy project-row" data-project="${index}">${external(project.links[0].href, project.title)}: ${escapeHtml(project.description)} ${project.links.slice(1).map(link => external(link.href, link.label)).join(' / ')}</p>`).join('\n')}
+    ${projects.map((project, index) => `<p class="flow-copy project-row" data-project="${index}">${external(project.links[0].href, project.title, 'project-title')}: ${escapeHtml(project.description)} ${project.links.slice(1).map(link => external(link.href, link.label, 'project-link')).join(' / ')}</p>`).join('\n')}
     <div id="github-activity" data-slot="github-activity" aria-label="GitHub contribution chart" aria-busy="true"><p class="calendar-status">Loading GitHub contributions…</p></div>
     <p class="flow-copy contact-copy">${external('https://github.com/zidankazi', 'github')} / ${external('https://twitter.com/zidaaaaaaaannnn', 'twitter')} / <a href="mailto:hi@zidankazi.com">email</a></p>`;
 }
