@@ -1,33 +1,10 @@
 import {mountScene} from './scene.js';
-import {projects} from './data.js';
 import type {Track} from './spotify.js';
 
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text = ''): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag); node.className=className; node.textContent=text; return node;
 }
 const safeUrl = (value: unknown): value is string => typeof value === 'string' && value.startsWith('https://');
-
-function mountProjects() {
-  document.querySelectorAll<HTMLDetailsElement>('.project-detail').forEach(details => {
-    const project = projects[Number(details.dataset.project)];
-    const illustration = details.querySelector<HTMLElement>('.project-illustration')!;
-    details.addEventListener('toggle', () => {
-      const video = illustration.querySelector('video');
-      if (!details.open) {video?.pause(); return;}
-      document.querySelectorAll<HTMLDetailsElement>('.project-detail[open]').forEach(other => {if (other !== details) other.open=false;});
-      if (!project.motion || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      if (project.motion.type === 'gif') {
-        illustration.querySelector('img')!.src=project.motion.src;
-      } else if (video) void video.play().catch(() => {});
-      else {
-        const media = element('video'); media.src=project.motion.src; media.poster=project.preview;
-        media.muted=true; media.loop=true; media.playsInline=true; media.controls=true;
-        media.setAttribute('aria-label', project.title+' project demonstration');
-        illustration.replaceChildren(media); void media.play().catch(() => {});
-      }
-    });
-  });
-}
 
 function mountSpotify() {
   const container = document.querySelector<HTMLElement>('#spotify');
@@ -37,7 +14,6 @@ function mountSpotify() {
   let signature = '';
   let loading = false;
   let ended = false;
-  let progressBar: HTMLSpanElement | null = null;
 
   function paint(next: Track) {
     track=next; synced=Date.now(); ended=false;
@@ -45,23 +21,16 @@ function mountSpotify() {
     const nextSignature=JSON.stringify([next.title, next.artist, next.albumArt, next.url, next.isPlaying]);
     if (nextSignature === signature) return;
     signature=nextSignature;
-    const record=element('div', 'record');
-    if (safeUrl(next.albumArt)) {const image=element('img'); image.src=next.albumArt; image.alt='Album cover for '+next.title; image.width=64; image.height=64; record.append(image);}
-    else record.append(element('span', '', 'z'));
-    const info=element('div', 'track-info');
-    info.append(element('span', 'eyebrow', next.title ? next.isPlaying ? 'Currently playing' : 'Last listened to' : 'A moment of quiet'));
-    const title=element('p');
-    if (next.title && safeUrl(next.url)) {const link=element('a', '', next.title); link.href=next.url; link.target='_blank'; link.rel='noopener noreferrer'; title.append(link);}
-    else title.textContent=next.title || 'I listen to a lot of music.';
-    info.append(title);
-    if (next.artist) info.append(element('span', 'track-artist', next.artist));
-    const mark=element('span', 'music-note', '♫'); mark.setAttribute('aria-hidden', 'true');
-    container!.replaceChildren(record, info, mark);
-    progressBar=null;
-    if (next.isPlaying && typeof next.durationMs === 'number' && next.durationMs > 0 && typeof next.progressMs === 'number') {
-      const rail=element('div', 'playback-rail'); rail.setAttribute('aria-hidden', 'true');
-      progressBar=element('span'); progressBar.dataset.playbackProgress=''; rail.append(progressBar); info.append(rail);
+    const label=element('span', '', next.title ? next.isPlaying ? 'Listening to ' : 'Last listened to ' : 'I listen to a lot of music.');
+    const parts: Node[]=[label];
+    if (next.title) {
+      if (safeUrl(next.url)) {const link=element('a', '', next.title); link.href=next.url; link.target='_blank'; link.rel='noopener noreferrer'; parts.push(link);}
+      else parts.push(document.createTextNode(next.title));
+      if (next.artist) parts.push(document.createTextNode(' by '+next.artist));
+      parts.push(document.createTextNode(' on Spotify.'));
     }
+    container!.replaceChildren(...parts);
+    document.dispatchEvent(new CustomEvent('flow-content-changed',{detail:'spotify'}));
   }
   async function poll() {
     if (loading || document.hidden) return;
@@ -76,9 +45,8 @@ function mountSpotify() {
     finally {loading=false;}
   }
   setInterval(() => {
-    if (!track?.isPlaying || !progressBar || !track.durationMs || typeof track.progressMs !== 'number') return;
+    if (!track?.isPlaying || !track.durationMs || typeof track.progressMs !== 'number') return;
     const progress=Math.min(track.durationMs, track.progressMs+Date.now()-synced);
-    progressBar.style.width=(progress/track.durationMs*100)+'%';
     if (progress >= track.durationMs && !ended) {ended=true; setTimeout(poll, 2000);}
   }, 1000);
   setInterval(poll, 30_000);
@@ -114,7 +82,7 @@ function mountCalendar() {
   }
   async function load() {
     hideTooltip(); container!.setAttribute('aria-busy', 'true');
-    container!.replaceChildren(element('p', 'calendar-status', 'Fetching the record of work…'));
+    container!.replaceChildren(element('p', 'calendar-status', 'Loading GitHub contributions…'));
     try {
       const response=await fetch('https://github-contributions-api.jogruber.de/v4/zidankazi?y=last', {signal:AbortSignal.timeout(12_000)});
       if (!response.ok) throw new Error('Unavailable');
@@ -157,13 +125,10 @@ function mountCalendar() {
       grid.append(...buttons); scroll.append(months, grid);
       const caption=element('div','calendar-caption');
       caption.append(element('span','', `${days.reduce((total,day) => total+day.count,0).toLocaleString()} contributions in the last year`));
-      const legend=element('span','calendar-legend','Less ');
-      for (let i=0; i<5; i++) {const swatch=element('i'); swatch.dataset.level=String(i); swatch.setAttribute('aria-hidden','true'); legend.append(swatch);}
-      legend.append(' More'); caption.append(legend);
       container!.replaceChildren(scroll, caption);
       scroll.scrollLeft=scroll.scrollWidth;
     } catch {
-      const error=element('div','calendar-error'); error.append(element('p','','The record is taking a little longer to arrive.'));
+      const error=element('div','calendar-error'); error.append(element('p','',"Couldn't load GitHub contributions."));
       const retry=element('button','','Try again'); retry.type='button'; retry.addEventListener('click', () => {void load();}); error.append(retry); container!.replaceChildren(error);
     } finally {container!.setAttribute('aria-busy','false');}
   }
@@ -172,8 +137,7 @@ function mountCalendar() {
   void load();
 }
 
-mountProjects(); mountSpotify(); mountCalendar();
+mountSpotify(); mountCalendar();
 void mountScene().catch(() => {
   document.querySelector('#manuscript-scene')?.setAttribute('data-ready','false');
-  const toggle=document.querySelector<HTMLButtonElement>('#motion-toggle'); if (toggle) toggle.hidden=true;
 });
