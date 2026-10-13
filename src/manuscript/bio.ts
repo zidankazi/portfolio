@@ -10,10 +10,11 @@ export function biographyBlocks(track:BioTrack | null=null):BioBlock[] {
     {kind:'name',text:"I'm Zidan Kazi",gap:12},
     {kind:'body',text:"I'm a junior at Stevens Institute of Technology studying Computer Science & Math. I'm currently in Hoboken, New Jersey.",gap:20},
     {kind:'body',text:"Right now I'm building Mavri. We use fine-tuned diffusion models to make campaign visuals for brands, with tools for production, feedback, and approvals. Some of our clients include Four Seasons, Nespresso, Sephora, and Tiffany & Co.",gap:20},
+    {kind:'body',text:"I also co-founded Relic, a shared memory for teams and AI agents. It connects to the tools a company already uses and makes its decisions, conversations, and context easy to find.",gap:20},
     {kind:'body',text:"Before that, I interned at Trenchant Analytics, where I built military drone software that brought real-time computer vision, tactical maps, and augmented reality into HoloLens headsets.",gap:24},
     {kind:'label',text:'Outside of coding',gap:8},
     {kind:'hobby',text:'I like trying new foods.',gap:12},
-    {kind:'hobby',text:'I play League of Legends. I used to be Challenger.',gap:12,accent:true,image:{src:'/manuscript/league.png',alt:'League of Legends logo',kind:'league'}},
+    {kind:'hobby',text:'I play League of Legends. I used to be Challenger (top 300 out of 3,000,000).',gap:12,accent:true,image:{src:'/manuscript/league.png',alt:'League of Legends logo',kind:'league'}},
     {kind:'hobby',text:'I also collect CS2 skins.',gap:24,image:{src:'/manuscript/cs2.jpg',alt:'Counter-Strike 2 logo',kind:'cs2'}},
     {kind:'body',text:'I listen to a lot of music, too.',gap:12},
     ...(track?.title ? [
