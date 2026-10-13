@@ -16,7 +16,7 @@ test('manuscript sits above a normal portfolio with live widgets and project lin
   await expect(page.locator('#manuscript-scene a')).toHaveCount(0);
   await expect(page.locator('.manuscript-fallback')).toContainText('I like trying new foods.');
   await expect(page.locator('.manuscript-fallback')).toContainText('I also collect CS2 skins.');
-  await expect(page.locator('.manuscript-fallback')).toContainText('I used to be Challenger.');
+  await expect(page.locator('.manuscript-fallback')).toContainText('I used to be Challenger (top 300 out of 3,000,000).');
   await expect(page.locator('.manuscript-fallback')).toContainText('Listening now');
   await expect(page.locator('.manuscript-fallback')).toContainText('Test track');
   await expect(page.locator('.manuscript-fallback')).toContainText('by Test artist');
@@ -46,7 +46,7 @@ test('real game logos and album artwork flow together with their text',async({pa
   await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
   const read=async()=>JSON.parse(await canvas.getAttribute('data-inline-media'));
   const initial=await read(),box=await canvas.boundingBox();
-  const pageOffset=(box.width-Math.min(760,box.width-24))/2;
+  const pageOffset=(box.width-Math.min(760,box.width-16))/2;
   let moved=false;
   for (const delta of [0,70,-50]) {
     const league=initial.find(image=>image.kind==='league');
