@@ -1,0 +1,37 @@
+import type {Track} from './spotify.ts';
+
+export type BioTrack = Pick<Track,'title' | 'artist' | 'isPlaying' | 'albumArt'>;
+export type BioImage = {src:string; alt:string; kind:'league' | 'cs2' | 'album'};
+export type BioBlock = {kind:'name' | 'body' | 'label' | 'hobby' | 'song' | 'artist' | 'cue'; text:string; gap:number; accent?:boolean; image?:BioImage};
+
+export function biographyBlocks(track:BioTrack | null=null):BioBlock[] {
+  const album=track?.albumArt?.startsWith('https://i.scdn.co/image/') ? track.albumArt : null;
+  return [
+    {kind:'name',text:"I'm Zidan Kazi",gap:12},
+    {kind:'body',text:"I'm a junior at Stevens Institute of Technology studying Computer Science & Math. I'm currently in Hoboken, New Jersey.",gap:20},
+    {kind:'body',text:"I design and build websites for clients, and make software for the love of the game. I've built AI tools and terminal apps, and made Sponge, a coding interview practice app, in 24 hours at QuackHacks '26.",gap:24},
+    {kind:'label',text:'Outside of coding',gap:8},
+    {kind:'hobby',text:'I like trying new foods.',gap:12},
+    {kind:'hobby',text:'I play League of Legends. I used to be Challenger.',gap:12,accent:true,image:{src:'/manuscript/league.png',alt:'League of Legends logo',kind:'league'}},
+    {kind:'hobby',text:'I also collect CS2 skins.',gap:24,image:{src:'/manuscript/cs2.jpg',alt:'Counter-Strike 2 logo',kind:'cs2'}},
+    {kind:'body',text:'I listen to a lot of music, too.',gap:12},
+    ...(track?.title ? [
+      {kind:'label' as const,text:track.isPlaying ? '♪ Listening now' : '♪ Last listened to',gap:6},
+      {kind:'song' as const,text:track.title,gap:track.artist ? 0 : 24,...(album ? {image:{src:album,alt:track.title+' album cover',kind:'album' as const}} : {})},
+      ...(track.artist ? [{kind:'artist' as const,text:'by '+track.artist,gap:24}] : []),
+    ] : []),
+    {kind:'cue',text:'A few things I’ve built ↓',gap:0},
+  ];
+}
+
+// Keep artwork and the words it describes together in both canvas and fallback.
+export function biographyInline(block:BioBlock):{text:string;image?:BioImage}[] {
+  if (!block.image) return [{text:block.text}];
+  const phrase=block.image.kind==='league' ? 'League of Legends' : block.image.kind==='cs2' ? 'CS2 skins' : block.text.split(/\s+/)[0];
+  const start=block.text.indexOf(phrase);
+  return [
+    ...(start>0 ? [{text:block.text.slice(0,start)}] : []),
+    {text:phrase,image:block.image},
+    ...(start+phrase.length<block.text.length ? [{text:block.text.slice(start+phrase.length)}] : []),
+  ];
+}
