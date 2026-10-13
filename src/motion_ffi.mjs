@@ -1,4 +1,5 @@
-import { Rect, chain } from './lib/chain_geometry.mjs';
+import { Rect, Point, chain_at } from './lib/chain_geometry.mjs';
+import { pose as finger_pose, wrist as wrist_pose, pull as finger_pull } from './lib/hand_motion.mjs';
 import { init as rail_init, frame as rail_frame } from './lib/rail_motion.mjs';
 import { phrase as make_phrase, progress as chain_progress, visible_count } from './lib/chain_motion.mjs';
 import { toList } from './gleam.mjs';
@@ -66,8 +67,11 @@ export function mount_threads(root, front, skip, reveal) {
     const main = document.querySelector('main');
     const desktop = window.matchMedia('(min-width: 1024px)');
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const paths = [...root.querySelectorAll('.puppet-threads path')];
-    const threads = [...root.querySelectorAll('.puppet-threads textPath')];
+    const paths = [...root.querySelectorAll('.puppet-threads path[id^="puppet-thread-"]')];
+    const threads = [...root.querySelectorAll('.puppet-threads textPath[href^="#puppet-thread-"]')];
+    const leads = [...root.querySelectorAll('[data-thread-lead]')];
+    const leadInk = [...root.querySelectorAll('[data-thread-lead-ink]')];
+    const leadEnds = new Array(8);
     const nodes = [...root.querySelectorAll('.puppet-threads circle')];
     const frontThreads = [...front.querySelectorAll('textPath')];
     const frontClips = [...front.querySelectorAll('clipPath rect')];
@@ -75,9 +79,13 @@ export function mount_threads(root, front, skip, reveal) {
         const text = '='.repeat(count);
         threads[slot].textContent = text;
         frontThreads[slot].textContent = text;
+        leadInk[slot].setAttribute('opacity', count > 0 ? '1' : '0');
     };
     const hands = [...root.querySelectorAll('[data-puppet-hand]')];
+    const fingers = hands.map(hand => [...hand.querySelectorAll('[data-hand-part]:not([data-hand-part="0"])')]);
     const wraps = hands.flatMap(hand => [...hand.querySelectorAll('[data-finger-wrap]')].reverse());
+    const tails = wraps.map(wrap => [...wrap.querySelectorAll('[data-wrap-reveal]')].at(-1));
+    const tips = tails.map(tail => tail.getPointAtLength(tail.getTotalLength()));
     const coils = wraps.map(wrap => {
         const masks = [...wrap.querySelectorAll('[data-wrap-reveal]')];
         const lengths = masks.map(path => path.getTotalLength());
@@ -108,12 +116,37 @@ export function mount_threads(root, front, skip, reveal) {
     const arrived = new Array(8).fill(false);
     const started = performance.now();
     let growing = !reduced.matches && !skip;
+    let immediate = reduced.matches || skip;
     let revealed = false;
+    let visible = true;
+    let elapsed = 0;
+    let last = started;
+    const animateHands = now => {
+        elapsed += Math.min(now - last, 50);
+        last = now;
+        hands.forEach((hand, side) => {
+            const wrist = wrist_pose(side === 1, elapsed);
+            hand.style.transform = reduced.matches ? '' : `translate3d(${wrist.x.toFixed(2)}px,${wrist.y.toFixed(2)}px,0) rotate(${wrist.angle.toFixed(3)}deg)`;
+            fingers[side].forEach(finger => {
+                const part = Number(finger.dataset.handPart);
+                const phrase = phrasing[side * 4 + 4 - part];
+                const pull = growing && phrase ? finger_pull(now - started - phrase.delay) : 0;
+                const pose = finger_pose(part, side === 1, elapsed, pull);
+                finger.style.transform = reduced.matches ? '' : `rotate(${pose.angle.toFixed(3)}deg) scaleY(${pose.stretch.toFixed(4)})`;
+            });
+        });
+    };
     const draw = () => {
         if (document.hidden)
             return;
+        // Long text paths only change with layout. Measure their resting joints
+        // once; a small separate section follows the articulated fingertip.
+        const joints = [...hands, ...fingers.flat()];
+        const transforms = joints.map(joint => joint.style.transform);
+        joints.forEach(joint => { joint.style.transform = ''; });
         const rootBox = root.getBoundingClientRect();
-        const handBoxes = hands.map(hand => hand.getBoundingClientRect());
+        const starts = tails.map((tail, slot) => tips[slot].matrixTransform(tail.getScreenCTM()));
+        joints.forEach((joint, index) => { joint.style.transform = transforms[index]; });
         const content = main.getBoundingClientRect();
         const anchorBoxes = anchors.map(anchor => anchor.getBoundingClientRect());
         const sceneHeight = Math.ceil(Math.max(content.bottom - rootBox.top, window.innerHeight));
@@ -128,6 +161,8 @@ export function mount_threads(root, front, skip, reveal) {
                 const node = nodes[slot];
                 if (!box) {
                     path.removeAttribute('d');
+                    leads[slot].removeAttribute('d');
+                    leadEnds[slot] = undefined;
                     writeThread(slot, 0);
                     frontClips[slot].setAttribute('width', '0');
                     threadCounts[slot] = 0;
@@ -138,7 +173,8 @@ export function mount_threads(root, front, skip, reveal) {
                 if (!growing || arrived[slot])
                     wind(slot, 1);
                 const crossed = slot === 1 || slot === 7 ? anchorBoxes[index - 1] : undefined;
-                const geometry=chain(side,index,rect(rootBox),rect(handBoxes[side]),rect(content),rect(box),crossed ? new Some(rect(crossed)) : Option$None$const,!desktop.matches);
+                const start=starts[slot];
+                const geometry=chain_at(side,index,new Point(start.x-rootBox.left,start.y-rootBox.top),rect(rootBox),rect(content),rect(box),crossed ? new Some(rect(crossed)) : Option$None$const,!desktop.matches);
                 const clip=frontClips[slot];
                 clip.setAttribute('x',geometry.clip.left.toFixed(1));
                 clip.setAttribute('y',geometry.clip.top.toFixed(1));
@@ -149,6 +185,7 @@ export function mount_threads(root, front, skip, reveal) {
                 const ey=geometry.end.y;
                 if (path.getAttribute('d') !== d) {
                     path.setAttribute('d', d);
+                    leadEnds[slot] = path.getPointAtLength(25.2);
                     const count = geometry.count;
                     if (count !== threadCounts[slot]) {
                         if (!growing || arrived[slot])
@@ -162,14 +199,33 @@ export function mount_threads(root, front, skip, reveal) {
             }
         }
     };
+    const drawLeads = () => {
+        const rootBox = root.getBoundingClientRect();
+        tails.forEach((tail, slot) => {
+            const end = leadEnds[slot];
+            if (!end) return;
+            const tip = tips[slot].matrixTransform(tail.getScreenCTM());
+            const x = tip.x - rootBox.left;
+            const y = tip.y - rootBox.top;
+            const reach = Math.max(3, (end.y - y) * 0.5);
+            const d = `M${x.toFixed(1)},${y.toFixed(1)} C${x.toFixed(1)},${(y+reach).toFixed(1)} ${end.x.toFixed(1)},${(end.y-reach).toFixed(1)} ${end.x.toFixed(1)},${end.y.toFixed(1)}`;
+            if (leads[slot].getAttribute('d') !== d) leads[slot].setAttribute('d', d);
+        });
+    };
     const frame = (now) => {
         raf = 0;
+        if (document.hidden) return;
+        const moving = visible && !reduced.matches;
+        if (moving || dirty) {
+            animateHands(now);
+        }
         if (dirty) {
             dirty = false;
             draw();
         }
+        if (moving || reduced.matches) drawLeads();
         if (growing) {
-            const skip = reduced.matches;
+            const skip = reduced.matches || immediate;
             const progressByChain = [];
             threads.forEach((_, slot) => {
                 const phrase = phrasing[slot];
@@ -196,15 +252,27 @@ export function mount_threads(root, front, skip, reveal) {
             if (arrived.every(Boolean))
                 growing = false;
         }
-        if ((growing || dirty) && !document.hidden)
+        if (growing || dirty || moving)
             raf = requestAnimationFrame(frame);
     };
     const schedule = () => {
         dirty = true;
+        last = performance.now();
         if (!raf)
             raf = requestAnimationFrame(frame);
     };
     const resize = new ResizeObserver(schedule);
+    const keyboard = event => {
+        if (event.key === 'Tab' && growing) {
+            immediate = true;
+            schedule();
+        }
+    };
+    const visibility = new IntersectionObserver(entries => {
+        visible = entries[0].isIntersecting;
+        schedule();
+    });
+    visibility.observe(root.querySelector('.puppet-hand-stage'));
     const discover = () => {
         const next = [...main.querySelectorAll('[data-puppet-anchor]')].slice(0, 4);
         if (next.length === anchors.length && next.every((anchor, index) => anchor === anchors[index]))
@@ -221,8 +289,10 @@ export function mount_threads(root, front, skip, reveal) {
     reduced.addEventListener('change', schedule);
     document.addEventListener('visibilitychange', schedule);
     window.addEventListener('resize', schedule);
+    window.addEventListener('keydown', keyboard);
     discover();
     draw();
+    drawLeads();
     paths.forEach((path, slot) => {
         arrivalCounts[slot] = path.hasAttribute('d') ? Math.ceil(path.getTotalLength() / 3.6) : 0;
         const samples=Array.from({length:arrivalCounts[slot]},()=>Math.random());
@@ -234,9 +304,13 @@ export function mount_threads(root, front, skip, reveal) {
         cancelAnimationFrame(raf);
         resize.disconnect();
         mutations.disconnect();
+        visibility.disconnect();
+        hands.forEach(hand => { hand.style.transform = ''; });
+        fingers.flat().forEach(finger => { finger.style.transform = ''; });
         desktop.removeEventListener('change', schedule);
         reduced.removeEventListener('change', schedule);
         document.removeEventListener('visibilitychange', schedule);
         window.removeEventListener('resize', schedule);
+        window.removeEventListener('keydown', keyboard);
     };
 }

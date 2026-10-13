@@ -54,6 +54,22 @@ pub fn chain(
     }
     *. scale
   let sy = hand.top -. root.top +. tip.tip_y *. scale
+  chain_at(side, index, Point(sx, sy), root, content, box, crossed, mobile)
+}
+
+// A transformed SVG joint supplies its actual tip instead of an axis-aligned box.
+pub fn chain_at(
+  side: Int,
+  index: Int,
+  start: Point,
+  root: Rect,
+  content: Rect,
+  box: Rect,
+  crossed: Option(Rect),
+  mobile: Bool,
+) -> Chain {
+  let sx = start.x
+  let sy = start.y
   let end_side = case crossed {
     Some(_) -> 1 - side
     None -> side

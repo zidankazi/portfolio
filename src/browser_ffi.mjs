@@ -167,24 +167,46 @@ export function mount_scene(path, skip, dispatch) {
   if(!root || !front) return;
   const animations=[];
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  let interrupted=false;
   const finish=() => {
     if(disposed) return;
-    emit({kind:'stage',stage:skip || reduced.matches ? 'ready':'threading'});
-    disposals.push(mount_threads(root,front,skip,() => emit({kind:'stage',stage:'ready'})));
+    const immediate=skip || reduced.matches || interrupted;
+    emit({kind:'stage',stage:immediate ? 'ready':'threading'});
+    disposals.push(mount_threads(root,front,immediate,() => emit({kind:'stage',stage:'ready'})));
   };
   const cancel=() => animations.forEach(animation => animation.finish());
-  const keyboard=event => { if(event.key==='Tab') cancel(); };
+  const keyboard=event => { if(event.key==='Tab') { interrupted=true; cancel(); } };
   reduced.addEventListener('change',cancel);
   window.addEventListener('keydown',keyboard);
   disposals.push(() => { reduced.removeEventListener('change',cancel); window.removeEventListener('keydown',keyboard); animations.forEach(animation=>animation.cancel()); });
   if(skip || reduced.matches) { finish(); return; }
   for(const side of ['left','right']) {
     const hand=root.querySelector(`[data-puppet-hand="${side}"]`);
-    const from=side==='left'?'translate3d(-9px,-260px,0) rotate(-7deg)':'translate3d(11px,-275px,0) rotate(9deg)';
-    const animation=hand.animate([{transform:from},{transform:'translate3d(0,0,0) rotate(0deg)'}],{duration:side==='left'?1220:1340,delay:side==='left'?40:180,easing:'cubic-bezier(.22,.1,.25,1)',fill:'both'});
+    const direction=side==='left'?1:-1;
+    const wrist=(x,y,angle)=>`translate3d(${x*direction}%,${y}%,0) rotate(${angle*direction}deg)`;
+    const animation=hand.animate([
+      {transform:wrist(-12,-115,-19),offset:0},
+      {transform:wrist(3,4,7),offset:0.54,easing:'cubic-bezier(.22,1,.36,1)'},
+      {transform:wrist(-1,-5,-4),offset:0.76,easing:'cubic-bezier(.45,0,.55,1)'},
+      {transform:wrist(0,0,0),offset:1},
+    ],{duration:820,delay:side==='left'?0:100,easing:'cubic-bezier(.22,.68,.32,1)',fill:'both'});
     animations.push(animation);
+    for(const finger of hand.querySelectorAll('[data-hand-part]:not([data-hand-part="0"])')) {
+      const part=Number(finger.dataset.handPart);
+      const spread=(part-2.5)*direction;
+      const curl=(angle,scale)=>`rotate(${angle}deg) scaleY(${scale})`;
+      animations.push(finger.animate([
+        {transform:curl(spread*4,0.88),offset:0},
+        {transform:curl(spread*-1.8,1.035),offset:0.5},
+        {transform:curl(spread*0.9,0.97),offset:0.74},
+        {transform:curl(0,1),offset:1},
+      ],{duration:630,delay:(side==='left'?100:200)+(5-part)*20,easing:'cubic-bezier(.22,.68,.32,1)',fill:'both'}));
+    }
   }
-  Promise.all(animations.map(animation=>animation.finished.catch(()=>{}))).then(finish);
+  Promise.all(animations.map(animation=>animation.finished.catch(()=>{}))).then(() => {
+    animations.forEach(animation=>animation.cancel());
+    finish();
+  });
 }
 
 function mountStudio(disposals, emit) {

@@ -101,19 +101,18 @@ h6 {
   animation: blob-drift 26s ease-in-out infinite;
 }
 
-/* The chains type toward stationary anchors, then the conversation fades in. */
+/* The strings form around an immediately usable conversation. */
 @keyframes conversation-arrive {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  [data-puppet-stage='dropping'] main,
-  [data-puppet-stage='threading'] main {
-    visibility: hidden;
+  [data-puppet-hand],
+  [data-hand-part]:not([data-hand-part='0']) {
+    will-change: transform;
   }
 
-  [data-puppet-stage='ready']:not([data-puppet-skip]) main,
   [data-puppet-stage]:not([data-puppet-stage='dropping']):not([data-puppet-skip]) .sigil-ink {
     animation: conversation-arrive 0.95s cubic-bezier(0.4, 0, 0.2, 1) both;
   }
@@ -127,6 +126,10 @@ h6 {
 @media (prefers-reduced-motion: reduce) {
 
   [data-puppet-hand] {
+    transform: none !important;
+  }
+
+  [data-hand-part] {
     transform: none !important;
   }
 

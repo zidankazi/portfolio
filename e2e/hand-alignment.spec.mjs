@@ -25,18 +25,21 @@ async function alignment(page) {
     const hands=[...document.querySelectorAll('[data-puppet-hand]')];
     for(const hand of hands) {
       for(const layer of hand.querySelectorAll('[data-hand-art]')) {
-        [...layer.querySelectorAll('tspan')].forEach((row,index)=>{
+        [...layer.querySelectorAll('tspan')].forEach(row=>{
+          const centers=row.getAttribute('x').split(' ').map(Number);
+          const baseline=Number(row.getAttribute('y'));
+          baselineError=Math.max(baselineError,Math.abs((baseline/4-0.8)-Math.round(baseline/4-0.8)));
           [...row.textContent].forEach((letter,column)=>{
             if(letter===' ') return;
             const box=row.getExtentOfChar(column);
-            glyphError=Math.max(glyphError,Math.abs(box.x+box.width/2-(column*2.4+1.2)));
-            baselineError=Math.max(baselineError,Math.abs(row.getStartPositionOfChar(column).y-(index+0.8)*4));
+            glyphError=Math.max(glyphError,Math.abs(box.x+box.width/2-centers[column]));
+            baselineError=Math.max(baselineError,Math.abs(row.getStartPositionOfChar(column).y-baseline));
             checked++;
           });
         });
       }
     }
-    const threads=[...document.querySelectorAll('.puppet-threads path')];
+    const threads=[...document.querySelectorAll('[data-thread-lead]')];
     let chainError=0;
     hands.forEach((hand,side)=>{
       const wraps=[...hand.querySelectorAll('[data-finger-wrap]')].reverse();

@@ -45,3 +45,33 @@ test('chain phrasing always advances and reduced motion completes immediately',a
   assert.equal(visible_count(sampled.beats,0,2),2);
   assert.equal(visible_count(sampled.beats,1,0),4);
 });
+
+test('joint partition preserves every original glyph exactly once on either hand',async()=>{
+  const {rows,joint,pose}=await import('../build/dev/javascript/portfolio/lib/hand_motion.mjs');
+  const {hand_left,hand_right}=await import('../build/dev/javascript/portfolio/data/art.mjs');
+  for(const right of [false,true]) {
+    const art=right?hand_right():hand_left();
+    for(const source of [art.detail,art.body,art.highlights]) {
+      const original=source.split('\n');
+      const reconstructed=original.map(line=>Array(line.length).fill(' '));
+      for(let part=0;part<6;part++) {
+        for(const row of rows(source,part,right).toArray()) {
+          const line=Math.round(row.y/4-0.8);
+          row.columns.toArray().forEach((center,index)=>{
+            const column=Math.round((center-1.2)/2.4);
+            assert.equal(reconstructed[line][column],' ');
+            reconstructed[line][column]=row.glyphs[index];
+          });
+        }
+        const pivot=joint(part,right);
+        assert.equal(pivot.x+joint(part,!right).x,240);
+        for(const elapsed of [0,50,1000,60000]) {
+          const output=pose(part,right,elapsed,1);
+          assert.ok(Number.isFinite(output.angle));
+          assert.ok(output.stretch>0.9 && output.stretch<=1);
+        }
+      }
+      assert.deepEqual(reconstructed.map(row=>row.join('')),original);
+    }
+  }
+});

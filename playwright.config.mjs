@@ -6,6 +6,7 @@ export default defineConfig({
   projects:[
     {name:'desktop',testIgnore:'hand-alignment.spec.mjs',use:{...devices['Desktop Chrome'],viewport:{width:1440,height:1000}}},
     {name:'mobile',testIgnore:'hand-alignment.spec.mjs',use:{...devices['iPhone 13'],defaultBrowserType:'chromium'}},
+    {name:'retina',testMatch:'hand-motion.spec.mjs',use:{...devices['Desktop Chrome'],viewport:{width:1512,height:870},deviceScaleFactor:2}},
     ...['chromium','firefox','webkit'].map(browserName=>({
       name:`hands-${browserName}`,
       testMatch:'hand-alignment.spec.mjs',

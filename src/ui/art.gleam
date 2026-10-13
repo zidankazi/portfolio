@@ -3,6 +3,7 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/string
+import lib/hand_motion
 import lustre/attribute as a
 import lustre/element.{type Element, text}
 import lustre/element/html as h
@@ -82,6 +83,7 @@ pub fn scene() -> Element(msg) {
 
 fn thread(slot: Int) -> Element(msg) {
   let id = "puppet-thread-" <> int.to_string(slot)
+  let lead = "puppet-lead-" <> int.to_string(slot)
   svg_element(
     "svg",
     [
@@ -90,7 +92,28 @@ fn thread(slot: Int) -> Element(msg) {
       a.attribute("focusable", "false"),
     ],
     [
-      svg_element("defs", [], [svg_element("path", [a.id(id)], [])]),
+      svg_element("defs", [], [
+        svg_element("path", [a.id(id)], []),
+        svg_element(
+          "path",
+          [a.id(lead), a.attribute("data-thread-lead", "")],
+          [],
+        ),
+      ]),
+      svg_element(
+        "text",
+        [
+          a.class("font-mono"),
+          a.attribute("font-size", "6"),
+          a.attribute("font-weight", "500"),
+          a.attribute("fill", "#ce272d"),
+          a.attribute("stroke", "#ce272d"),
+          a.attribute("stroke-width", "0.3"),
+          a.attribute("data-thread-lead-ink", ""),
+          a.attribute("opacity", "0"),
+        ],
+        [svg_element("textPath", [a.href("#" <> lead)], [text("============")])],
+      ),
       svg_element(
         "text",
         [
@@ -101,7 +124,13 @@ fn thread(slot: Int) -> Element(msg) {
           a.attribute("stroke", "#ce272d"),
           a.attribute("stroke-width", "0.3"),
         ],
-        [svg_element("textPath", [a.href("#" <> id)], [])],
+        [
+          svg_element(
+            "textPath",
+            [a.href("#" <> id), a.attribute("startOffset", "25.2")],
+            [],
+          ),
+        ],
       ),
       svg_element(
         "circle",
@@ -124,67 +153,82 @@ fn hand(side: String, layers: art.Layers) -> Element(msg) {
         _ -> "68% 0%"
       }),
     ],
-    [
-      svg_element(
-        "svg",
+    list.map([0, 1, 2, 3, 4, 5], fn(part) {
+      let right = side == "right"
+      let joint = hand_motion.joint(part, right)
+      h.div(
         [
-          a.class("absolute inset-0 h-full w-full overflow-visible"),
-          a.attribute("viewBox", "0 0 240 240"),
-          a.attribute("focusable", "false"),
-        ],
-        list.append(
-          list.map(
-            [
-              #("detail", layers.detail, "text-zinc-500/25"),
-              #("body", layers.body, "text-zinc-300/65"),
-              #("highlights", layers.highlights, "text-zinc-100"),
-            ],
-            fn(layer) {
-              svg_element(
-                "text",
-                [
-                  a.attribute("data-hand-art", layer.0),
-                  a.class("font-mono " <> layer.2),
-                  a.attribute("fill", "currentColor"),
-                  a.attribute("font-size", "4"),
-                  a.attribute("text-anchor", "middle"),
-                  a.style("white-space", "pre"),
-                  a.style("font-kerning", "none"),
-                  a.style("font-variant-ligatures", "none"),
-                ],
-                list.index_map(string.split(layer.1, "\n"), fn(line, row) {
-                  svg_element(
-                    "tspan",
-                    [
-                      a.attribute("x", columns(line)),
-                      a.attribute(
-                        "y",
-                        float.to_string({ int.to_float(row) +. 0.8 } *. 4.0),
-                      ),
-                    ],
-                    [text(line)],
-                  )
-                }),
-              )
-            },
+          a.attribute("data-hand-part", int.to_string(part)),
+          a.class("absolute inset-0"),
+          a.style(
+            "transform-origin",
+            n(joint.x /. 2.4) <> "% " <> n(joint.y /. 2.4) <> "%",
           ),
-          list.index_map(art.wraps(), fn(wrap, finger) {
-            coil(side, wrap, finger)
-          }),
-        ),
-      ),
-    ],
+        ],
+        [
+          svg_element(
+            "svg",
+            [
+              a.class("absolute inset-0 h-full w-full overflow-visible"),
+              a.attribute("viewBox", "0 0 240 240"),
+              a.attribute("focusable", "false"),
+            ],
+            list.append(
+              list.map(
+                [
+                  #("detail", layers.detail, "text-zinc-500/25"),
+                  #("body", layers.body, "text-zinc-300/65"),
+                  #("highlights", layers.highlights, "text-zinc-100"),
+                ],
+                fn(layer) {
+                  svg_element(
+                    "text",
+                    [
+                      a.attribute("data-hand-art", layer.0),
+                      a.class("font-mono " <> layer.2),
+                      a.attribute("fill", "currentColor"),
+                      a.attribute("font-size", "4"),
+                      a.attribute("text-anchor", "middle"),
+                      a.style("white-space", "pre"),
+                      a.style("font-kerning", "none"),
+                      a.style("font-variant-ligatures", "none"),
+                    ],
+                    list.map(hand_motion.rows(layer.1, part, right), fn(row) {
+                      svg_element(
+                        "tspan",
+                        [
+                          a.attribute("x", columns(row.columns)),
+                          a.attribute("y", float.to_string(row.y)),
+                        ],
+                        [text(row.glyphs)],
+                      )
+                    }),
+                  )
+                },
+              ),
+              case part >= 1 && part <= 4 {
+                True ->
+                  art.wraps()
+                  |> list.index_map(fn(wrap, finger) {
+                    case finger == part - 1 {
+                      True -> coil(side, wrap, finger)
+                      False -> element.none()
+                    }
+                  })
+                False -> []
+              },
+            ),
+          ),
+        ],
+      )
+    }),
   )
 }
 
-// Match the generator's 2.4-unit cells regardless of the font's glyph advances.
-// Centering each letter also keeps the mirrored hands registered during swaps.
-fn columns(line: String) -> String {
-  line
-  |> string.to_graphemes
-  |> list.index_map(fn(_, column) {
-    float.to_string(float.to_precision(int.to_float(column) *. 2.4 +. 1.2, 1))
-  })
+// Keep explicit cell centers while omitting whitespace from the animated SVG.
+fn columns(values: List(Float)) -> String {
+  values
+  |> list.map(fn(value) { float.to_string(float.to_precision(value, 1)) })
   |> string.join(" ")
 }
 
