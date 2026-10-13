@@ -20,10 +20,22 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--link);outline-offse
 #spotify{margin-bottom:32px}
 #spotify a,.contact-copy a{color:var(--ink)}
 .contact-copy{margin-bottom:0}
-.manuscript-surface{position:relative;height:100svh;min-height:560px;overflow:hidden;isolation:isolate;user-select:none;-webkit-user-select:none}
+.manuscript-surface{position:relative;height:100svh;min-height:900px;overflow:hidden;isolation:isolate;user-select:none;-webkit-user-select:none}
 #manuscript{display:block;position:absolute;inset:0;width:100%;height:100%;touch-action:pan-y}
-.manuscript-fallback{font-family:"Furia",serif;font-size:21px;line-height:34px;max-width:610px;margin:75px auto;padding:0 24px}
-.manuscript-surface[data-ready="true"] .manuscript-fallback{visibility:hidden}
+.manuscript-fallback{font:21px/1.5 "Furia",serif;max-width:610px;margin:75px auto;padding:0 24px;color:#2a1a0a}
+.manuscript-fallback p{margin-top:0;display:flow-root}
+.bio-inline{white-space:nowrap}
+.bio-media{width:32px;height:32px;object-fit:cover;vertical-align:middle;margin-right:8px;outline:1px solid rgba(0,0,0,.1)}
+.bio-media-league{object-fit:contain;outline:0}
+.bio-media-album{width:64px;height:64px}
+.bio-song .bio-inline{white-space:normal;overflow-wrap:anywhere}
+.manuscript-fallback .bio-name{font-size:max(34px,1.85em)}
+.manuscript-fallback .bio-artist{font-size:max(15px,.8em);color:var(--muted)}
+.manuscript-fallback .bio-label,.manuscript-fallback .bio-cue{font-size:max(14px,.72em);color:var(--muted)}
+.manuscript-fallback .bio-song{font-size:max(24px,1.3em)}
+.manuscript-fallback .bio-accent{color:var(--link)}
+.manuscript-surface:not([data-ready="true"]) #manuscript{visibility:hidden}
+.manuscript-surface[data-ready="true"] .manuscript-fallback{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .manuscript-surface + main{margin-top:80px}
 #github-activity{padding-top:10px;margin:0 0 28px;font-size:13px;line-height:20px}
 .calendar-status{margin:0;color:var(--muted);min-height:130px;display:flex;align-items:center}
@@ -39,4 +51,5 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--link);outline-offse
 .calendar-error p{margin:0;color:var(--muted)}
 .calendar-error button{background:none;border:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;white-space:nowrap}
 @media(max-width:600px){body{font-size:18px;line-height:28px}main{margin:44px auto 44px;width:calc(100% - 44px)}.intro-copy{font-size:21px;line-height:32px}#spotify,.contact-copy{font-size:16px;line-height:25px}}
+@media(max-width:600px){.manuscript-surface{min-height:1000px}.manuscript-fallback{font-size:17px;width:calc(100% - 80px);padding:0;margin-top:52px}}
 @media print{.manuscript-surface{display:none}body{background:white}main{margin:0 auto}p{break-inside:avoid}}
