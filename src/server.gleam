@@ -31,13 +31,17 @@ pub fn response(
         site.manifest_json(),
       ))
     "/" -> {
-      use track <- promise.map(spotify.get_track_json(client))
-      Response(
+      promise.resolve(Response(
         200,
         "text/html; charset=utf-8",
         "no-store",
-        portfolio.document(path, track, script, stylesheet),
-      )
+        portfolio.document(
+          path,
+          spotify.cached_track_json(client),
+          script,
+          stylesheet,
+        ),
+      ))
     }
     "/studio" ->
       promise.resolve(Response(

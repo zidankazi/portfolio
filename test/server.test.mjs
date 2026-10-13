@@ -20,3 +20,16 @@ test('server renders both pages and preserves Spotify and manifest routes',async
   const manifest=await response('/manifest.webmanifest',client,'','');
   assert.equal(JSON.parse(manifest.body).name,'Zidan Kazi');
 });
+
+test('homepage returns immediately when Spotify is stalled', {timeout:1000}, async t=>{
+  let requests=0;
+  t.mock.method(globalThis,'fetch',()=>{
+    requests++;
+    return new Promise(()=>{});
+  });
+  const slowClient=new_client('test-client','test-secret','test-refresh');
+  const home=await response('/',slowClient,'/assets/site.js','/assets/site.css');
+  assert.equal(home.status,200);
+  assert.match(home.body,/Stevens Institute of Technology/);
+  assert.equal(requests,0);
+});

@@ -409,3 +409,9 @@ pub fn get_track_json(client: Client) -> Promise(String) {
   use playback <- promise.map(get_track(client))
   playback |> playback_json |> json.to_string
 }
+
+// Initial HTML can use known metadata without waiting for an external request.
+// The browser refreshes playback through the existing API after mounting.
+pub fn cached_track_json(client: Client) -> String {
+  client |> cached_playback |> playback_json |> json.to_string
+}
