@@ -1,30 +1,40 @@
 @font-face{font-family:"IM Fell English";src:url('/fonts/im-fell-english.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
-:root{--paper:#f4eee0;--ink:#2a241c;--muted:#817768;color-scheme:light}
+@font-face{font-family:"IM Fell English";src:url('/fonts/im-fell-english-italic.ttf') format('truetype');font-weight:400;font-style:italic;font-display:swap}
+:root{--paper:#f4eee0;--ink:#2b2822;--muted:#6c665a;--link:#744338;color-scheme:light}
 *{box-sizing:border-box}
 html{overflow-anchor:none}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:"IM Fell English",Georgia,serif;font-size:22px;line-height:34px}
-main{width:min(650px,calc(100% - 48px));margin:72px auto 56px}
-p{margin:0 0 28px}
-a{color:inherit;text-underline-offset:3px;text-decoration-thickness:1px}
-a:hover{color:#943f32}
-a:focus-visible,button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
-::selection{color:var(--paper);background:#943f32}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"IM Fell English",Georgia,serif;font-size:20px;line-height:32px;-webkit-font-smoothing:antialiased}
+main{width:min(620px,calc(100% - 56px));margin:clamp(56px,9vh,88px) auto 64px}
+p{margin:0 0 24px}
+.intro-copy{font-size:23px;line-height:36px;margin-bottom:26px}
+.person-name,.project-title{font-style:italic}
+a{color:inherit;text-decoration-color:#2b282266;text-underline-offset:4px;text-decoration-thickness:1px;text-decoration-skip-ink:auto}
+a:hover{color:var(--link);text-decoration-color:currentColor}
+.project-title{color:var(--link);text-decoration:none}
+.project-title:hover{text-decoration:underline}
+.project-link{font-size:.85em;color:var(--muted)}
+a:focus-visible,button:focus-visible{outline:1px solid var(--link);outline-offset:4px}
+::selection{color:var(--paper);background:var(--link)}
+#spotify,.contact-copy{font-size:17px;line-height:27px;color:var(--muted)}
+#spotify{margin-bottom:32px}
+#spotify a,.contact-copy a{color:var(--ink)}
+.contact-copy{margin-bottom:0}
 #manuscript{position:fixed;inset:0;z-index:2;pointer-events:none}
 .flow-ready{position:relative}
 .text-fragment{position:absolute;left:0;top:0;white-space:pre}
 .text-fragment[hidden]{display:none}
-#github-activity{margin:0 0 28px;font-size:13px;line-height:20px}
+#github-activity{padding-top:10px;margin:0 0 28px;font-size:13px;line-height:20px}
 .calendar-status{margin:0;color:var(--muted);min-height:130px;display:flex;align-items:center}
-.calendar-scroll{overflow-x:auto;scrollbar-width:thin;scrollbar-color:#c6baa1 transparent;padding:0 2px 6px}
+.calendar-scroll{overflow-x:auto;scrollbar-width:thin;scrollbar-color:#c6baa1 transparent;padding:0 2px 8px;overscroll-behavior-x:contain}
 .calendar-months{display:grid;min-width:520px;font-size:11px;line-height:16px;color:var(--muted);padding-bottom:7px;gap:3px}
 .calendar-grid{display:grid;grid-template-rows:repeat(7,1fr);grid-auto-flow:column;gap:3px;min-width:520px}
-.calendar-day{aspect-ratio:1;width:100%;padding:0;min-width:0;background:#e5dcc9;border:0;border-radius:1px;cursor:pointer;outline-offset:2px!important}
+.calendar-day{aspect-ratio:1;width:100%;padding:0;min-width:0;background:#e3dccd;border:0;border-radius:1px;cursor:pointer;outline-offset:2px!important}
 .calendar-day:hover{outline:1px solid var(--ink)}
-[data-level="1"]{background:#d7c49e}[data-level="2"]{background:#bfa06c}[data-level="3"]{background:#98734b}[data-level="4"]{background:#674c34}
+[data-level="1"]{background:#ccbea1}[data-level="2"]{background:#aa9875}[data-level="3"]{background:#7a684b}[data-level="4"]{background:#4c402e}
 .calendar-caption{font-size:12px;color:var(--muted);margin-top:4px}
 .calendar-tooltip{position:fixed;max-width:calc(100vw - 16px);padding:6px 9px;background:var(--ink);color:var(--paper);font-size:12px;line-height:18px;z-index:3;pointer-events:none}
 .calendar-error{min-height:130px;display:flex;align-items:center;justify-content:space-between;gap:15px}
 .calendar-error p{margin:0;color:var(--muted)}
 .calendar-error button{background:none;border:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;white-space:nowrap}
-@media(max-width:600px){body{font-size:19px;line-height:30px}main{margin-top:48px;width:calc(100% - 40px)}}
+@media(max-width:600px){body{font-size:18px;line-height:28px}main{margin:44px auto 44px;width:calc(100% - 44px)}.intro-copy{font-size:21px;line-height:32px}#spotify,.contact-copy{font-size:16px;line-height:25px}}
 @media print{#manuscript{display:none}body{background:white}main{margin:0 auto}.flow-copy{break-inside:avoid}}
