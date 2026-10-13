@@ -1,13 +1,16 @@
 import {prepareRichInline, layoutNextRichInlineLineRange, materializeRichInlineLineRange, type PreparedRichInline, type RichInlineCursor} from '@chenglou/pretext/rich-inline';
 import {Dragon, type Range} from './dragon.js';
 
-type Item = {text: string; href?: string; target?: string; rel?: string};
+type Item = {text: string; href?: string; target?: string; rel?: string; className?: string};
 type Paragraph = {
   node: HTMLElement;
   items: Item[];
   prepared: PreparedRichInline;
   groups: HTMLElement[];
   fragments: Map<number, HTMLElement[]>;
+  fontSize: number;
+  lineHeight: number;
+  gap: number;
 };
 
 export function subtractRanges(ranges: Range[], exclusion: Range): Range[] {
@@ -25,7 +28,7 @@ function readItems(node: HTMLElement): Item[] {
     if (child instanceof HTMLElement && child.hasAttribute('data-ignore-flow')) return [];
     const text=child.textContent ?? '';
     if (!text) return [];
-    if (child instanceof HTMLAnchorElement) return [{text,href:child.getAttribute('href') ?? '',target:child.target,rel:child.rel}];
+    if (child instanceof HTMLAnchorElement) return [{text,href:child.getAttribute('href') ?? '',target:child.target,rel:child.rel,className:child.className}];
     return [{text}];
   });
 }
@@ -35,24 +38,35 @@ export async function mountScene(): Promise<void> {
   const canvas=document.querySelector<HTMLCanvasElement>('#manuscript');
   const ctx=canvas?.getContext('2d');
   if (!page || !canvas || !ctx) return;
-  await document.fonts.load('22px "IM Fell English"');
+  await Promise.all([document.fonts.load('20px "IM Fell English"'),document.fonts.load('italic 24px "IM Fell English"')]);
   const dragon=await Dragon.load();
   const motion=matchMedia('(prefers-reduced-motion: reduce)');
   const coarse=matchMedia('(pointer: coarse)');
   const paragraphs=new Map<HTMLElement, Paragraph>();
   const blocks=[...page.children] as HTMLElement[];
-  let width=0, left=0, top=0, fontSize=22, lineHeight=34;
+  let width=0, left=0, top=0;
   let viewportWidth=0, viewportHeight=0, chartHeight=140;
   let restX=0, restY=0;
   let target: {x:number; y:number} | null=null;
   let lastMove=0, frame=0, lastScroll=scrollY;
   let dirty=true;
+  let hoveredLink=false, keyboardFocus=false, selecting=false, selectionActive=false;
+  let lastInput:'keyboard' | 'pointer'='keyboard';
 
   function prepare(node: HTMLElement, items: Item[]) {
-    const prepared=prepareRichInline(items.map(item=>({text:item.text,font:`${fontSize}px "IM Fell English"`})));
+    const style=getComputedStyle(node);
+    const fontSize=parseFloat(style.fontSize);
+    const lineHeight=parseFloat(style.lineHeight);
+    const gap=parseFloat(style.marginBottom);
+    const prepared=prepareRichInline(items.map(item=>{
+      const classes=item.className?.split(' ') ?? [];
+      const italic=classes.includes('project-title') || classes.includes('person-name');
+      const size=classes.includes('project-link') ? fontSize*.85 : fontSize;
+      return {text:item.text,font:`${italic ? 'italic ' : ''}${size}px "IM Fell English"`};
+    }));
     node.replaceChildren();
     const groups=items.map(()=>{const group=document.createElement('span'); group.className='flow-item'; node.append(group); return group;});
-    paragraphs.set(node,{node,items,prepared,groups,fragments:new Map()});
+    paragraphs.set(node,{node,items,prepared,groups,fragments:new Map(),fontSize,lineHeight,gap});
     node.classList.add('flow-ready');
   }
 
@@ -62,6 +76,7 @@ export async function mountScene(): Promise<void> {
     for (const block of blocks) {
       const paragraph=paragraphs.get(block);
       if (!paragraph) {blockY+=chartHeight+28; continue;}
+      const {fontSize,lineHeight,gap}=paragraph;
       let y=0;
       let cursor: RichInlineCursor={itemIndex:0,segmentIndex:0,graphemeIndex:0};
       const used=new Map<number,number>();
@@ -70,7 +85,7 @@ export async function mountScene(): Promise<void> {
         const viewportY=top+blockY+y-currentScroll;
         let ranges: Range[]=[{left:0,right:width}];
         for (const exclusion of dragon.exclusions(viewportY,viewportY+lineHeight)) ranges=subtractRanges(ranges,{left:exclusion.left-left,right:exclusion.right-left});
-        ranges=ranges.filter(range=>range.right-range.left >= Math.max(fontSize*4,width*.2));
+        ranges=ranges.filter(range=>range.right-range.left >= Math.max(fontSize*6,width*.24));
         if (width<450 && ranges.length>1) ranges=[ranges.reduce((largest,range)=>range.right-range.left>largest.right-largest.left ? range : largest)];
         let rowUsed=false;
         for (const range of ranges) {
@@ -85,8 +100,12 @@ export async function mountScene(): Promise<void> {
             let node=pool[index];
             if (!node) {
               node=document.createElement(item.href ? 'a' : 'span');
-              if (node instanceof HTMLAnchorElement) {node.href=item.href!; node.target=item.target ?? ''; node.rel=item.rel ?? '';}
-              node.className='text-fragment';
+              if (node instanceof HTMLAnchorElement) {
+                node.href=item.href!; node.target=item.target ?? ''; node.rel=item.rel ?? '';
+                node.tabIndex=index===0 ? 0 : -1;
+                node.setAttribute('aria-label',item.text);
+              }
+              node.className='text-fragment'+(item.className ? ' '+item.className : '');
               pool.push(node); paragraph.fragments.set(fragment.itemIndex,pool); paragraph.groups[fragment.itemIndex].append(node);
             }
             node.hidden=false;
@@ -104,7 +123,7 @@ export async function mountScene(): Promise<void> {
       }
       for (const [itemIndex,pool] of paragraph.fragments) pool.forEach((node,index)=>{node.hidden=index >= (used.get(itemIndex) ?? 0);});
       paragraph.node.style.height=Math.max(lineHeight,y)+'px';
-      blockY+=Math.max(lineHeight,y)+28;
+      blockY+=Math.max(lineHeight,y)+gap;
     }
     page!.dataset.ready='true';
     lastScroll=currentScroll;
@@ -115,7 +134,10 @@ export async function mountScene(): Promise<void> {
     frame=0;
     if (document.hidden) return;
     const animated=!motion.matches;
-    const moved=animated && dragon.update(time,time-lastMove<1800 ? target : null,restX,restY);
+    const reading=hoveredLink || keyboardFocus || selecting || selectionActive;
+    if (!animated || reading) dragon.hold(time);
+    const moved=animated && !reading && dragon.update(time,time-lastMove<1600 ? target : null,restX,restY);
+    page!.dataset.interaction=reading ? 'reading' : 'moving';
     ctx!.clearRect(0,0,viewportWidth,viewportHeight);
     if (dirty || moved || scrollY!==lastScroll) layout();
     dragon.draw(ctx!,time,animated);
@@ -129,15 +151,13 @@ export async function mountScene(): Promise<void> {
     viewportWidth=innerWidth; viewportHeight=innerHeight;
     width=page!.clientWidth;
     const bounds=page!.getBoundingClientRect(); left=bounds.left; top=bounds.top+scrollY;
-    fontSize=viewportWidth<600 ? 19 : 22;
-    lineHeight=viewportWidth<600 ? 30 : 34;
     const dpr=Math.min(devicePixelRatio || 1,2);
     canvas!.width=Math.round(viewportWidth*dpr); canvas!.height=Math.round(viewportHeight*dpr);
     canvas!.style.width=viewportWidth+'px'; canvas!.style.height=viewportHeight+'px';
     ctx!.setTransform(dpr,0,0,dpr,0,0);
-    const scale=viewportWidth<600 ? .48 : .9;
-    restX=viewportWidth<600 ? viewportWidth-42 : left+width+90;
-    restY=viewportWidth<600 ? 95 : 110;
+    const scale=viewportWidth<600 ? .38 : .8;
+    restX=viewportWidth<600 ? viewportWidth-46 : Math.min(viewportWidth-80,left+width+110);
+    restY=viewportWidth<600 ? 112 : top+46;
     dragon.rest(restX,restY,scale); target=null;
     for (const block of blocks) {
       if (!block.classList.contains('flow-copy')) continue;
@@ -149,16 +169,25 @@ export async function mountScene(): Promise<void> {
 
   document.addEventListener('pointermove',event=>{
     if (motion.matches || event.pointerType!=='mouse') return;
-    target={x:event.clientX,y:event.clientY}; lastMove=performance.now(); schedule();
+    hoveredLink=Boolean((event.target as HTMLElement).closest('a,button,.calendar-scroll'));
+    if (!hoveredLink && !selecting) {target={x:event.clientX,y:event.clientY}; lastMove=performance.now();}
+    schedule();
   });
   document.addEventListener('pointerdown',event=>{
-    if (motion.matches || event.button!==0 || event.pointerType!=='mouse' || (event.target as HTMLElement).closest('a,button')) return;
+    if (motion.matches || event.button!==0 || event.pointerType!=='mouse') return;
+    lastInput='pointer'; keyboardFocus=false;
+    if ((event.target as HTMLElement).closest('a,button,.flow-copy,.calendar-scroll')) {selecting=true; schedule(); return;}
     dragon.breathe(); dirty=true; schedule();
   });
-  document.documentElement.addEventListener('pointerleave',()=>{target=null;});
+  document.addEventListener('pointerup',()=>{selecting=false; schedule();});
+  document.addEventListener('selectionchange',()=>{selectionActive=!window.getSelection()?.isCollapsed; schedule();});
+  document.addEventListener('keydown',()=>{lastInput='keyboard'; keyboardFocus=Boolean(document.activeElement?.closest('a,button')); schedule();});
+  document.addEventListener('focusin',event=>{keyboardFocus=lastInput==='keyboard' && Boolean((event.target as HTMLElement).closest('a,button')); schedule();});
+  document.addEventListener('focusout',event=>{keyboardFocus=Boolean(event.relatedTarget instanceof HTMLElement && event.relatedTarget.closest('a,button')); schedule();});
+  document.documentElement.addEventListener('pointerleave',()=>{target=null; hoveredLink=false; selecting=false;});
   document.addEventListener('scroll',()=>{dirty=true; schedule();},{passive:true});
   document.addEventListener('visibilitychange',()=>{if (!document.hidden) schedule();});
-  motion.addEventListener('change',()=>{dragon.sparks=[]; dirty=true; page!.dataset.paused=String(motion.matches); schedule();});
+  motion.addEventListener('change',()=>{dragon.stopFire(); dirty=true; page!.dataset.paused=String(motion.matches); schedule();});
   document.addEventListener('flow-content-changed',event=>{
     const id=(event as CustomEvent<string>).detail;
     const node=document.getElementById(id);
