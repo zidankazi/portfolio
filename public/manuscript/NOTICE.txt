@@ -1,4 +1,4 @@
-Dragon illustrations and chain-animation design adapted from Illustrated Manuscript:
+Canvas renderer, story, drop cap, dragon illustrations, and animation adapted from Illustrated Manuscript:
 https://github.com/dengshu2/illustrated-manuscript
 Original project by River Marchand (@Riyvir), Neither/Nor.
 The upstream package declares the ISC license. Artwork has been converted to WebP.
