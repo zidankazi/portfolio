@@ -21,7 +21,7 @@ function mountSpotify() {
     const nextSignature=JSON.stringify([next.title, next.artist, next.albumArt, next.url, next.isPlaying]);
     if (nextSignature === signature) return;
     signature=nextSignature;
-    const label=element('span', '', next.title ? next.isPlaying ? 'Listening to ' : 'Last listened to ' : 'I listen to a lot of music.');
+    const label=element('span', '', next.title ? next.isPlaying ? "Right now I'm listening to " : 'I last listened to ' : 'I listen to a lot of music.');
     const parts: Node[]=[label];
     if (next.title) {
       if (safeUrl(next.url)) {const link=element('a', '', next.title); link.href=next.url; link.target='_blank'; link.rel='noopener noreferrer'; parts.push(link);}

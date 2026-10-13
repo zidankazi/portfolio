@@ -15,10 +15,10 @@ export function biographyBlocks(track:BioTrack | null=null):BioBlock[] {
     {kind:'label',text:'Outside of coding',gap:8},
     {kind:'hobby',text:'I like trying new foods.',gap:12},
     {kind:'hobby',text:'I play League of Legends. I used to be Challenger (top 300 out of 3,000,000).',gap:12,accent:true,image:{src:'/manuscript/league.png',alt:'League of Legends logo',kind:'league'}},
-    {kind:'hobby',text:'I also collect CS2 skins.',gap:24,image:{src:'/manuscript/cs2.jpg',alt:'Counter-Strike 2 logo',kind:'cs2'}},
+    {kind:'hobby',text:'I also collect CS2 skins. Right now I have a FN Damascus Steel Karambit and MW Snow Leopards.',gap:24,image:{src:'/manuscript/cs2.jpg',alt:'Counter-Strike 2 logo',kind:'cs2'}},
     {kind:'body',text:'I listen to a lot of music, too.',gap:12},
     ...(track?.title ? [
-      {kind:'label' as const,text:track.isPlaying ? '♪ Listening now' : '♪ Last listened to',gap:6},
+      {kind:'label' as const,text:track.isPlaying ? "♪ Right now I'm listening to" : '♪ I last listened to',gap:6},
       {kind:'song' as const,text:track.title,gap:track.artist ? 0 : 24,...(album ? {image:{src:album,alt:track.title+' album cover',kind:'album' as const}} : {})},
       ...(track.artist ? [{kind:'artist' as const,text:'by '+track.artist,gap:24}] : []),
     ] : []),
