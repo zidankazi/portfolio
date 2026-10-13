@@ -15,9 +15,9 @@ test('manuscript sits above a normal portfolio with live widgets and project lin
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
   await expect(page.locator('#manuscript-scene a')).toHaveCount(0);
   await expect(page.locator('.manuscript-fallback')).toContainText('I like trying new foods.');
-  await expect(page.locator('.manuscript-fallback')).toContainText('I also collect CS2 skins.');
+  await expect(page.locator('.manuscript-fallback')).toContainText('I also collect CS2 skins. Right now I have a FN Damascus Steel Karambit and MW Snow Leopards.');
   await expect(page.locator('.manuscript-fallback')).toContainText('I used to be Challenger (top 300 out of 3,000,000).');
-  await expect(page.locator('.manuscript-fallback')).toContainText('Listening now');
+  await expect(page.locator('.manuscript-fallback')).toContainText("Right now I'm listening to");
   await expect(page.locator('.manuscript-fallback')).toContainText('Test track');
   await expect(page.locator('.manuscript-fallback')).toContainText('by Test artist');
   await expect(page.getByRole('link',{name:'Zidan Kazi',exact:true})).toBeVisible();
@@ -102,6 +102,27 @@ test('idle wings keep moving while the pointer is still',async({page})=>{
   await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
   const canvas=page.locator('#manuscript');const before=await canvas.screenshot();
   await page.clock.runFor(400);expect(await canvas.screenshot()).not.toEqual(before);
+});
+
+test('dragon keeps the last cursor position through idle time and tab switching',async({page,context})=>{
+  await page.clock.install();await page.goto('/');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  const canvas=page.locator('#manuscript'),box=await canvas.boundingBox();
+  const target={x:Math.round(box.width*.65),y:Math.round(box.height*.4)};
+  await page.mouse.move(box.x+target.x,box.y+target.y);await page.clock.runFor(1500);
+  await page.mouse.move(box.x+box.width+30,box.y+target.y);
+  await page.clock.runFor(3000);
+  const nearLastPointer=async()=>{
+    expect(Math.abs(Number(await canvas.getAttribute('data-head-x'))-target.x)).toBeLessThan(7);
+    expect(Math.abs(Number(await canvas.getAttribute('data-head-y'))-target.y)).toBeLessThan(7);
+  };
+  await nearLastPointer();
+  const other=await context.newPage();await other.goto('about:blank');await other.bringToFront();
+  await page.clock.runFor(3500);
+  await page.bringToFront();await other.close();await page.clock.runFor(1000);
+  await nearLastPointer();
+  expect(await canvas.getAttribute('data-fire-count')).toBe('0');
 });
 
 test('dragon is clipped to the manuscript and stops rendering below it',async({page})=>{
@@ -196,7 +217,7 @@ test('Spotify updates and recovers without moving or rewriting projects',async({
   const projects=await page.locator('.project-row').allTextContents();
   await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:track}));
   await page.clock.fastForward(31000);await expect(page.getByRole('link',{name:'Test track',exact:true})).toBeVisible();
-  await expect(page.locator('.manuscript-fallback')).toContainText('Listening now');
+  await expect(page.locator('.manuscript-fallback')).toContainText("Right now I'm listening to");
   await expect(page.locator('.manuscript-fallback')).toContainText('Test track');
   await expect(page.locator('.manuscript-fallback')).toContainText('by Test artist');
   await expect.poll(()=>page.locator('#manuscript').getAttribute('data-frame')).not.toBe(before);
@@ -207,8 +228,8 @@ test('Spotify updates and recovers without moving or rewriting projects',async({
   await expect(page.getByAltText('Test track album cover')).toHaveAttribute('src',nextCover);
   await expect(page.locator('#manuscript')).toHaveAttribute('data-media-count','3');
   await page.route('**/api/spotify/now-playing',route=>route.fulfill({status:503}));
-  await page.clock.fastForward(31000);await expect(page.locator('#spotify')).toContainText('Last listened to Test track');
-  await expect(page.locator('.manuscript-fallback')).toContainText('Last listened to');
+  await page.clock.fastForward(31000);await expect(page.locator('#spotify')).toContainText('I last listened to Test track');
+  await expect(page.locator('.manuscript-fallback')).toContainText('I last listened to');
   await expect(page.locator('#manuscript-scene a')).toHaveCount(0);
   expect(await page.locator('.project-row').allTextContents()).toEqual(projects);
 });

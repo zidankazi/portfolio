@@ -9,15 +9,16 @@ icons and Spotify cover art flow inline with their text through Pretext. The
 canvas fits the viewport, with typography measured when the screen or song
 changes. Type stays stable while the dragon moves. The scene pauses when it
 leaves the viewport. Hold the pointer to breathe fire; touch can still scroll
-the page. Reduced motion keeps the illustration static.
+the page. After interaction it settles at the last pointer position, including
+after tab switches. Reduced motion keeps the illustration static.
 
 The name, Spotify sentence, projects, links, and GitHub contribution chart sit
 below the manuscript in ordinary server-rendered HTML. They use normal browser
 layout and selection; no canvas or animated text covers their hit areas. The
 studio page uses the same plain portfolio typography without the manuscript.
 
-The manuscript uses the same Furia III webfont as the live reference. The local
-font file comes from the demo’s `/furia-iii.ttf` asset. Furia is a commercial font
+The manuscript uses Furia III from the live reference, with IM Fell English
+for capital I only to distinguish it from J. The local font file comes from the demo’s `/furia-iii.ttf` asset. Furia is a commercial font
 with separate licensing; confirm the site’s webfont license before publishing.
 It is not covered by the reference’s ISC license. Portfolio text retains
 IM Fell English. Source and artwork credits are in `public/manuscript/NOTICE.txt`;
