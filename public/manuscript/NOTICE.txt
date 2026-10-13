@@ -1,4 +1,4 @@
-Canvas renderer, story, drop cap, dragon illustrations, and animation adapted from Illustrated Manuscript:
+Canvas renderer, drop cap, dragon illustrations, and animation adapted from Illustrated Manuscript:
 https://github.com/dengshu2/illustrated-manuscript
 Original project by River Marchand (@Riyvir), Neither/Nor.
 The upstream package declares the ISC license. Artwork has been converted to WebP.
@@ -18,3 +18,11 @@ OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
 DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS
 ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
+
+Game icons (separate from the ISC artwork above):
+League of Legends rendered icon from Riot Games' official asset downloads:
+https://www.leagueoflegends.com/en-us/league-of-legends-downloads/
+https://cmsassets.rgpub.io/sanity/files/dsfx7636/news/443020e6faac361cd44ced1c12108e4de2e60ef9.zip
+Counter-Strike 2 app icon from Valve's official Steam community page:
+https://shared.fastly.steamstatic.com/community_assets/images/apps/730/8dbc71957312bbd3baea65848b545be9eae2a355_full.jpg
+Game marks remain owned by their respective rights holders.
