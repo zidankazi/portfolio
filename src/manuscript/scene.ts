@@ -76,6 +76,7 @@ export async function mountScene():Promise<void> {
       let fontSize=bodySize;
       if (block.kind==='name') fontSize=Math.max(34,bodySize*1.85);
       else if (block.kind==='song') fontSize=Math.max(24,bodySize*(block.text.length>48 ? 1 : 1.3));
+      else if (block.kind==='clients') fontSize=Math.max(17,bodySize*.9);
       else if (block.kind==='artist') fontSize=Math.max(15,bodySize*.8);
       else if (block.kind==='label' || block.kind==='cue') fontSize=Math.max(14,bodySize*.72);
       const lineHeight=Math.round(fontSize*1.5);
