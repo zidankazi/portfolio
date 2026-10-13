@@ -1,10 +1,12 @@
 import {test,expect} from '@playwright/test';
 const calendar={contributions:Array.from({length:365},(_,index)=>({date:new Date(Date.UTC(2025,9,14+index)).toISOString().slice(0,10),count:index%5,level:index%5}))};
-const track={title:'Test track',artist:'Test artist',url:'https://open.spotify.com/track/test',albumArt:null,isPlaying:true,progressMs:30000,durationMs:120000};
+const cover='https://i.scdn.co/image/portfolio-test-cover';
+const track={title:'Test track',artist:'Test artist',url:'https://open.spotify.com/track/test',albumArt:cover,isPlaying:true,progressMs:30000,durationMs:120000};
 
 test.beforeEach(async({page})=>{
   await page.route('**/github-contributions-api.jogruber.de/**',route=>route.fulfill({json:calendar}));
   await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:track}));
+  await page.route(cover,route=>route.fulfill({path:'public/android-chrome-192x192.png',contentType:'image/png',headers:{'Access-Control-Allow-Origin':'*'}}));
 });
 
 test('manuscript sits above a normal portfolio with live widgets and project links',async({page})=>{
@@ -12,6 +14,12 @@ test('manuscript sits above a normal portfolio with live widgets and project lin
   await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
   await expect(page.locator('#manuscript-scene a')).toHaveCount(0);
+  await expect(page.locator('.manuscript-fallback')).toContainText('I like trying new foods.');
+  await expect(page.locator('.manuscript-fallback')).toContainText('I also collect CS2 skins.');
+  await expect(page.locator('.manuscript-fallback')).toContainText('I used to be Challenger.');
+  await expect(page.locator('.manuscript-fallback')).toContainText('Listening now');
+  await expect(page.locator('.manuscript-fallback')).toContainText('Test track');
+  await expect(page.locator('.manuscript-fallback')).toContainText('by Test artist');
   await expect(page.getByRole('link',{name:'Zidan Kazi',exact:true})).toBeVisible();
   await expect(page.getByRole('link',{name:'Test track',exact:true})).toBeVisible();
   await expect(page.locator('[data-slot="github-activity"]')).toContainText('contributions in the last year');
@@ -26,6 +34,34 @@ test('manuscript sits above a normal portfolio with live widgets and project lin
   await expect(page.getByRole('link',{name:'OMU',exact:true})).toBeVisible();
   await page.getByRole('link',{name:'Zidan Kazi',exact:true}).click();
   await expect(page).toHaveURL('/');expect(errors).toEqual([]);
+});
+
+test('real game logos and album artwork flow together with their text',async({page})=>{
+  await page.clock.install();await page.goto('/');
+  const canvas=page.locator('#manuscript');
+  await expect(canvas).toHaveAttribute('data-media-count','3');
+  await expect(page.getByAltText('League of Legends logo')).toHaveAttribute('src','/manuscript/league.png');
+  await expect(page.getByAltText('Counter-Strike 2 logo')).toHaveAttribute('src','/manuscript/cs2.jpg');
+  await expect(page.getByAltText('Test track album cover')).toHaveAttribute('src',cover);
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  const read=async()=>JSON.parse(await canvas.getAttribute('data-inline-media'));
+  const initial=await read(),box=await canvas.boundingBox();
+  const pageOffset=(box.width-Math.min(700,box.width-40))/2;
+  let moved=false;
+  for (const delta of [0,70,-50]) {
+    const league=initial.find(image=>image.kind==='league');
+    await page.mouse.move(box.x+pageOffset+league.textX+delta,box.y+30+league.y);
+    await page.clock.runFor(650);
+    const images=await read();
+    expect(images.map(image=>image.kind)).toEqual(['league','cs2','album']);
+    for (const image of images) {
+      // The occupied inline item carries both artwork and adjacent words.
+      expect(image.textX-image.x).toBe(image.size+8);
+      expect(Math.abs(image.textY-image.y)).toBeLessThan(image.size/2);
+    }
+    moved ||= images.some(image=>{const before=initial.find(item=>item.kind===image.kind);return image.x!==before.x || image.y!==before.y;});
+  }
+  expect(moved).toBe(true);
 });
 
 test('holding the manuscript sustains fire until release',async({page})=>{
@@ -124,10 +160,12 @@ test('project text copies normally without changing selection',async({page})=>{
 });
 
 test('small phones and tablets retain complete content without horizontal overflow',async({page})=>{
+  await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:{...track,title:'Supercalifragilisticexpialidocious (live)'}}));
   await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
-  for(const width of [320,768]) {
-    await page.setViewportSize({width,height:900});
+  for(const [width,height] of [[320,600],[390,844],[768,900]]) {
+    await page.setViewportSize({width,height});
+    await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-bio-complete','true');
     await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await expect(page.locator('.project-row').last()).toContainText('live sgp4 mechanics.');
     expect(await page.locator('.project-row a').evaluateAll(links=>links.every(link=>getComputedStyle(link).position==='static'))).toBe(true);
@@ -149,11 +187,25 @@ test('Spotify updates and recovers without moving or rewriting projects',async({
   await page.emulateMedia({reducedMotion:'reduce'});await page.clock.install();
   await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:{title:null,isPlaying:false}}));
   await page.goto('/');await expect(page.locator('#spotify')).toHaveAttribute('data-state','empty');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  const before=await page.locator('#manuscript').getAttribute('data-frame');
   const projects=await page.locator('.project-row').allTextContents();
   await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:track}));
   await page.clock.fastForward(31000);await expect(page.getByRole('link',{name:'Test track',exact:true})).toBeVisible();
+  await expect(page.locator('.manuscript-fallback')).toContainText('Listening now');
+  await expect(page.locator('.manuscript-fallback')).toContainText('Test track');
+  await expect(page.locator('.manuscript-fallback')).toContainText('by Test artist');
+  await expect.poll(()=>page.locator('#manuscript').getAttribute('data-frame')).not.toBe(before);
+  const nextCover=cover+'-next';
+  await page.route(nextCover,route=>route.fulfill({path:'public/android-chrome-192x192.png',contentType:'image/png',headers:{'Access-Control-Allow-Origin':'*'}}));
+  await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:{...track,albumArt:nextCover}}));
+  await page.clock.fastForward(31000);
+  await expect(page.getByAltText('Test track album cover')).toHaveAttribute('src',nextCover);
+  await expect(page.locator('#manuscript')).toHaveAttribute('data-media-count','3');
   await page.route('**/api/spotify/now-playing',route=>route.fulfill({status:503}));
   await page.clock.fastForward(31000);await expect(page.locator('#spotify')).toContainText('Last listened to Test track');
+  await expect(page.locator('.manuscript-fallback')).toContainText('Last listened to');
+  await expect(page.locator('#manuscript-scene a')).toHaveCount(0);
   expect(await page.locator('.project-row').allTextContents()).toEqual(projects);
 });
 

@@ -2,9 +2,11 @@
 
 The portfolio is TypeScript, bundled with esbuild. The top section adapts the
 canvas renderer from [Illustrated Manuscript](https://github.com/dengshu2/illustrated-manuscript):
-its story, illuminated initial, articulated dragon, idle wings, sustained fire,
-and Pretext exclusions. The canvas is contained in that section and pauses when
-it leaves the viewport. Hold the pointer to breathe fire; touch can still scroll
+its illuminated initial, articulated dragon, idle wings, sustained fire,
+and Pretext exclusions. Its bio uses a prominent name, readable paragraphs,
+separate hobby lines, and a live song title with an artist caption. Official game
+icons and Spotify cover art flow inline with their text through Pretext. The
+canvas is contained in that section and pauses when it leaves the viewport. Hold the pointer to breathe fire; touch can still scroll
 the page. Reduced motion keeps the illustration static.
 
 The name, Spotify sentence, projects, links, and GitHub contribution chart sit
