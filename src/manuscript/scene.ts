@@ -1,12 +1,13 @@
 // Canvas composition adapted from Illustrated Manuscript (ISC).
 // The portfolio below this surface uses ordinary browser layout and links.
-import {prepareWithSegments, layoutNextLine} from '@chenglou/pretext';
-import {STORY_TEXT} from './reference/story.js';
+import {prepareRichInline,layoutNextRichInlineLineRange,materializeRichInlineLineRange} from '@chenglou/pretext/rich-inline';
+import {biographyBlocks,biographyInline,type BioTrack,type BioImage} from './bio.ts';
 import {BG_COLOR, TEXT_COLOR, MOUSE_IDLE_TIMEOUT, getResponsiveLayout, getPageOffset, getPageScale} from './reference/config.js';
 import {loadDragonSprites, createDragon, updateDragonScale, updateDragon, getDragonExclusions, getFireExclusions, getFireInfluence, spawnFire, hasActiveFire, updateFire, drawDragon, drawFire} from './reference/dragon.js';
 
 type Range = {left:number; right:number};
-type Line = {text:string; x:number; y:number};
+type Picture = {image:BioImage; x:number; y:number; size:number; textX:number; textY:number};
+type Line = {text:string; x:number; y:number; font:string; fontSize:number; color:string};
 
 export function subtractRanges(ranges:Range[], exclusion:Range):Range[] {
   return ranges.flatMap(range => {
@@ -23,6 +24,28 @@ export async function mountScene():Promise<void> {
   const canvas=document.querySelector<HTMLCanvasElement>('#manuscript');
   const ctx=canvas?.getContext('2d',{alpha:false});
   if (!surface || !canvas || !ctx) return;
+  const fallback=surface.querySelector<HTMLElement>('.manuscript-fallback');
+  let track:BioTrack | null=null;
+  let bio=JSON.stringify(biographyBlocks());
+  let refreshText:(()=>void) | null=null;
+  document.addEventListener('manuscript-track',event=>{
+    track=(event as CustomEvent<BioTrack>).detail;
+    const next=JSON.stringify(biographyBlocks(track));
+    if (next===bio) return;
+    bio=next;
+    if (fallback) fallback.replaceChildren(...biographyBlocks(track).map(block=>{
+      const paragraph=document.createElement('p');paragraph.className='bio-'+block.kind+(block.accent ? ' bio-accent' : '');
+      paragraph.style.marginBottom=block.gap+'px';
+      for (const part of biographyInline(block)) {
+        if (!part.image) {paragraph.append(document.createTextNode(part.text));continue;}
+        const span=document.createElement('span');span.className='bio-inline';
+        const image=document.createElement('img');image.className='bio-media bio-media-'+part.image.kind;image.src=part.image.src;image.alt=part.image.alt;
+        span.append(image,document.createTextNode(part.text));paragraph.append(span);
+      }
+      return paragraph;
+    }));
+    refreshText?.();
+  });
   const dropCap=new Image();
   dropCap.src='/manuscript/dropcap.webp';
   await Promise.all([document.fonts.load('21px "Furia"'), loadDragonSprites(), dropCap.decode()]);
@@ -31,16 +54,73 @@ export async function mountScene():Promise<void> {
   let layout=getResponsiveLayout(width,height);
   let offset=getPageOffset(layout,width,height);
   let scale=getPageScale(width);
-  let prepared=prepareWithSegments(STORY_TEXT.slice(1),layout.font);
+  const media=new Map<string,HTMLCanvasElement>();
+  const mediaRequests=new Set<string>();
+  let prepared=prepareBio();
   let lines:Line[]=[];
+  let pictures:Picture[]=[];
   let dirty=true, frame=0, frames=0, visible=true;
   let mouse={x:0,y:0}, lastMove=-Infinity, held=false;
   let bounds=surface.getBoundingClientRect();
   const glyphWidths=new Map<string,number>();
   const dragon=createDragon(0,0,scale);
+  refreshText=()=>{
+    const active=new Set(biographyBlocks(track).flatMap(block=>block.image ? [block.image.src] : []));
+    for (const src of media.keys()) if (!active.has(src)) {media.delete(src);mediaRequests.delete(src);}
+    prepared=prepareBio();dirty=true;schedule();
+  };
 
+  function prepareBio() {
+    const bodySize=Math.max(17,layout.fontSize);
+    return biographyBlocks(track).map((block,index)=>{
+      let fontSize=bodySize;
+      if (block.kind==='name') fontSize=Math.max(34,bodySize*1.85);
+      else if (block.kind==='song') fontSize=Math.max(24,bodySize*(block.text.length>48 ? 1 : 1.3));
+      else if (block.kind==='artist') fontSize=Math.max(15,bodySize*.8);
+      else if (block.kind==='label' || block.kind==='cue') fontSize=Math.max(14,bodySize*.72);
+      const lineHeight=Math.round(fontSize*1.5);
+      const font=`${fontSize}px "Furia", Georgia, serif`;
+      const color=block.accent ? '#744338' : ['artist','label','cue'].includes(block.kind) ? '#6c665a' : TEXT_COLOR;
+      const parts=biographyInline(index===0 ? {...block,text:block.text.slice(1)} : block).flatMap(part=>{
+        if (part.image?.kind!=='album') return [part];
+        // A very long first word must not block the entire remaining biography.
+        ctx!.font=font;
+        const limit=layout.pageWidth-2*layout.margin-72;
+        const characters=Array.from(part.text);
+        let end=characters.length;
+        while (end>1 && ctx!.measureText(characters.slice(0,end).join('')).width>limit) end--;
+        return end===characters.length ? [part] : [{...part,text:characters.slice(0,end).join('')},{text:characters.slice(end).join('')}];
+      });
+      const items=parts.map(part=>({text:part.text,font,...(part.image ? {break:'never' as const,extraWidth:(part.image.kind==='album' ? 64 : 32)+8} : {})}));
+      const imageIndex=parts.findIndex(part=>part.image);
+      return {prepared:prepareRichInline(items),itemCount:items.length,font,fontSize,lineHeight,color,gap:block.gap*bodySize/21,image:block.image,imageIndex};
+    });
+  }
+  function loadPicture(image:BioImage) {
+    if (mediaRequests.has(image.src)) return;
+    mediaRequests.add(image.src);
+    const bitmap=new Image();
+    if (image.kind==='album') bitmap.crossOrigin='anonymous';
+    bitmap.onload=()=>{
+      if (!biographyBlocks(track).some(block=>block.image?.src===image.src)) {mediaRequests.delete(image.src);return;}
+      const cached=document.createElement('canvas');
+      cached.width=cached.height=(image.kind==='album' ? 64 : 32)*2;
+      const drawing=cached.getContext('2d')!;
+      if (image.kind==='league') {
+        const ratio=Math.min(cached.width/bitmap.naturalWidth,cached.height/bitmap.naturalHeight);
+        const w=bitmap.naturalWidth*ratio,h=bitmap.naturalHeight*ratio;
+        drawing.drawImage(bitmap,(cached.width-w)/2,(cached.height-h)/2,w,h);
+      } else {
+        const side=Math.min(bitmap.naturalWidth,bitmap.naturalHeight);
+        drawing.drawImage(bitmap,(bitmap.naturalWidth-side)/2,(bitmap.naturalHeight-side)/2,side,side,0,0,cached.width,cached.height);
+      }
+      media.set(image.src,cached);dirty=true;schedule();
+    };
+    bitmap.onerror=()=>{dirty=true;schedule();};
+    bitmap.src=image.src;
+  }
   function dropCapSize() {
-    const height=layout.lineHeight*7;
+    const height=layout.lineHeight*3;
     const drawWidth=dropCap.naturalWidth*height/dropCap.naturalHeight;
     return {width:drawWidth+12,height,drawWidth};
   }
@@ -65,44 +145,77 @@ export async function mountScene():Promise<void> {
     ctx!.setTransform(dpr,0,0,dpr,0,0);
     layout=getResponsiveLayout(width,height); offset=getPageOffset(layout,width,height);
     scale=getPageScale(width); updateDragonScale(dragon,scale);
-    prepared=prepareWithSegments(STORY_TEXT.slice(1),layout.font); glyphWidths.clear();
+    prepared=prepareBio(); glyphWidths.clear();
     if (changed) placeDragon();
     dirty=true; schedule();
   }
   function layoutText() {
-    lines=[];
+    lines=[];pictures=[];
     const cap=dropCapSize();
-    let cursor={segmentIndex:0,graphemeIndex:0};
-    const baselineOffset=(layout.lineHeight-layout.fontSize*.857)/2;
-    for (let y=layout.margin;y+layout.lineHeight<=layout.pageHeight-layout.margin;y+=layout.lineHeight) {
+    let cursor={itemIndex:0,segmentIndex:0,graphemeIndex:0},paragraphIndex=0;
+    let y=layout.margin;
+    while (paragraphIndex<prepared.length) {
+      const block=prepared[paragraphIndex];
+      const {fontSize,font,color,gap}=block;
+      const imageSize=block.image?.kind==='album' ? 64 : 32;
+      const lineHeight=block.image && cursor.itemIndex<=block.imageIndex ? Math.max(block.lineHeight,imageSize) : block.lineHeight;
+      if (y+lineHeight>layout.pageHeight-layout.margin) break;
+      const baselineOffset=(lineHeight-fontSize*.857)/2;
       let ranges:Range[]=[{left:layout.margin,right:layout.pageWidth-layout.margin}];
       if (y<layout.margin-4+cap.height) ranges=subtractRanges(ranges,{left:layout.margin-4,right:layout.margin-4+cap.width});
-      const top=y+offset.y,bottom=top+layout.lineHeight;
+      const top=y+offset.y,bottom=top+lineHeight;
       for (const exclusion of [...getDragonExclusions(dragon,top,bottom,10),...getFireExclusions(dragon,top,bottom,6)]) {
         ranges=subtractRanges(ranges,{left:exclusion.left-offset.x,right:exclusion.right-offset.x});
       }
-      for (const range of ranges.filter(range=>range.right-range.left>=40)) {
-        const line=layoutNextLine(prepared,cursor,range.right-range.left);
-        if (!line) {dirty=false;return;}
-        lines.push({text:line.text,x:range.left,y:y+baselineOffset});cursor=line.end;
+      for (const range of ranges.filter(range=>range.right-range.left>=Math.max(40,fontSize*3))) {
+        const geometry=layoutNextRichInlineLineRange(block.prepared,range.right-range.left,cursor);
+        if (!geometry) {paragraphIndex++;cursor={itemIndex:0,segmentIndex:0,graphemeIndex:0};y+=gap;break;}
+        // An indivisible icon + name must wait for a gap wide enough for both.
+        if (geometry.width>range.right-range.left+.5) continue;
+        const line=materializeRichInlineLineRange(block.prepared,geometry);
+        let x=range.left;
+        for (const fragment of line.fragments) {
+          x+=fragment.gapBefore;
+          let textX=x;
+          if (block.image && fragment.itemIndex===block.imageIndex) {
+            loadPicture(block.image);textX+=imageSize+8;
+            pictures.push({image:block.image,x,y:y+(lineHeight-imageSize)/2,size:imageSize,textX,textY:y+baselineOffset});
+          }
+          lines.push({text:fragment.text,x:textX,y:y+baselineOffset,font,fontSize,color});
+          x+=fragment.occupiedWidth;
+        }
+        cursor=line.end;
+        if (cursor.itemIndex>=block.itemCount) {
+          paragraphIndex++;cursor={itemIndex:0,segmentIndex:0,graphemeIndex:0};y+=gap;break;
+        }
       }
+      y+=lineHeight;
     }
+    surface!.dataset.bioComplete=String(paragraphIndex>=prepared.length);
     dirty=false;
   }
   function drawText() {
-    ctx!.save(); ctx!.translate(offset.x,offset.y); ctx!.font=layout.font; ctx!.textBaseline='top';
+    ctx!.save(); ctx!.translate(offset.x,offset.y); ctx!.textBaseline='top';
     const cap=dropCapSize();
     ctx!.drawImage(dropCap,layout.margin,layout.margin,cap.drawWidth,cap.height);
+    for (const picture of pictures) {
+      const {x,y,size,image}=picture;
+      const bitmap=media.get(image.src);
+      if (bitmap) ctx!.drawImage(bitmap,x,y,size,size);
+      if (image.kind!=='league') {ctx!.strokeStyle='rgba(0,0,0,.1)';ctx!.strokeRect(x+.5,y+.5,size-1,size-1);}
+    }
     for (const line of lines) {
-      if (!hasActiveFire(dragon)) {ctx!.fillStyle=TEXT_COLOR;ctx!.fillText(line.text,Math.round(line.x),Math.round(line.y));continue;}
+      ctx!.font=line.font;
+      if (!hasActiveFire(dragon)) {ctx!.fillStyle=line.color;ctx!.fillText(line.text,Math.round(line.x),Math.round(line.y));continue;}
       let x=line.x;
-      const halfAscent=layout.fontSize*.857/2;
+      const halfAscent=line.fontSize*.857/2;
       for (const char of line.text) {
-        let charWidth=glyphWidths.get(char);
-        if (charWidth===undefined) {charWidth=ctx!.measureText(char).width;glyphWidths.set(char,charWidth);}
+        const glyphKey=line.font+char;
+        let charWidth=glyphWidths.get(glyphKey);
+        if (charWidth===undefined) {charWidth=ctx!.measureText(char).width;glyphWidths.set(glyphKey,charWidth);}
         const influence=getFireInfluence(dragon,x+charWidth/2+offset.x,line.y+halfAscent+offset.y);
         const strength=influence.strength;
-        if (strength<.01) {ctx!.fillStyle=TEXT_COLOR;ctx!.fillText(char,x,line.y);}
+        if (strength<.01) {ctx!.fillStyle=line.color;ctx!.fillText(char,x,line.y);}
         else {
           ctx!.save();
           ctx!.translate(x+charWidth/2+influence.dx*strength*45,line.y+halfAscent+influence.dy*strength*45);
@@ -132,6 +245,8 @@ export async function mountScene():Promise<void> {
     surface!.dataset.ready='true';
     canvas!.dataset.frame=String(++frames);canvas!.dataset.headX=String(Math.round(dragon.segments[0].x));
     canvas!.dataset.headY=String(Math.round(dragon.segments[0].y));canvas!.dataset.fireCount=String(dragon.fire.length);
+    canvas!.dataset.mediaCount=String(pictures.filter(picture=>media.has(picture.image.src)).length);
+    canvas!.dataset.inlineMedia=JSON.stringify(pictures.map(picture=>({kind:picture.image.kind,x:picture.x,y:picture.y,size:picture.size,textX:picture.textX,textY:picture.textY})));
     if (animated) schedule();
   }
   function schedule() {if (!frame && visible && !document.hidden) frame=requestAnimationFrame(render);}

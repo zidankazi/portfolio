@@ -30,6 +30,7 @@ function mountSpotify() {
       parts.push(document.createTextNode(' on Spotify.'));
     }
     container!.replaceChildren(...parts);
+    document.dispatchEvent(new CustomEvent('manuscript-track',{detail:{title:next.title,artist:next.artist,isPlaying:next.isPlaying,albumArt:next.albumArt}}));
   }
   async function poll() {
     if (loading || document.hidden) return;
