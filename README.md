@@ -1,33 +1,30 @@
 [zidankazi.com](https://www.zidankazi.com/)
 
-The active portfolio is a TypeScript page, bundled with esbuild. Pretext
-lays out plain text and links around a dragon that follows the cursor across
-the entire viewport. Spotify appears as a sentence and GitHub activity retains
-its contribution chart. There is no navigation, decorative heading, or visible
-animation control; reduced motion follows the system preference. The dragon uses
-the reference’s original tracking, body constraints, and wing motion. Pretext computes the layout around
-cached artwork outlines; persistent words ease toward their new positions.
-Links remain native anchors, and approaching a link, keyboard focus, or text
-selection holds the layout still so reading, clicking, and copying remain
-predictable. The page is server rendered, so its content and links remain
-available without JavaScript.
+The portfolio is TypeScript, bundled with esbuild. The top section adapts the
+canvas renderer from [Illustrated Manuscript](https://github.com/dengshu2/illustrated-manuscript):
+its story, illuminated initial, articulated dragon, idle wings, sustained fire,
+and Pretext exclusions. The canvas is contained in that section and pauses when
+it leaves the viewport. Hold the pointer to breathe fire; touch can still scroll
+the page. Reduced motion keeps the illustration static.
 
-`npm run dev` starts the site on port 3000. `npm run build` creates the Node
-server and Vercel Build Output. `npm run check`, `npm run lint`, and `npm test`
-check the active TypeScript app. To run the browser suite, start the server with
-`npm run dev -- --port 3001`, then run `npm run test:e2e` (Google Chrome).
+The name, Spotify sentence, projects, links, and GitHub contribution chart sit
+below the manuscript in ordinary server-rendered HTML. They use normal browser
+layout and selection; no canvas or animated text covers their hit areas. The
+studio page uses the same plain portfolio typography without the manuscript.
 
-Spotify uses the existing `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, and
-`SPOTIFY_REFRESH_TOKEN` server environment variables. No credentials are bundled
-into the browser. GitHub contribution data is requested from the existing public
-contributions endpoint.
+The live reference uses Furia, which is excluded from its public repository.
+The manuscript uses locally hosted Pirata One blackletter under the SIL Open Font
+License. Portfolio text retains IM Fell English. Source and artwork credits are
+in `public/manuscript/NOTICE.txt`; font licenses are in `public/fonts/`.
 
-The previous Gleam implementation remains in `src/` for reference, including its
-hand animation and tests. It is no longer part of the development or production
-build. `npm run test:gleam` still runs its unit tests separately.
+`npm run dev` starts the site on port 3000. `npm run build` creates the Node server
+and Vercel Build Output. `npm run check`, `npm run lint`, and `npm test` check the
+active app. For browser tests, start `npm run dev -- --port 3001`, then run
+`npm run test:e2e` (Google Chrome).
 
-The visual reference is
-[Illustrated Manuscript](https://github.com/dengshu2/illustrated-manuscript).
-Dragon credits and the upstream license are in
-[`public/manuscript/NOTICE.txt`](public/manuscript/NOTICE.txt). Fonts are hosted
-locally with their licenses in `public/fonts/`.
+Spotify uses `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, and
+`SPOTIFY_REFRESH_TOKEN` server environment variables. GitHub contributions use
+the existing public endpoint. Credentials never enter the browser bundle.
+
+The previous Gleam implementation remains in `src/` for reference and is not part
+of the current build. `npm run test:gleam` runs its unit tests separately.
