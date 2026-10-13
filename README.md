@@ -1,8 +1,10 @@
 [zidankazi.com](https://www.zidankazi.com/)
 
-The active portfolio is a TypeScript manuscript, bundled with esbuild. Pretext
-lays out the introduction around an articulated dragon while Spotify and GitHub
-activity retain their live data. The page is server rendered, so its content and
+The active portfolio is a TypeScript page, bundled with esbuild. Pretext
+lays out plain text and links around a dragon that follows the cursor across
+the entire viewport. Spotify appears as a sentence and GitHub activity retains
+its contribution chart. There is no navigation, decorative heading, or visible
+animation control; reduced motion follows the system preference. The page is server rendered, so its content and
 links remain available without JavaScript.
 
 `npm run dev` starts the site on port 3000. `npm run build` creates the Node
