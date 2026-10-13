@@ -59,6 +59,33 @@ test('reduced motion keeps a static dragon without a visible control',async({pag
   await expect(page.getByRole('button',{name:/dragon/i})).toHaveCount(0);
 });
 
+test('hovering and focusing a link holds its position while the dragon is nearby',async({page})=>{
+  await page.clock.install();await page.goto('/');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  const name=page.getByRole('link',{name:'Zidan Kazi',exact:true});
+  await name.hover();await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-interaction','reading');
+  const before=await name.boundingBox();
+  await page.clock.runFor(350);expect(await name.boundingBox()).toEqual(before);
+  const project=page.locator('.project-title').first();await project.focus();
+  const focused=await project.boundingBox();await page.clock.runFor(350);
+  expect(await project.boundingBox()).toEqual(focused);
+  await expect(project).toBeFocused();await expect(project).toHaveAttribute('href','https://tryrelic.io');
+});
+
+test('selected project text remains readable and does not move during copying',async({page})=>{
+  await page.clock.install();await page.goto('/');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  const selected=await page.locator('.project-row').first().evaluate(paragraph=>{
+    const range=document.createRange();range.selectNodeContents(paragraph);
+    const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);
+    return selection.toString();
+  });
+  expect(selected.replace(/\s+/g,' ')).toContain('memory that builds itself from your team');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-interaction','reading');
+  await page.mouse.move(700,400);await page.clock.runFor(350);
+  expect(await page.evaluate(()=>window.getSelection().toString())).toBe(selected);
+});
+
 test('small phones and tablets keep complete paragraphs inside the page',async({page})=>{
   await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
