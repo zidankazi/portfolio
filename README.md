@@ -6,7 +6,9 @@ its illuminated initial, articulated dragon, idle wings, sustained fire,
 and Pretext exclusions. Its bio uses a prominent name, readable paragraphs,
 separate hobby lines, and a live song title with an artist caption. Official game
 icons and Spotify cover art flow inline with their text through Pretext. The
-canvas is contained in that section and pauses when it leaves the viewport. Hold the pointer to breathe fire; touch can still scroll
+canvas fits the viewport, with typography measured when the screen or song
+changes. Type stays stable while the dragon moves. The scene pauses when it
+leaves the viewport. Hold the pointer to breathe fire; touch can still scroll
 the page. Reduced motion keeps the illustration static.
 
 The name, Spotify sentence, projects, links, and GitHub contribution chart sit

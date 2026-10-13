@@ -46,14 +46,15 @@ test('real game logos and album artwork flow together with their text',async({pa
   await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
   const read=async()=>JSON.parse(await canvas.getAttribute('data-inline-media'));
   const initial=await read(),box=await canvas.boundingBox();
-  const pageOffset=(box.width-Math.min(700,box.width-40))/2;
+  const pageOffset=(box.width-Math.min(760,box.width-24))/2;
   let moved=false;
   for (const delta of [0,70,-50]) {
     const league=initial.find(image=>image.kind==='league');
-    await page.mouse.move(box.x+pageOffset+league.textX+delta,box.y+30+league.y);
+    await page.mouse.move(box.x+pageOffset+league.textX+delta,box.y+12+league.y);
     await page.clock.runFor(650);
     const images=await read();
     expect(images.map(image=>image.kind)).toEqual(['league','cs2','album']);
+    await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-bio-complete','true');
     for (const image of images) {
       // The occupied inline item carries both artwork and adjacent words.
       expect(image.textX-image.x).toBe(image.size+8);
@@ -163,9 +164,12 @@ test('small phones and tablets retain complete content without horizontal overfl
   await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:{...track,title:'Supercalifragilisticexpialidocious (live)'}}));
   await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
-  for(const [width,height] of [[320,600],[390,844],[768,900]]) {
+  for(const [width,height] of [[320,600],[390,844],[768,900],[1512,698]]) {
     await page.setViewportSize({width,height});
     await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-bio-complete','true');
+    const section=await page.locator('#manuscript-scene').boundingBox();
+    expect(section.height).toBe(height);
+    if(width===390) await page.screenshot({path:test.info().outputPath('one-screen-phone.png')});
     await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await expect(page.locator('.project-row').last()).toContainText('live sgp4 mechanics.');
     expect(await page.locator('.project-row a').evaluateAll(links=>links.every(link=>getComputedStyle(link).position==='static'))).toBe(true);
