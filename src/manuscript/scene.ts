@@ -2,7 +2,7 @@
 // The portfolio below this surface uses ordinary browser layout and links.
 import {prepareRichInline,layoutNextRichInlineLineRange,materializeRichInlineLineRange,measureRichInlineStats} from '@chenglou/pretext/rich-inline';
 import {biographyBlocks,biographyInline,type BioTrack,type BioImage} from './bio.ts';
-import {BG_COLOR, TEXT_COLOR, MOUSE_IDLE_TIMEOUT, getResponsiveLayout, getPageOffset, getPageScale} from './reference/config.js';
+import {BG_COLOR, TEXT_COLOR, getResponsiveLayout, getPageOffset, getPageScale} from './reference/config.js';
 import {loadDragonSprites, createDragon, updateDragonScale, updateDragon, getDragonExclusions, getFireExclusions, getFireInfluence, spawnFire, hasActiveFire, updateFire, drawDragon, drawFire} from './reference/dragon.js';
 
 type Range = {left:number; right:number};
@@ -48,7 +48,7 @@ export async function mountScene():Promise<void> {
   });
   const dropCap=new Image();
   dropCap.src='/manuscript/dropcap.webp';
-  await Promise.all([document.fonts.load('21px "Furia"'), loadDragonSprites(), dropCap.decode()]);
+  await Promise.all([document.fonts.load('21px "Furia"'), document.fonts.load('21px "Manuscript Initial"','I'), loadDragonSprites(), dropCap.decode()]);
   const motion=matchMedia('(prefers-reduced-motion: reduce)');
   let width=surface.clientWidth, height=surface.clientHeight;
   let layout=sceneLayout();
@@ -60,7 +60,7 @@ export async function mountScene():Promise<void> {
   let lines:Line[]=[];
   let pictures:Picture[]=[];
   let dirty=true, frame=0, frames=0, visible=true;
-  let mouse={x:0,y:0}, lastMove=-Infinity, held=false;
+  let mouse={x:0,y:0}, hasPointer=false, held=false;
   let bounds=surface.getBoundingClientRect();
   const glyphWidths=new Map<string,number>();
   const dragon=createDragon(0,0,scale);
@@ -106,7 +106,7 @@ export async function mountScene():Promise<void> {
       else if (block.kind==='artist') fontSize=Math.max(12,bodySize*.85);
       else if (block.kind==='label' || block.kind==='cue') fontSize=Math.max(12,bodySize*.8);
       const lineHeight=Math.round(fontSize*lineSpacing());
-      const font=`${fontSize}px "Furia", Georgia, serif`;
+      const font=`${fontSize}px "Manuscript Initial", "Furia", Georgia, serif`;
       const color=block.accent ? '#744338' : ['artist','label','cue'].includes(block.kind) ? '#6c665a' : TEXT_COLOR;
       const imageSize=block.image ? pictureSize(block.image,bodySize) : 0;
       const parts=biographyInline(index===0 ? {...block,text:block.text.slice(1)} : block).flatMap(part=>{
@@ -156,7 +156,7 @@ export async function mountScene():Promise<void> {
     return {x:width<=600 ? width*.72 : offset.x+layout.margin+dropCapSize().width*.8-115*scale,y:offset.y+layout.margin+24*scale};
   }
   function placeDragon() {
-    const rest=restPosition();
+    const rest=hasPointer ? mouse : restPosition();
     dragon.segments.forEach((segment,index)=>{
       segment.angle=-(index/19)*(Math.PI/2)*1.4;
       const previous=dragon.segments[index-1];
@@ -174,7 +174,8 @@ export async function mountScene():Promise<void> {
     layout=sceneLayout(); offset=getPageOffset(layout,width,height);
     scale=getPageScale(width); updateDragonScale(dragon,scale);
     prepared=fitBio(); glyphWidths.clear();
-    if (changed) placeDragon();
+    mouse={x:Math.min(width,mouse.x),y:Math.min(height,mouse.y)};
+    if (changed && !hasPointer) placeDragon();
     dirty=true; schedule();
   }
   function layoutText() {
@@ -262,7 +263,7 @@ export async function mountScene():Promise<void> {
     if (!visible || document.hidden) return;
     const animated=!motion.matches;
     const rest=restPosition();
-    const moved=animated && updateDragon(dragon,time,mouse.x,mouse.y,time-lastMove>MOUSE_IDLE_TIMEOUT,rest.x,rest.y);
+    const moved=animated && updateDragon(dragon,time,mouse.x,mouse.y,!hasPointer,rest.x,rest.y);
     // Keep the reference's sustained breath without unbounded particle work.
     if (animated && held && dragon.fire.length<180) spawnFire(dragon);
     const fire=hasActiveFire(dragon);
@@ -282,7 +283,7 @@ export async function mountScene():Promise<void> {
   function point(event:PointerEvent) {
     if (motion.matches) return;
     mouse={x:Math.max(0,Math.min(width,event.clientX-bounds.left)),y:Math.max(0,Math.min(height,event.clientY-bounds.top))};
-    lastMove=performance.now();schedule();
+    hasPointer=true;schedule();
   }
   canvas.addEventListener('pointermove',point);
   canvas.addEventListener('pointerdown',event=>{
@@ -290,7 +291,7 @@ export async function mountScene():Promise<void> {
     point(event);held=true;
     if (event.pointerType==='touch') canvas.setPointerCapture(event.pointerId);
   });
-  canvas.addEventListener('pointerleave',()=>{release();lastMove=-Infinity;});
+  canvas.addEventListener('pointerleave',release);
   canvas.addEventListener('pointercancel',release);
   canvas.addEventListener('lostpointercapture',release);
   window.addEventListener('pointerup',release);
@@ -304,7 +305,7 @@ export async function mountScene():Promise<void> {
   new IntersectionObserver(entries=>{
     visible=entries[0].isIntersecting;surface.dataset.running=String(visible && !motion.matches);
     if (visible) schedule();
-    else {release();dragon.fire=[];lastMove=-Infinity;if (frame) cancelAnimationFrame(frame);frame=0;}
+    else {release();dragon.fire=[];if (frame) cancelAnimationFrame(frame);frame=0;}
   }).observe(surface);
   new ResizeObserver(resize).observe(surface);
   surface.dataset.paused=String(motion.matches);
