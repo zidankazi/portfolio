@@ -326,7 +326,7 @@ export async function mountScene():Promise<void> {
       }
     }
     // Keep the reference's sustained breath without unbounded particle work.
-    if(!visible) {release();dragon.fire=[];}
+    if(!visible && !margin?.fireAllowed) {release();dragon.fire=[];}
     if (animated && held && dragon.fire.length<180) spawnFire(dragon);
     const fire=hasActiveFire(dragon);
     if (fire) updateFire(dragon,time);
@@ -355,12 +355,20 @@ export async function mountScene():Promise<void> {
   }
   canvas.addEventListener('pointermove',point);
   window.addEventListener('pointermove',event=>{if(margin?.active) point(event);},{passive:true});
-  canvas.addEventListener('pointerdown',event=>{
+  function breathe(event:PointerEvent) {
     if (event.button!==0 || motion.matches) return;
     point(event);held=true;
     // A short click can finish before the next frame; start its burst on pointer-down.
     if(dragon.fire.length<180) spawnFire(dragon);
-    if (event.pointerType==='touch') canvas.setPointerCapture(event.pointerId);
+    if (event.pointerType==='touch' && event.target===canvas) canvas!.setPointerCapture(event.pointerId);
+  }
+  canvas.addEventListener('pointerdown',breathe);
+  window.addEventListener('pointerdown',event=>{
+    if(event.button!==0 || motion.matches || !margin?.fireAllowed || !(event.target instanceof Element) || canvas.contains(event.target)) return;
+    // Keep project links and text selection native; only empty margins suppress selection.
+    if(event.target.closest('a,button,input,textarea,select,[contenteditable="true"]')) return;
+    if(!event.target.closest('#portfolio')) event.preventDefault();
+    breathe(event);
   });
   canvas.addEventListener('pointerleave',release);
   canvas.addEventListener('pointercancel',release);

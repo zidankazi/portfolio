@@ -1,4 +1,4 @@
-import {getRestPose,updateDragonScale,updateDragon,getDragonBounds,drawDragon} from './reference/dragon.js';
+import {getRestPose,updateDragonScale,updateDragon,getDragonBounds,drawDragon,drawFire} from './reference/dragon.js';
 import type {createDragon} from './reference/dragon.js';
 
 type Pose={x:number;y:number;angle:number};
@@ -173,13 +173,26 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
   function draw(animated:boolean) {
     const local=getDragonBounds(dragon);
     const bounds={...local,top:local.top+heroTop,bottom:local.bottom+heroTop};
-    const left=Math.max(0,Math.min(painted?.left ?? bounds.left,bounds.left)-2);
-    const top=Math.max(0,Math.min(painted?.top ?? bounds.top,bounds.top)-2);
-    const right=Math.min(width,Math.max(painted?.right ?? bounds.right,bounds.right)+2);
-    const bottom=Math.min(height,Math.max(painted?.bottom ?? bounds.bottom,bounds.bottom)+2);
+    const fireTop=Math.max(0,hero.getBoundingClientRect().bottom),fireRight=Math.max(0,portfolio.getBoundingClientRect().left-24);
+    const ink={...bounds};
+    // Include visible flames in the dirty rectangle so fading particles leave no trails.
+    if(target && heroTop<0) for(const particle of dragon.fire) {
+      const radius=particle.size*2,y=particle.y+heroTop;
+      if(particle.x-radius>=fireRight || particle.x+radius<=0 || y+radius<=fireTop || y-radius>=height) continue;
+      ink.left=Math.min(ink.left,Math.max(0,particle.x-radius));ink.right=Math.max(ink.right,Math.min(fireRight,particle.x+radius));
+      ink.top=Math.min(ink.top,Math.max(fireTop,y-radius));ink.bottom=Math.max(ink.bottom,Math.min(height,y+radius));
+    }
+    const left=Math.max(0,Math.min(painted?.left ?? ink.left,ink.left)-2);
+    const top=Math.max(0,Math.min(painted?.top ?? ink.top,ink.top)-2);
+    const right=Math.min(width,Math.max(painted?.right ?? ink.right,ink.right)+2);
+    const bottom=Math.min(height,Math.max(painted?.bottom ?? ink.bottom,ink.bottom)+2);
     if(right>left && bottom>top) ctx.clearRect(left,top,right-left,bottom-top);
-    painted=bounds;
+    painted=ink;
     if(!visible) return;
+    if(target && heroTop<0 && fireTop<height) {
+      ctx.save();ctx.beginPath();ctx.rect(0,fireTop,fireRight,height-fireTop);ctx.clip();
+      ctx.translate(0,heroTop);drawFire(ctx,dragon);ctx.restore();
+    }
     ctx.save();
     if(!snapshot) {ctx.beginPath();ctx.rect(0,0,width,Math.max(0,hero.getBoundingClientRect().bottom));ctx.clip();}
     ctx.translate(0,heroTop);drawDragon(ctx,dragon,animated);ctx.restore();
@@ -191,6 +204,7 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     canvas.dataset.paused=String(!animated);
     canvas.dataset.renderedProgress=String(progress);paintedHeroTop=heroTop;
     canvas.dataset.head=JSON.stringify({x:dragon.segments[0].x,y:dragon.segments[0].y+heroTop,angle:dragon.segments[0].angle});
+    canvas.dataset.fireCount=String(dragon.fire.length);
     if(!snapshot) canvas.dataset.settled='true';
   }
   window.addEventListener('scroll',sync,{passive:true});
@@ -198,5 +212,5 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
   window.addEventListener('pointermove',event=>{pointer={x:event.clientX,y:event.clientY};if(snapshot && canvas.dataset.paused!=='true') onChange();},{passive:true});
   new ResizeObserver(sync).observe(portfolio);
   sync();
-  return {canvas,sync,update,draw,restore,get active(){return !!target && (heroTop<0 || progress>0 || !!snapshot);},get visible(){return visible;}};
+  return {canvas,sync,update,draw,restore,get active(){return !!target && (heroTop<0 || progress>0 || !!snapshot);},get fireAllowed(){return !!target && visible && heroTop<0;},get visible(){return visible;}};
 }
