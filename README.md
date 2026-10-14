@@ -30,9 +30,9 @@ its position. In the margin it still looks and follows, with its whole body
 constrained to the left gutter. It stays
 clear of the list and right-side previews; narrow screens keep it in the hero.
 Reduced motion keeps the wings still; hidden scenes do not run animation frames.
-Clicks and holds also breathe fire beside projects. Flames fade out inside the
-left gutter before reaching the text; project text, selection, GitHub links,
-and hover previews remain native.
+Clicks and holds also breathe fire beside projects, using the same particles
+and natural fade as the intro. Flames can cross the text, while project layout,
+selection, GitHub links, and hover previews remain native.
 
 The manuscript uses Furia III from the live reference, with IM Fell English
 for capital I only to distinguish it from J. The local font file comes from the demo’s `/furia-iii.ttf` asset. Furia is a commercial font

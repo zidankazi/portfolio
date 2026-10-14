@@ -430,7 +430,7 @@ test('return growth and cursor handback never reset to the saved hero position',
   await expect(dragon).toHaveAttribute('data-mode','hero');await expect(dragon).toHaveCount(1);
 });
 
-test('project-margin fire stays clear of fixed text, previews, and native links',async({page},info)=>{
+test('project-margin fire preserves fixed text, previews, and native links',async({page},info)=>{
   test.skip(info.project.name!=='desktop','The project dragon needs a desktop gutter');
   await page.clock.install();await page.goto('/');
   const dragon=page.locator('#project-dragon');
@@ -447,18 +447,16 @@ test('project-margin fire stays clear of fixed text, previews, and native links'
   expect(await positions()).toEqual(before);
   expect(await page.evaluate(()=>window.getSelection()?.toString())).toBe('');
   const pixels=()=>dragon.evaluate(canvas=>{
-    const dpr=canvas.width/innerWidth,edge=document.querySelector('#portfolio').getBoundingClientRect().left-24;
     const ctx=canvas.getContext('2d'),data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
-    let flames=0,overText=0;
+    let flames=0;
     for(let y=0;y<canvas.height;y++) for(let x=0;x<canvas.width;x++) {
       const i=(y*canvas.width+x)*4;
       if(!data[i+3]) continue;
-      if(x/dpr>=edge) overText++;
       if(data[i+3]>10 && data[i]>175 && data[i+1]>100 && data[i+2]<90) flames++;
     }
-    return {flames,overText};
+    return {flames};
   });
-  expect((await pixels()).flames).toBeGreaterThan(3);expect((await pixels()).overText).toBe(0);
+  expect((await pixels()).flames).toBeGreaterThan(3);
   await page.screenshot({path:info.outputPath('projects-fire.png')});
   await page.mouse.up();await page.clock.runFor(1800);
   expect(await dragon.getAttribute('data-fire-count')).toBe('0');expect((await pixels()).flames).toBe(0);
@@ -502,8 +500,8 @@ test('growth remains continuous when scrolling reverses before the dragon settle
   await page.screenshot({path:info.outputPath('smooth-dragon-return.png')});
 });
 
-test('margin flames fade away before reaching the project column',async({page},info)=>{
-  test.skip(info.project.name!=='desktop','The fade needs a desktop gutter');
+test('full-strength margin flames can cross project text without blocking its links',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','Project fire needs a desktop gutter');
   await page.clock.install();await page.goto('/');
   const dragon=page.locator('#project-dragon');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
@@ -511,13 +509,15 @@ test('margin flames fade away before reaching the project column',async({page},i
   await page.evaluate(()=>window.scrollTo(0,1040));
   await expect.poll(async()=>{await page.clock.runFor(500);return dragon.getAttribute('data-drawn-mode');}).toBe('margin');
   await page.mouse.move(1200,500);await page.clock.runFor(3000);await page.mouse.down();
-  let visible=0,nearAlpha=0,edgeAlpha=0;
+  let visible=0,columnAlpha=0;
+  const positions=()=>page.locator('.project-row').evaluateAll(rows=>rows.map(row=>[row.offsetTop,row.offsetHeight,row.textContent]));
+  const before=await positions();
   for(let frame=0;frame<14;frame++) {
     await page.clock.runFor(64);
     const ink=await dragon.evaluate(canvas=>{
       const dpr=canvas.width/innerWidth,edge=document.querySelector('#portfolio').getBoundingClientRect().left-24;
       const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
-      let visible=0,nearAlpha=0,edgeAlpha=0;
+      let visible=0,columnAlpha=0;
       for(let y=0;y<canvas.height;y++) for(let x=0;x<canvas.width;x++) {
         const i=(y*canvas.width+x)*4;
         if(pixels[i+3]<=8) continue;
@@ -527,16 +527,20 @@ test('margin flames fade away before reaching the project column',async({page},i
           || (Math.abs(r-240)<8 && Math.abs(g-192)<8 && Math.abs(b-48)<8);
         if(!fire) continue;
         visible++;
-        if(x/dpr>=edge-20) nearAlpha=Math.max(nearAlpha,pixels[i+3]);
-        if(x/dpr>=edge-12) edgeAlpha=Math.max(edgeAlpha,pixels[i+3]);
+        if(x/dpr>=edge+24) columnAlpha=Math.max(columnAlpha,pixels[i+3]);
       }
-      return {visible,nearAlpha,edgeAlpha};
+      return {visible,columnAlpha};
     });
-    visible+=ink.visible;nearAlpha=Math.max(nearAlpha,ink.nearAlpha);edgeAlpha=Math.max(edgeAlpha,ink.edgeAlpha);
+    visible+=ink.visible;columnAlpha=Math.max(columnAlpha,ink.columnAlpha);
   }
-  expect(visible).toBeGreaterThan(10);expect(nearAlpha).toBeLessThan(50);expect(edgeAlpha).toBe(0);
-  await page.screenshot({path:info.outputPath('soft-fire-boundary.png')});
+  expect(visible).toBeGreaterThan(10);expect(columnAlpha).toBeGreaterThan(200);
+  expect(await positions()).toEqual(before);await expect(dragon).toHaveCSS('pointer-events','none');
+  await page.screenshot({path:info.outputPath('full-project-fire.png')});
   await page.mouse.up();
+  await page.route('https://arxiv.org/abs/1909.07528',route=>route.fulfill({body:'<p>Paper</p>'}));
+  const opened=page.waitForEvent('popup');await page.getByRole('link',{name:"openai's 2019 paper"}).click();
+  const popup=await opened;await expect(popup).toHaveURL('https://arxiv.org/abs/1909.07528');await popup.close();
+  expect(await positions()).toEqual(before);
 });
 
 test('reduced motion keeps the manuscript static and disables fire',async({page})=>{
