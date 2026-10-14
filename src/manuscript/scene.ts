@@ -349,11 +349,12 @@ export async function mountScene():Promise<void> {
   function schedule() {if (!frame && (visible || margin?.visible) && !document.hidden) frame=requestAnimationFrame(render);}
   function release() {held=false;}
   function point(event:PointerEvent) {
-    if (motion.matches || margin?.active) return;
-    mouse={x:Math.max(0,Math.min(width,event.clientX-bounds.left)),y:Math.max(0,Math.min(height,event.clientY-bounds.top))};
+    if (motion.matches) return;
+    mouse={x:Math.max(0,Math.min(width,event.clientX-bounds.left)),y:Math.max(0,Math.min(height,event.clientY-(margin?.active ? 0 : bounds.top)))};
     hasPointer=true;schedule();
   }
   canvas.addEventListener('pointermove',point);
+  window.addEventListener('pointermove',event=>{if(margin?.active) point(event);},{passive:true});
   canvas.addEventListener('pointerdown',event=>{
     if (event.button!==0 || motion.matches) return;
     point(event);held=true;
