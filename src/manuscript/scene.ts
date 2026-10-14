@@ -312,8 +312,8 @@ export async function mountScene():Promise<void> {
     if ((!visible && !margin?.visible) || document.hidden) return;
     const animated=!motion.matches;
     const rest=restPosition();
-    const transferring=!!margin?.progress;
-    const transferred=margin?.update() ?? false;
+    const transferring=!!margin?.active;
+    const transferred=margin?.update(time,animated) ?? false;
     const bottomLimit=height-16;
     const headRoom=Math.max(0,getDragonBottom(dragon)-dragon.segments[0].y);
     const targetY=Math.min(mouse.y,bottomLimit-headRoom);
@@ -349,7 +349,7 @@ export async function mountScene():Promise<void> {
   function schedule() {if (!frame && (visible || margin?.visible) && !document.hidden) frame=requestAnimationFrame(render);}
   function release() {held=false;}
   function point(event:PointerEvent) {
-    if (motion.matches || margin?.progress) return;
+    if (motion.matches || margin?.active) return;
     mouse={x:Math.max(0,Math.min(width,event.clientX-bounds.left)),y:Math.max(0,Math.min(height,event.clientY-bounds.top))};
     hasPointer=true;schedule();
   }

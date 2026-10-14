@@ -14,19 +14,21 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
   const ctx=canvas.getContext('2d')!;
   const rest=getRestPose(0,0,1);
   const natural=getDragonBounds({...dragon,scale:1,segments:rest});
-  let width=0,height=0,dpr=0,heroTop=0,progress=0,visible=true,frames=0;
+  let width=0,height=0,dpr=0,heroTop=0,goal=0,progress=0,visible=true,frames=0,lastTime=0,lift=0;
   let target:{poses:Pose[];scale:number;bottom:number;right:number} | null=null;
-  let snapshot:{poses:Pose[];scale:number} | null=null;
+  let snapshot:{poses:Pose[];original:Pose[];scale:number} | null=null;
   let applied='';
   let painted:{left:number;right:number;top:number;bottom:number} | null=null;
+  let paintedHeroTop:number | null=null;
 
   function restore() {
     if(snapshot) {
       updateDragonScale(dragon,snapshot.scale);
-      dragon.segments.forEach((segment,index)=>Object.assign(segment,snapshot!.poses[index]));
+      dragon.segments.forEach((segment,index)=>Object.assign(segment,snapshot!.original[index]));
       snapshot=null;
     }
     applied='';
+    lift=0;
   }
   function sync() {
     const nextDpr=Math.min(devicePixelRatio || 1,2);
@@ -50,22 +52,30 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     }
     const heroBox=hero.getBoundingClientRect(),projectBox=projects.getBoundingClientRect();
     heroTop=heroBox.top;
-    // Finish settling before project text reaches the dragon's vertical range.
-    const finish=target ? Math.max(100,Math.min(heroBox.height*.5,projectBox.top-heroTop-target.bottom-32)) : 1;
-    progress=target ? Math.max(0,Math.min(1,-heroTop/finish)) : 0;
+    // Keep full size until projects reach the lower screen; settle as they approach reading height.
+    const projectPageTop=projectBox.top-heroTop;
+    const start=Math.max(0,projectPageTop-height*.9);
+    const finish=Math.max(start+200,projectPageTop-height*.32);
+    goal=target ? Math.max(0,Math.min(1,(-heroTop-start)/(finish-start))) : 0;
     visible=heroBox.bottom>0 || (!!target && projectBox.bottom>0);
     canvas.dataset.visible=String(visible);
-    canvas.dataset.mode=!visible ? 'hidden' : progress===0 ? 'hero' : progress===1 ? 'margin' : 'transition';
-    canvas.dataset.progress=String(progress);
+    canvas.dataset.progress=String(goal);
     onChange();
   }
-  function update():boolean {
-    if(!progress || !target) {const changed=!!snapshot;restore();return changed;}
-    if(!snapshot) snapshot={scale:dragon.scale,poses:dragon.segments.map(({x,y,angle})=>({x,y,angle}))};
-    const key=progress+':'+heroTop+':'+width+':'+height;
+  function update(time:number,animated:boolean):boolean {
+    const dt=Math.max(0,Math.min(48,lastTime ? time-lastTime : 16));lastTime=time;
+    const alpha=animated ? 1-Math.exp(-dt/140) : 1;
+    progress+= (goal-progress)*alpha;
+    if(Math.abs(goal-progress)<.0005) progress=goal;
+    if(!target || (!progress && heroTop>=0)) {const changed=!!snapshot;restore();return changed;}
+    if(!snapshot) {
+      const original=dragon.segments.map(({x,y,angle})=>({x,y,angle}));
+      snapshot={scale:dragon.scale,original,poses:original.map(pose=>({...pose,y:pose.y+(paintedHeroTop ?? heroTop)}))};
+    }
+    const key=progress+':'+heroTop+':'+width+':'+height+':'+lift;
     if(applied===key) return false;
     applied=key;
-    const t=progress*progress*(3-2*progress);
+    const t=progress*progress*progress*(progress*(progress*6-15)+10);
     updateDragonScale(dragon,snapshot.scale+(target.scale-snapshot.scale)*t);
     dragon.segments.forEach((segment,index)=>{
       const start=snapshot!.poses[index],end=target!.poses[index];
@@ -77,10 +87,12 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     // During travel, keep the whole illustration above native text until it fits the gutter.
     const bounds=getDragonBounds(dragon);
     const projectTop=projects.getBoundingClientRect().top;
-    if(bounds.right>portfolio.getBoundingClientRect().left-24) {
-      const overlap=Math.max(0,bounds.bottom+heroTop-projectTop+24);
-      if(overlap) for(const segment of dragon.segments) segment.y-=overlap;
-    }
+    const required=bounds.right>portfolio.getBoundingClientRect().left-24 ? Math.max(0,bounds.bottom+heroTop-projectTop+24) : 0;
+    // Enforce clearance immediately, but ease the release so entering the gutter cannot drop the body.
+    lift=Math.max(required,lift+(required-lift)*alpha);
+    if(Math.abs(lift-required)<.05) lift=required;
+    if(lift) for(const segment of dragon.segments) segment.y-=lift;
+    canvas.dataset.settled=String(progress===goal && lift===required);
     return true;
   }
   function draw(animated:boolean) {
@@ -94,17 +106,20 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     painted=bounds;
     if(!visible) return;
     ctx.save();
-    if(!progress) {ctx.beginPath();ctx.rect(0,0,width,Math.max(0,hero.getBoundingClientRect().bottom));ctx.clip();}
+    if(!snapshot) {ctx.beginPath();ctx.rect(0,0,width,Math.max(0,hero.getBoundingClientRect().bottom));ctx.clip();}
     ctx.translate(0,heroTop);drawDragon(ctx,dragon,animated);ctx.restore();
     canvas.dataset.bounds=JSON.stringify(bounds);
     canvas.dataset.scale=String(dragon.scale);canvas.dataset.frame=String(++frames);
+    canvas.dataset.mode=!visible ? 'hidden' : progress===0 ? 'hero' : progress===1 ? 'margin' : 'transition';
     canvas.dataset.drawnMode=canvas.dataset.mode;
     canvas.dataset.drawnScroll=String(-heroTop);
     canvas.dataset.paused=String(!animated);
+    canvas.dataset.renderedProgress=String(progress);paintedHeroTop=heroTop;
+    if(!snapshot) canvas.dataset.settled='true';
   }
   window.addEventListener('scroll',sync,{passive:true});
   window.addEventListener('resize',sync);
   new ResizeObserver(sync).observe(portfolio);
   sync();
-  return {canvas,sync,update,draw,restore,get progress(){return progress;},get visible(){return visible;}};
+  return {canvas,sync,update,draw,restore,get active(){return !!target && (heroTop<0 || progress>0);},get visible(){return visible;}};
 }
