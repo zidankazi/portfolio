@@ -18,10 +18,11 @@ manuscript in ordinary server-rendered HTML. Project hover and keyboard focus
 show the original screenshots and demo clips beside the list when there is
 room. Clips pause when dismissed; reduced motion uses the still posters.
 Phone links keep their ordinary tap behavior. No canvas or preview covers
-their hit areas. Once the manuscript scrolls away, a smaller dragon idles in
-the left margin beside projects. It uses the same sprites, stays clear of the
-list and right-side previews, and hides when there is not enough gutter space.
-Reduced motion keeps it still; hidden scenes do not run animation frames.
+their hit areas. One persistent dragon follows the scroll from the manuscript,
+shrinking and moving its existing pose into the left margin beside projects.
+Reverse scrolling restores its original pose and cursor tracking. It stays
+clear of the list and right-side previews; narrow screens keep it in the hero.
+Reduced motion keeps the wings still; hidden scenes do not run animation frames.
 
 The manuscript uses Furia III from the live reference, with IM Fell English
 for capital I only to distinguish it from J. The local font file comes from the demo’s `/furia-iii.ttf` asset. Furia is a commercial font

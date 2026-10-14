@@ -110,7 +110,7 @@ test('the entire dragon stops above the lower manuscript edge while scrolling',a
   }
   await page.evaluate(height=>window.scrollTo(0,height*.35),hero.height);
   await page.mouse.move(hero.width*.8,hero.height*.65-2);await page.clock.runFor(1600);
-  expect(Number(await canvas.getAttribute('data-dragon-bottom'))).toBeLessThanOrEqual(hero.height-15.9);
+  expect(JSON.parse(await page.locator('#project-dragon').getAttribute('data-bounds')).bottom).toBeLessThanOrEqual(hero.height-15.9);
   // The boundary has clear parchment below it, rather than slicing any sprite.
   const darkPixels=await canvas.evaluate(node=>{
     const pixels=node.getContext('2d').getImageData(0,node.height-12,node.width,12).data;
@@ -227,8 +227,51 @@ test('idle wings keep moving while the pointer is still',async({page})=>{
   await page.clock.install();await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
   await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
-  const canvas=page.locator('#manuscript');const before=await canvas.screenshot();
+  const canvas=page.locator('#project-dragon');const before=await canvas.screenshot();
   await page.clock.runFor(400);expect(await canvas.screenshot()).not.toEqual(before);
+});
+
+test('one dragon continuously shrinks into the gutter and returns with reverse scrolling',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','The handoff needs spare gutter space');
+  await page.clock.install();await page.goto('/');
+  const hero=page.locator('#manuscript-scene'),dragon=page.locator('#project-dragon');
+  await expect(hero).toHaveAttribute('data-ready','true');await expect(dragon).toHaveCount(1);
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.mouse.move(700,400);await page.clock.runFor(3000);
+  const scrollTo=async y=>{
+    await page.evaluate(scroll=>window.scrollTo(0,scroll),y);
+    await expect.poll(async()=>{await page.clock.runFor(50);return dragon.getAttribute('data-drawn-scroll');}).toBe(String(y));
+  };
+  const scales=[],frames=[];
+  for(const scroll of [0,40,80,120,160,200,240,280,320,360,400,440,480]) {
+    await scrollTo(scroll);
+    const box=JSON.parse(await dragon.getAttribute('data-bounds'));
+    scales.push(Number(await dragon.getAttribute('data-scale')));frames.push(box);
+    await expect(dragon).toBeVisible();await expect(dragon).toHaveCount(1);
+    const project=await page.locator('.project-list').boundingBox();
+    expect(box.right<=project.x-23 || box.bottom<=project.y-23).toBe(true);
+    if(scroll===160) await page.screenshot({path:info.outputPath('dragon-handoff.png')});
+  }
+  expect(scales[0]).toBe(1);expect(scales.at(-1)).toBeLessThanOrEqual(.5);
+  for(let i=1;i<scales.length;i++) {
+    expect(scales[i]).toBeLessThanOrEqual(scales[i-1]);
+    expect(scales[i-1]-scales[i]).toBeLessThan(.2);
+    expect(Math.abs(frames[i].left-frames[i-1].left)).toBeLessThan(160);
+  }
+  await scrollTo(160);
+  expect(JSON.parse(await dragon.getAttribute('data-bounds'))).toEqual(frames[4]);
+  await scrollTo(0);
+  await expect(dragon).toHaveAttribute('data-mode','hero');
+  expect(await dragon.getAttribute('data-scale')).toBe('1');
+  expect(Math.abs(Number(await page.locator('#manuscript').getAttribute('data-head-x'))-700)).toBeLessThan(6);
+  expect(Math.abs(Number(await page.locator('#manuscript').getAttribute('data-head-y'))-400)).toBeLessThan(6);
+  // The biography canvas contains no second dragon in its otherwise empty left gutter.
+  const duplicateInk=await page.locator('#manuscript').evaluate(canvas=>{
+    const dpr=canvas.width/innerWidth,pixels=canvas.getContext('2d').getImageData(0,0,Math.floor(300*dpr),canvas.height).data;
+    let count=0;for(let i=0;i<pixels.length;i+=4) if(pixels[i]<100 && pixels[i+1]<100 && pixels[i+2]<100) count++;
+    return count;
+  });
+  expect(duplicateInk).toBe(0);
 });
 
 test('dragon keeps the last cursor position through idle time and tab switching',async({page,context})=>{
@@ -274,13 +317,14 @@ test('a small idle dragon stays in the left gutter without moving text or coveri
   test.skip(info.project.name!=='desktop','The companion needs spare margin space');
   await page.clock.install();await page.goto('/');
   const surface=page.locator('#manuscript-scene'),dragon=page.locator('#project-dragon');
-  await expect(surface).toHaveAttribute('data-ready','true');await expect(dragon).toBeHidden();
+  await expect(surface).toHaveAttribute('data-ready','true');await expect(dragon).toHaveAttribute('data-mode','hero');
   const positions=()=>page.locator('.project-row').evaluateAll(rows=>rows.map(row=>[row.offsetTop,row.offsetHeight,row.textContent]));
   const before=await positions();
   await page.evaluate(()=>window.scrollTo(0,document.querySelector('#manuscript-scene').offsetHeight+40));
+  await expect(dragon).toHaveAttribute('data-drawn-mode','margin');
   await expect(dragon).toBeVisible();await expect(dragon).toHaveCSS('pointer-events','none');
-  const box=await dragon.boundingBox(),list=await page.locator('.project-list').boundingBox();
-  expect(box.x).toBeGreaterThanOrEqual(16);expect(box.x+box.width).toBeLessThanOrEqual(list.x-24);
+  const box=JSON.parse(await dragon.getAttribute('data-bounds')),list=await page.locator('.project-list').boundingBox();
+  expect(box.left).toBeGreaterThanOrEqual(16);expect(box.right).toBeLessThanOrEqual(list.x-24);
   expect(Number(await dragon.getAttribute('data-scale'))).toBeLessThanOrEqual(.5);
   await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
   const resting=await dragon.screenshot();await page.clock.runFor(320);
@@ -288,8 +332,8 @@ test('a small idle dragon stays in the left gutter without moving text or coveri
   await page.locator('.project-row').first().hover();await page.clock.runFor(100);
   const preview=page.locator('.project-hover-preview');await expect(preview).toBeVisible();
   const previewBox=await preview.boundingBox();expect(previewBox.x).toBeGreaterThanOrEqual(list.x+list.width+20);
-  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.clock.runFor(650);
-  expect(await dragon.boundingBox()).toEqual(box);expect(await positions()).toEqual(before);
+  await page.mouse.move((box.left+box.right)/2,(box.top+box.bottom)/2);await page.clock.runFor(650);
+  expect(JSON.parse(await dragon.getAttribute('data-bounds'))).toEqual(box);expect(await positions()).toEqual(before);
   const borderPixels=await dragon.evaluate(canvas=>{
     const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
     return [[0,0,w,1],[0,h-1,w,1],[0,0,1,h],[w-1,0,1,h]].reduce((count,rect)=>{
@@ -306,7 +350,7 @@ test('a small idle dragon stays in the left gutter without moving text or coveri
   expect(await dragon.getAttribute('data-frame')).toBe(frame);
   await page.setViewportSize({width:900,height:800});await page.clock.runFor(100);await expect(dragon).toBeHidden();
   await page.setViewportSize({width:1440,height:1000});await page.clock.runFor(100);await expect(dragon).toBeVisible();
-  await page.evaluate(()=>window.scrollTo(0,0));await page.clock.runFor(100);await expect(dragon).toBeHidden();
+  await page.evaluate(()=>window.scrollTo(0,0));await page.clock.runFor(100);await expect(dragon).toHaveAttribute('data-mode','hero');
 });
 
 test('reduced motion keeps the manuscript static and disables fire',async({page})=>{
