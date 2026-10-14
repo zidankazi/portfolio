@@ -26,3 +26,8 @@ https://cmsassets.rgpub.io/sanity/files/dsfx7636/news/443020e6faac361cd44ced1c12
 Counter-Strike 2 app icon from Valve's official Steam community page:
 https://shared.fastly.steamstatic.com/community_assets/images/apps/730/8dbc71957312bbd3baea65848b545be9eae2a355_full.jpg
 Game marks remain owned by their respective rights holders.
+
+Spotify icon from the official design asset package:
+https://developer.spotify.com/images/guidelines/design/2024-spotify-logo-icon.zip
+https://developer.spotify.com/documentation/design
+The Spotify mark remains owned by Spotify.
