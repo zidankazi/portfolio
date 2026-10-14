@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createDragon,updateDragon,spawnFire,updateFire,getFireInfluence} from '../src/manuscript/reference/dragon.js';
+import {createDragon,updateDragon,updateDragonScale,getRestPose,spawnFire,updateFire,getFireInfluence} from '../src/manuscript/reference/dragon.js';
+import {followDragonBody} from '../src/manuscript/rig-motion.ts';
 
 const angleDifference=(to:number,from:number)=>Math.atan2(Math.sin(to-from),Math.cos(to-from));
 
@@ -34,4 +35,28 @@ test('fire particles affect nearby text, then expire completely',()=>{
   assert.equal(getFireInfluence(dragon,0,0).strength,0);
   for(let time=80;time<=2000;time+=80) updateFire(dragon,time);
   assert.equal(dragon.fire.length,0);
+});
+
+test('the live body keeps its spacing and turn speed while growing, shrinking, and reversing',()=>{
+  const dragon=createDragon(700,300,1);
+  getRestPose(700,300,1).forEach((pose,index)=>Object.assign(dragon.segments[index],pose));
+  for(let frame=0;frame<720;frame++) {
+    const before=dragon.segments.map(segment=>({...segment})),head=dragon.segments[0];
+    // Size reverses before settling while cursor direction crosses the angle wrap repeatedly.
+    const scale=.65+.35*Math.cos(frame*.035),ratio=scale/dragon.scale;
+    for(const segment of dragon.segments) {
+      segment.x=head.x+(segment.x-head.x)*ratio;
+      segment.y=head.y+(segment.y-head.y)*ratio;
+    }
+    updateDragonScale(dragon,scale);
+    head.x+=10*Math.cos(frame*.045);head.y+=7*Math.sin(frame*.045);
+    head.angle+=.09*Math.sin(frame*.018);
+    followDragonBody(dragon,false,1-Math.exp(-16/220),.096);
+    for(let index=1;index<20;index++) {
+      const segment=dragon.segments[index],parent=dragon.segments[index-1];
+      assert.ok(Math.abs(angleDifference(segment.angle,before[index].angle))<=.096001,'a joint must not snap to another direction');
+      assert.ok(Math.abs(angleDifference(segment.angle,parent.angle))<=.250001,'body bends must remain within the artwork limits');
+      assert.ok(Math.abs(Math.hypot(segment.x-parent.x,segment.y-parent.y)-30*scale)<.001,'the body must never stretch or fold its links');
+    }
+  }
 });
