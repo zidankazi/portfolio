@@ -319,7 +319,7 @@ test('the large dragon pauses below the manuscript while native projects stay fi
   await expect(page.locator('#portfolio')).toHaveCSS('transform','none');
 });
 
-test('a small idle dragon stays in the left gutter without moving text or covering previews',async({page},info)=>{
+test('a small cursor-following dragon stays in the left gutter without moving text or covering previews',async({page},info)=>{
   test.skip(info.project.name!=='desktop','The companion needs spare margin space');
   await page.clock.install();await page.goto('/');
   const surface=page.locator('#manuscript-scene'),dragon=page.locator('#project-dragon');
@@ -339,7 +339,20 @@ test('a small idle dragon stays in the left gutter without moving text or coveri
   const preview=page.locator('.project-hover-preview');await expect(preview).toBeVisible();
   const previewBox=await preview.boundingBox();expect(previewBox.x).toBeGreaterThanOrEqual(list.x+list.width+20);
   await page.mouse.move((box.left+box.right)/2,(box.top+box.bottom)/2);await page.clock.runFor(650);
-  expect(JSON.parse(await dragon.getAttribute('data-bounds'))).toEqual(box);expect(await positions()).toEqual(before);
+  const following=JSON.parse(await dragon.getAttribute('data-bounds'));
+  expect(following).not.toEqual(box);
+  expect(following.left).toBeGreaterThanOrEqual(16);expect(following.right).toBeLessThanOrEqual(list.x-24);
+  expect(await positions()).toEqual(before);
+  const heads=[];
+  for(const point of [[50,80],[330,850],[1200,200],[30,500]]) {
+    await page.mouse.move(...point);await page.clock.runFor(700);
+    heads.push(JSON.parse(await dragon.getAttribute('data-head')));
+    const bounds=JSON.parse(await dragon.getAttribute('data-bounds'));
+    expect(bounds.left).toBeGreaterThanOrEqual(15.99);expect(bounds.right).toBeLessThanOrEqual(list.x-24);
+    expect(bounds.top).toBeGreaterThanOrEqual(23.99);expect(bounds.bottom).toBeLessThanOrEqual(976.01);
+    expect(await positions()).toEqual(before);
+  }
+  expect(Math.abs(heads[0].angle-heads[2].angle)).toBeGreaterThan(.3);
   const borderPixels=await dragon.evaluate(canvas=>{
     const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
     return [[0,0,w,1],[0,h-1,w,1],[0,0,1,h],[w-1,0,1,h]].reduce((count,rect)=>{
@@ -358,6 +371,65 @@ test('a small idle dragon stays in the left gutter without moving text or coveri
   await page.setViewportSize({width:1440,height:1000});await page.clock.runFor(100);await expect(dragon).toBeVisible();
   await page.evaluate(()=>window.scrollTo(0,0));
   await expect.poll(async()=>{await page.clock.runFor(100);return dragon.getAttribute('data-mode');}).toBe('hero');
+});
+
+test('return growth and cursor handback never reset to the saved hero position',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','The return needs spare gutter space');
+  await page.clock.install();await page.goto('/');
+  const dragon=page.locator('#project-dragon');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.mouse.move(700,350);await page.clock.runFor(3000);
+  // Start after a nonzero scroll so restoring a remembered hero-local pose would visibly jump.
+  await page.evaluate(()=>window.scrollTo(0,120));
+  await expect.poll(async()=>{await page.clock.runFor(100);return dragon.getAttribute('data-drawn-scroll');}).toBe('120');
+  await page.evaluate(()=>window.scrollTo(0,1100));
+  await expect.poll(async()=>{await page.clock.runFor(500);return dragon.getAttribute('data-drawn-mode');}).toBe('margin');
+  await page.mouse.move(1050,300);await page.clock.runFor(3000);
+  await page.evaluate(()=>window.scrollTo(0,0));
+  await expect.poll(async()=>{await page.clock.runFor(16);return dragon.getAttribute('data-drawn-scroll');}).toBe('0');
+  const frames=[];
+  for(let i=0;i<110;i++) {
+    await page.clock.runFor(16);
+    frames.push({head:JSON.parse(await dragon.getAttribute('data-head')),scale:Number(await dragon.getAttribute('data-scale'))});
+  }
+  expect(frames.some(frame=>frame.scale>.55 && frame.scale<.9)).toBe(true);
+  expect(frames.at(-1).scale).toBe(1);
+  for(let i=1;i<frames.length;i++) {
+    const before=frames[i-1],after=frames[i];
+    expect(Math.hypot(after.head.x-before.head.x,after.head.y-before.head.y)).toBeLessThan(65);
+    expect(Math.abs(after.scale-before.scale)).toBeLessThan(.065);
+  }
+  expect(Math.abs(frames.at(-1).head.x-1050)).toBeLessThan(7);
+  expect(Math.abs(frames.at(-1).head.y-300)).toBeLessThan(7);
+  await expect(dragon).toHaveAttribute('data-mode','hero');await expect(dragon).toHaveCount(1);
+});
+
+test('growth remains continuous when scrolling reverses before the dragon settles',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','The margin needs a desktop screen');
+  await page.setViewportSize({width:1512,height:698});
+  await page.clock.install();await page.goto('/');
+  const dragon=page.locator('#project-dragon');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.mouse.move(950,280);await page.clock.runFor(3000);
+  const frames=[];
+  for(const scroll of [300,550,250,600,100,500,0]) {
+    await page.evaluate(y=>window.scrollTo(0,y),scroll);
+    await expect.poll(async()=>{await page.clock.runFor(16);return dragon.getAttribute('data-drawn-scroll');}).toBe(String(scroll));
+    for(let frame=0;frame<14;frame++) {
+      await page.clock.runFor(16);
+      frames.push({head:JSON.parse(await dragon.getAttribute('data-head')),scale:Number(await dragon.getAttribute('data-scale'))});
+    }
+  }
+  for(let index=1;index<frames.length;index++) {
+    const before=frames[index-1],after=frames[index];
+    expect(Math.hypot(after.head.x-before.head.x,after.head.y-before.head.y)).toBeLessThan(65);
+    expect(Math.abs(after.scale-before.scale)).toBeLessThan(.065);
+    expect(Math.abs(Math.atan2(Math.sin(after.head.angle-before.head.angle),Math.cos(after.head.angle-before.head.angle)))).toBeLessThan(.3);
+  }
+  await page.clock.runFor(3000);await expect(dragon).toHaveAttribute('data-mode','hero');
+  await page.screenshot({path:info.outputPath('smooth-dragon-return.png')});
 });
 
 test('reduced motion keeps the manuscript static and disables fire',async({page})=>{

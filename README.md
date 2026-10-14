@@ -21,9 +21,12 @@ Phone links keep their ordinary tap behavior. No canvas or preview covers
 their hit areas. One persistent dragon follows the scroll from the manuscript,
 shrinking and moving its existing pose into the left margin beside projects.
 It stays full-size through the early scroll and starts shrinking when projects
-reach the lower screen. The pose eases toward the scroll target, including when
-the boundary releases it into the gutter.
-Reverse scrolling restores its original pose and cursor tracking. It stays
+reach the lower screen. Position, rotation, and size ease toward the scroll
+target together. The joints keep their spacing throughout growth; boundary
+clearance changes the destination rather than shifting the painted dragon.
+Reverse scrolling grows it into its live cursor-following pose without resetting
+its position. In the margin it still looks and follows, with its whole body
+constrained to the left gutter. It stays
 clear of the list and right-side previews; narrow screens keep it in the hero.
 Reduced motion keeps the wings still; hidden scenes do not run animation frames.
 
