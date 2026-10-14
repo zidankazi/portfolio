@@ -15,6 +15,15 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
   const ctx=canvas.getContext('2d')!;
   const rest=getRestPose(0,0,1);
   const natural=getDragonBounds({...dragon,scale:1,segments:rest});
+  // Reserve room for a straight, turning dragon once, rather than resizing on every turn.
+  let turningSpan=0;
+  for(let step=0;step<24;step++) {
+    const angle=step*Math.PI/12;
+    const poses=rest.map((pose,index)=>({...pose,x:-index*30*Math.cos(angle),y:-index*30*Math.sin(angle),angle}));
+    const bounds=getDragonBounds({...dragon,scale:1,segments:poses});
+    turningSpan=Math.max(turningSpan,bounds.right-bounds.left,bounds.bottom-bounds.top);
+  }
+  turningSpan*=1.1;
   let width=0,height=0,dpr=0,heroTop=0,goal=0,progress=0,visible=true,frames=0,lastTime=0,lift=0;
   let target:{poses:Pose[];scale:number;bottom:number;right:number} | null=null;
   let snapshot:{poses:Pose[];original:Pose[];scale:number;home:Dragon} | null=null;
@@ -46,7 +55,7 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
       ctx.setTransform(dpr,0,0,dpr,0,0);canvas.dataset.gutter=String(left);
       if(gutter>=180 && height>=300) {
         const slotWidth=Math.min(260,gutter),slotHeight=Math.min(400,height*.65);
-        const scale=Math.min(.5,(slotWidth-24)/(natural.right-natural.left),(slotHeight-24)/(natural.bottom-natural.top));
+        const scale=Math.min(.5,(slotWidth-24)/(natural.right-natural.left),(slotHeight-24)/(natural.bottom-natural.top),(left-72)/turningSpan,(height-64)/turningSpan);
         const poses=getRestPose(0,0,scale);
         const box=getDragonBounds({...dragon,scale,segments:poses});
         const x=Math.max(16,(left-24-slotWidth)/2)+(slotWidth-(box.right-box.left))/2-box.left;
@@ -140,6 +149,8 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     // Keep a connected chain throughout growth; blending two entire poses stretched its joints.
     for(let index=1;index<wanted.length;index++) {
       const segment=wanted[index],previous=wanted[index-1];
+      const bend=Math.atan2(Math.sin(segment.angle-previous.angle),Math.cos(segment.angle-previous.angle));
+      segment.angle=previous.angle+Math.max(-.25,Math.min(.25,bend));
       segment.x=previous.x-Math.cos(segment.angle)*30*wantedScale;
       segment.y=previous.y-Math.sin(segment.angle)*30*wantedScale;
     }
@@ -148,7 +159,8 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     // Correct the destination, then ease toward it. Never shove the painted creature at a boundary.
     const dx=t===1 ? Math.max(room.left+8-bounds.left,Math.min(0,room.right-8-bounds.right)) : 0;
     const dy=t===1 ? Math.max(room.top+8-bounds.top,Math.min(0,room.bottom-8-bounds.bottom)) : 0;
-    lift=bounds.right+dx>columnEdge ? Math.max(0,bounds.bottom+dy-projectTop+96) : 0;
+    const aboveHeading=progress<1 && projectTop>24;
+    lift=aboveHeading && bounds.right+dx>columnEdge ? Math.max(0,bounds.bottom+dy-projectTop+96) : 0;
     const head=dragon.segments[0],previousTop=paintedHeroTop ?? heroTop;
     const desiredX=wanted[0].x+dx,desiredY=wanted[0].y+dy-lift;
     const easing=animated ? 1-Math.exp(-dt/170) : 1;
@@ -163,12 +175,21 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
       const turn=Math.atan2(Math.sin(wanted[index].angle-segment.angle),Math.cos(wanted[index].angle-segment.angle));
       segment.angle+=turn*easing;angleError=Math.max(angleError,Math.abs(turn));
       const previous=dragon.segments[index-1];
+      if(previous) {
+        const bend=Math.atan2(Math.sin(segment.angle-previous.angle),Math.cos(segment.angle-previous.angle));
+        segment.angle=previous.angle+Math.max(-.25,Math.min(.25,bend));
+      }
       segment.x=previous ? previous.x-Math.cos(segment.angle)*30*dragon.scale : nextX;
       segment.y=previous ? previous.y-Math.sin(segment.angle)*30*dragon.scale : nextY-heroTop;
     });
     // The heading is a physical floor during travel; the whole rig can pass below only in the gutter.
     const actual=getDragonBounds(dragon);
-    if(actual.right>columnEdge) {
+    if(progress===1) {
+      // Turning in the margin never consults the (now offscreen) heading's position.
+      const shiftX=Math.max(room.left+8-actual.left,Math.min(0,room.right-8-actual.right));
+      const shiftY=Math.max(room.top+8-actual.top-heroTop,Math.min(0,room.bottom-8-actual.bottom-heroTop));
+      for(const segment of dragon.segments) {segment.x+=shiftX;segment.y+=shiftY;}
+    } else if(aboveHeading && actual.right>columnEdge) {
       const overflow=Math.max(0,actual.bottom+heroTop-projectTop+24);
       if(overflow) for(const segment of dragon.segments) segment.y-=overflow;
     }
