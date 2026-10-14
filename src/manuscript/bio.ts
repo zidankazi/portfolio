@@ -1,8 +1,9 @@
 import type {Track} from './spotify.ts';
+import {playingMarkup} from './playing.ts';
 
 export type BioTrack = Pick<Track,'title' | 'artist' | 'isPlaying' | 'albumArt'>;
 export type BioImage = {src:string; alt:string; kind:'league' | 'cs2' | 'album'};
-export type BioBlock = {kind:'name' | 'body' | 'label' | 'hobby' | 'music' | 'cue'; text:string; gap:number; accent?:boolean; image?:BioImage; music?:{status:string;title:string;artist:string | null}};
+export type BioBlock = {kind:'name' | 'body' | 'label' | 'hobby' | 'music' | 'cue'; text:string; gap:number; accent?:boolean; image?:BioImage; music?:{status:string;title:string;artist:string | null;isPlaying:boolean}};
 
 export function biographyBlocks(track:BioTrack | null=null):BioBlock[] {
   const album=track?.albumArt?.startsWith('https://i.scdn.co/image/') ? track.albumArt : null;
@@ -20,7 +21,7 @@ export function biographyBlocks(track:BioTrack | null=null):BioBlock[] {
       kind:'music' as const,
       text:(track.isPlaying ? "Right now I'm listening to " : 'I last listened to ')+track.title+(track.artist ? ' by '+track.artist : ''),
       gap:24,
-      music:{status:track.isPlaying ? "Right now I'm listening to" : 'I last listened to',title:track.title,artist:track.artist ?? null},
+      music:{status:track.isPlaying ? "Right now I'm listening to" : 'I last listened to',title:track.title,artist:track.artist ?? null,isPlaying:track.isPlaying},
       ...(album ? {image:{src:album,alt:track.title+' album cover',kind:'album' as const}} : {}),
     }] : []),
     {kind:'cue',text:'A few things I’ve built ↓',gap:0},
@@ -52,7 +53,7 @@ export function biographyMarkup(track:BioTrack | null=null):string {
     if (block.music) {
       const music=block.music;
       content=(block.image ? `<img class="bio-media bio-media-album" src="${escape(block.image.src)}" alt="${escape(block.image.alt)}">` : '')+
-        `<span class="bio-music-copy"><span class="bio-music-status"><img class="bio-spotify" src="/manuscript/spotify.svg" alt="Spotify">${escape(music.status)}</span><span class="bio-music-song">${escape(music.title)}</span>${music.artist ? `<span class="bio-music-artist">by ${escape(music.artist)}</span>` : ''}</span>`;
+        `<span class="bio-music-copy"><span class="bio-music-status"><img class="bio-spotify" src="/manuscript/spotify.svg" alt="Spotify">${music.isPlaying ? playingMarkup : ''}${escape(music.status)}</span><span class="bio-music-song">${escape(music.title)}</span>${music.artist ? `<span class="bio-music-artist">by ${escape(music.artist)}</span>` : ''}</span>`;
     } else {
       content=biographyInline(block).map(part=>{
         const text=escape(part.text);
