@@ -8,6 +8,7 @@ type Dragon=ReturnType<typeof createDragon>;
 export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
   const hero=document.querySelector<HTMLElement>('#manuscript-scene')!;
   const projects=document.querySelector<HTMLElement>('#projects')!;
+  const heading=document.querySelector<HTMLElement>('#projects-heading')!;
   const portfolio=document.querySelector<HTMLElement>('#portfolio')!;
   const canvas=document.createElement('canvas');canvas.id='project-dragon';
   canvas.className='margin-dragon';canvas.setAttribute('aria-hidden','true');document.body.append(canvas);
@@ -103,7 +104,9 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     }
     const moved=animated && pointer && updateDragon(follower,time,pointer.x,pointer.y);
     // Fit the moving chain inside the left gutter, including its wings at their widest.
-    const room={left:16,right:portfolio.getBoundingClientRect().left-40,top:24,bottom:height-24};
+    const columnEdge=portfolio.getBoundingClientRect().left-24;
+    // Reserve a short breath lane between the small rig and the flame fade-out.
+    const room={left:16,right:columnEdge-80,top:24,bottom:height-24};
     // Reuse the fit between reference movement steps; only the cheap pose easing runs each frame.
     if(moved || !destination) {
       const box=getDragonBounds(follower);
@@ -142,16 +145,18 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
       segment.y=previous.y-Math.sin(segment.angle)*30*wantedScale;
     }
     const bounds=getDragonBounds({...dragon,scale:wantedScale,segments:wanted});
-    const projectTop=projects.getBoundingClientRect().top;
+    const projectTop=heading.getBoundingClientRect().top;
     // Correct the destination, then ease toward it. Never shove the painted creature at a boundary.
     const dx=t===1 ? Math.max(room.left+8-bounds.left,Math.min(0,room.right-8-bounds.right)) : 0;
     const dy=t===1 ? Math.max(room.top+8-bounds.top,Math.min(0,room.bottom-8-bounds.bottom)) : 0;
-    lift=bounds.right+dx>room.right+16 ? Math.max(0,bounds.bottom+dy-projectTop+48) : 0;
+    lift=bounds.right+dx>columnEdge ? Math.max(0,bounds.bottom+dy-projectTop+96) : 0;
     const head=dragon.segments[0],previousTop=paintedHeroTop ?? heroTop;
     const desiredX=wanted[0].x+dx,desiredY=wanted[0].y+dy-lift;
     const easing=animated ? 1-Math.exp(-dt/170) : 1;
     const nextX=head.x+(desiredX-head.x)*easing;
-    const nextY=head.y+previousTop+(desiredY-head.y-previousTop)*easing;
+    // While still large, travel with the page; the settled margin dragon stays fixed.
+    const currentY=head.y+previousTop+(heroTop-previousTop)*(1-t);
+    const nextY=currentY+(desiredY-currentY)*easing;
     const nextScale=dragon.scale+(wantedScale-dragon.scale)*easing;
     updateDragonScale(dragon,Math.abs(nextScale-wantedScale)<.0001 ? wantedScale : nextScale);
     let angleError=0;
@@ -162,6 +167,12 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
       segment.x=previous ? previous.x-Math.cos(segment.angle)*30*dragon.scale : nextX;
       segment.y=previous ? previous.y-Math.sin(segment.angle)*30*dragon.scale : nextY-heroTop;
     });
+    // The heading is a physical floor during travel; the whole rig can pass below only in the gutter.
+    const actual=getDragonBounds(dragon);
+    if(actual.right>columnEdge) {
+      const overflow=Math.max(0,actual.bottom+heroTop-projectTop+24);
+      if(overflow) for(const segment of dragon.segments) segment.y-=overflow;
+    }
     const settled=progress===goal && Math.hypot(desiredX-nextX,desiredY-nextY)<.3 && Math.abs(wantedScale-dragon.scale)<.0001 && angleError<.002;
     if(settled && !progress && heroTop>=0) {
       // Cursor tracking takes over from exactly the final painted pose.
@@ -191,7 +202,7 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     if(!visible) return;
     if(target && heroTop<0 && fireTop<height) {
       ctx.save();ctx.beginPath();ctx.rect(0,fireTop,fireRight,height-fireTop);ctx.clip();
-      ctx.translate(0,heroTop);drawFire(ctx,dragon);ctx.restore();
+      ctx.translate(0,heroTop);drawFire(ctx,dragon,fireRight-12,Math.min(72,fireRight*.3));ctx.restore();
     }
     ctx.save();
     if(!snapshot) {ctx.beginPath();ctx.rect(0,0,width,Math.max(0,hero.getBoundingClientRect().bottom));ctx.clip();}
