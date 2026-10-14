@@ -18,7 +18,10 @@ manuscript in ordinary server-rendered HTML. Project hover and keyboard focus
 show the original screenshots and demo clips beside the list when there is
 room. Clips pause when dismissed; reduced motion uses the still posters.
 Phone links keep their ordinary tap behavior. No canvas or preview covers
-their hit areas.
+their hit areas. Once the manuscript scrolls away, a smaller dragon idles in
+the left margin beside projects. It uses the same sprites, stays clear of the
+list and right-side previews, and hides when there is not enough gutter space.
+Reduced motion keeps it still; hidden scenes do not run animation frames.
 
 The manuscript uses Furia III from the live reference, with IM Fell English
 for capital I only to distinguish it from J. The local font file comes from the demo’s `/furia-iii.ttf` asset. Furia is a commercial font

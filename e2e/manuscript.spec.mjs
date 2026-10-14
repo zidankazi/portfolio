@@ -252,7 +252,7 @@ test('dragon keeps the last cursor position through idle time and tab switching'
   expect(await canvas.getAttribute('data-fire-count')).toBe('0');
 });
 
-test('dragon is clipped to the manuscript and stops rendering below it',async({page})=>{
+test('the large dragon pauses below the manuscript while native projects stay fixed',async({page})=>{
   await page.clock.install();await page.goto('/');
   const surface=page.locator('#manuscript-scene'),canvas=page.locator('#manuscript');
   await expect(surface).toHaveAttribute('data-ready','true');
@@ -268,6 +268,45 @@ test('dragon is clipped to the manuscript and stops rendering below it',async({p
   expect(await canvas.getAttribute('data-frame')).toBe(frame);
   expect(await page.locator('.project-row').evaluateAll(nodes=>nodes.map(node=>{const b=node.getBoundingClientRect();return [b.x,b.y,b.width,b.height,node.textContent];}))).toEqual(before);
   await expect(page.locator('#portfolio')).toHaveCSS('transform','none');
+});
+
+test('a small idle dragon stays in the left gutter without moving text or covering previews',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','The companion needs spare margin space');
+  await page.clock.install();await page.goto('/');
+  const surface=page.locator('#manuscript-scene'),dragon=page.locator('#project-dragon');
+  await expect(surface).toHaveAttribute('data-ready','true');await expect(dragon).toBeHidden();
+  const positions=()=>page.locator('.project-row').evaluateAll(rows=>rows.map(row=>[row.offsetTop,row.offsetHeight,row.textContent]));
+  const before=await positions();
+  await page.evaluate(()=>window.scrollTo(0,document.querySelector('#manuscript-scene').offsetHeight+40));
+  await expect(dragon).toBeVisible();await expect(dragon).toHaveCSS('pointer-events','none');
+  const box=await dragon.boundingBox(),list=await page.locator('.project-list').boundingBox();
+  expect(box.x).toBeGreaterThanOrEqual(16);expect(box.x+box.width).toBeLessThanOrEqual(list.x-24);
+  expect(Number(await dragon.getAttribute('data-scale'))).toBeLessThanOrEqual(.5);
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  const resting=await dragon.screenshot();await page.clock.runFor(320);
+  expect(await dragon.screenshot()).not.toEqual(resting);
+  await page.locator('.project-row').first().hover();await page.clock.runFor(100);
+  const preview=page.locator('.project-hover-preview');await expect(preview).toBeVisible();
+  const previewBox=await preview.boundingBox();expect(previewBox.x).toBeGreaterThanOrEqual(list.x+list.width+20);
+  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.clock.runFor(650);
+  expect(await dragon.boundingBox()).toEqual(box);expect(await positions()).toEqual(before);
+  const borderPixels=await dragon.evaluate(canvas=>{
+    const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
+    return [[0,0,w,1],[0,h-1,w,1],[0,0,1,h],[w-1,0,1,h]].reduce((count,rect)=>{
+      const pixels=ctx.getImageData(...rect).data;
+      for(let i=3;i<pixels.length;i+=4) if(pixels[i]>0) count++;
+      return count;
+    },0);
+  });
+  expect(borderPixels).toBe(0);
+  await page.screenshot({path:info.outputPath('margin-dragon.png')});
+  await page.emulateMedia({reducedMotion:'reduce'});await expect(dragon).toHaveAttribute('data-paused','true');await page.clock.runFor(100);
+  const still=await dragon.screenshot(),frame=await dragon.getAttribute('data-frame');
+  await page.clock.runFor(500);expect(await dragon.screenshot()).toEqual(still);
+  expect(await dragon.getAttribute('data-frame')).toBe(frame);
+  await page.setViewportSize({width:900,height:800});await page.clock.runFor(100);await expect(dragon).toBeHidden();
+  await page.setViewportSize({width:1440,height:1000});await page.clock.runFor(100);await expect(dragon).toBeVisible();
+  await page.evaluate(()=>window.scrollTo(0,0));await page.clock.runFor(100);await expect(dragon).toBeHidden();
 });
 
 test('reduced motion keeps the manuscript static and disables fire',async({page})=>{
