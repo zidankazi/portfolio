@@ -22,15 +22,17 @@ their hit areas. One persistent dragon follows the scroll from the manuscript,
 shrinking and moving its existing pose into the left margin beside projects.
 It stays full-size through the early scroll and starts shrinking when projects
 reach the lower screen. Position, rotation, and size ease toward the scroll
-target together. The joints keep their spacing throughout growth; boundary
-clearance changes the destination rather than shifting the painted dragon.
+target together. The joints keep their spacing throughout growth. The larger
+dragon travels with the page and stays above the projects heading until its
+whole body fits in the gutter.
 Reverse scrolling grows it into its live cursor-following pose without resetting
 its position. In the margin it still looks and follows, with its whole body
 constrained to the left gutter. It stays
 clear of the list and right-side previews; narrow screens keep it in the hero.
 Reduced motion keeps the wings still; hidden scenes do not run animation frames.
-Clicks and holds also breathe fire beside projects. Flames stay inside the left
-gutter; project text, selection, GitHub links, and hover previews remain native.
+Clicks and holds also breathe fire beside projects. Flames fade out inside the
+left gutter before reaching the text; project text, selection, GitHub links,
+and hover previews remain native.
 
 The manuscript uses Furia III from the live reference, with IM Fell English
 for capital I only to distinguish it from J. The local font file comes from the demo’s `/furia-iii.ttf` asset. Furia is a commercial font

@@ -484,17 +484,59 @@ test('growth remains continuous when scrolling reverses before the dragon settle
     await expect.poll(async()=>{await page.clock.runFor(16);return dragon.getAttribute('data-drawn-scroll');}).toBe(String(scroll));
     for(let frame=0;frame<14;frame++) {
       await page.clock.runFor(16);
-      frames.push({head:JSON.parse(await dragon.getAttribute('data-head')),scale:Number(await dragon.getAttribute('data-scale'))});
+      const bounds=JSON.parse(await dragon.getAttribute('data-bounds'));
+      const column=await page.locator('#portfolio').boundingBox(),heading=await page.locator('#projects-heading').boundingBox();
+      if(bounds.right>column.x-24) expect(bounds.bottom).toBeLessThanOrEqual(heading.y-23.99);
+      frames.push({head:JSON.parse(await dragon.getAttribute('data-head')),scale:Number(await dragon.getAttribute('data-scale')),scroll});
     }
   }
   for(let index=1;index<frames.length;index++) {
     const before=frames[index-1],after=frames[index];
-    expect(Math.hypot(after.head.x-before.head.x,after.head.y-before.head.y)).toBeLessThan(65);
+    expect(Math.abs(after.head.x-before.head.x)).toBeLessThan(65);
+    // Large artwork moves vertically with native scrolling until it fits the fixed margin.
+    expect(Math.abs(after.head.y-before.head.y)).toBeLessThan(65+Math.abs(after.scroll-before.scroll));
     expect(Math.abs(after.scale-before.scale)).toBeLessThan(.065);
     expect(Math.abs(Math.atan2(Math.sin(after.head.angle-before.head.angle),Math.cos(after.head.angle-before.head.angle)))).toBeLessThan(.3);
   }
   await page.clock.runFor(3000);await expect(dragon).toHaveAttribute('data-mode','hero');
   await page.screenshot({path:info.outputPath('smooth-dragon-return.png')});
+});
+
+test('margin flames fade away before reaching the project column',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','The fade needs a desktop gutter');
+  await page.clock.install();await page.goto('/');
+  const dragon=page.locator('#project-dragon');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.evaluate(()=>window.scrollTo(0,1040));
+  await expect.poll(async()=>{await page.clock.runFor(500);return dragon.getAttribute('data-drawn-mode');}).toBe('margin');
+  await page.mouse.move(1200,500);await page.clock.runFor(3000);await page.mouse.down();
+  let visible=0,nearAlpha=0,edgeAlpha=0;
+  for(let frame=0;frame<14;frame++) {
+    await page.clock.runFor(64);
+    const ink=await dragon.evaluate(canvas=>{
+      const dpr=canvas.width/innerWidth,edge=document.querySelector('#portfolio').getBoundingClientRect().left-24;
+      const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+      let visible=0,nearAlpha=0,edgeAlpha=0;
+      for(let y=0;y<canvas.height;y++) for(let x=0;x<canvas.width;x++) {
+        const i=(y*canvas.width+x)*4;
+        if(pixels[i+3]<=8) continue;
+        const r=pixels[i],g=pixels[i+1],b=pixels[i+2];
+        const fire=(Math.abs(r-196)<8 && Math.abs(g-64)<8 && Math.abs(b-42)<8)
+          || (Math.abs(r-224)<8 && Math.abs(g-138)<8 && Math.abs(b-48)<8)
+          || (Math.abs(r-240)<8 && Math.abs(g-192)<8 && Math.abs(b-48)<8);
+        if(!fire) continue;
+        visible++;
+        if(x/dpr>=edge-20) nearAlpha=Math.max(nearAlpha,pixels[i+3]);
+        if(x/dpr>=edge-12) edgeAlpha=Math.max(edgeAlpha,pixels[i+3]);
+      }
+      return {visible,nearAlpha,edgeAlpha};
+    });
+    visible+=ink.visible;nearAlpha=Math.max(nearAlpha,ink.nearAlpha);edgeAlpha=Math.max(edgeAlpha,ink.edgeAlpha);
+  }
+  expect(visible).toBeGreaterThan(10);expect(nearAlpha).toBeLessThan(50);expect(edgeAlpha).toBe(0);
+  await page.screenshot({path:info.outputPath('soft-fire-boundary.png')});
+  await page.mouse.up();
 });
 
 test('reduced motion keeps the manuscript static and disables fire',async({page})=>{
