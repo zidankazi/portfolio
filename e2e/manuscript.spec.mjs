@@ -21,20 +21,64 @@ test('manuscript sits above a normal portfolio with live widgets and project lin
   await expect(page.locator('.manuscript-fallback')).toContainText("Right now I'm listening to");
   await expect(page.locator('.manuscript-fallback')).toContainText('Test track');
   await expect(page.locator('.manuscript-fallback')).toContainText('by Test artist');
-  await expect(page.getByRole('link',{name:'Zidan Kazi',exact:true})).toBeVisible();
-  await expect(page.getByRole('link',{name:'Test track',exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:'email',exact:true})).toBeVisible();
+  await expect(page.locator('.bio-music')).toContainText('Test track');
   await expect(page.locator('[data-slot="github-activity"]')).toContainText('contributions in the last year');
   await expect(page.locator('[data-date]')).toHaveCount(365);
   await expect(page.locator('.project-row')).toHaveCount(7);
+  await expect(page.locator('#portfolio .intro-copy,#portfolio #spotify')).toHaveCount(0);
+  await expect(page.locator('#portfolio')).not.toContainText('I design and build');
   await expect(page.locator('.text-fragment')).toHaveCount(0);
   await expect(page.locator('nav,h1,h2,h3,header,footer,details')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await page.getByRole('link',{name:'websites for clients',exact:true}).click();
-  await expect(page).toHaveURL(/\/studio$/);await expect(page).toHaveTitle('studio · zidan kazi');
-  await expect(page.locator('#manuscript')).toHaveCount(0);
-  await expect(page.getByRole('link',{name:'OMU',exact:true})).toBeVisible();
-  await page.getByRole('link',{name:'Zidan Kazi',exact:true}).click();
-  await expect(page).toHaveURL('/');expect(errors).toEqual([]);
+  await expect(page.getByRole('link',{name:'studio',exact:true})).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('project previews stay beside the list and play the original media',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','Side previews require a mouse and spare horizontal room');
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.goto('/');
+  const rows=page.locator('.project-row'),preview=page.locator('.project-hover-preview');
+  await expect(preview).toBeHidden();await expect(preview.locator('video')).toHaveCount(0);
+  const names=['relic','roster','multi-agent hide and seek','sponge','zilean','sage','orbital'];
+  for (const [index,name] of names.entries()) {
+    const row=rows.nth(index);await row.scrollIntoViewIfNeeded();await row.hover();
+    await expect(preview).toHaveAttribute('data-active-project',name);await expect(preview).toBeVisible();
+    const rowBox=await row.boundingBox(),box=await preview.boundingBox();
+    expect(box.x>=rowBox.x+rowBox.width+20 || box.x+box.width<=rowBox.x-20).toBe(true);
+    expect(box.x).toBeGreaterThanOrEqual(16);expect(box.y).toBeGreaterThanOrEqual(16);
+    expect(box.x+box.width).toBeLessThanOrEqual(1440-16);expect(box.y+box.height).toBeLessThanOrEqual(1000-16);
+    await expect.poll(()=>preview.locator('img').first().evaluate(img=>img.complete && img.naturalWidth>0)).toBe(true);
+    if ([0,1,5].includes(index)) {
+      await expect(preview.locator('video')).toHaveAttribute('data-ready','true');
+      expect(await preview.locator('video').evaluate(video=>!video.paused && video.muted && video.loop)).toBe(true);
+    }
+    if ([2,6].includes(index)) await expect(preview.locator('.project-preview-motion')).toHaveAttribute('data-ready','true');
+    if (index===5) expect(box.height).toBeGreaterThan(box.width);
+    if (index===0) await page.screenshot({path:info.outputPath('project-side-preview.png')});
+    await page.mouse.move(20,20);await expect(preview).toBeHidden();
+    if ([0,1,5].includes(index)) expect(await preview.locator('video').evaluate(video=>video.paused)).toBe(true);
+  }
+  await page.getByRole('link',{name:'relic',exact:true}).focus();
+  await expect(preview).toHaveAttribute('data-active-project','relic');
+  await page.keyboard.press('Escape');await expect(preview).toBeHidden();
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await rows.first().hover();await expect(preview).toBeVisible();
+  await expect(preview.locator('video,.project-preview-motion')).toHaveCount(0);
+  await page.setViewportSize({width:900,height:800});await rows.first().hover();
+  await expect(preview).toBeHidden();expect(errors).toEqual([]);
+});
+
+test('a failed preview clip leaves its poster visible and links usable',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','Side previews require a mouse');
+  await page.route('**/projects/relic-loop.mp4',route=>route.fulfill({status:503}));
+  await page.goto('/');await page.locator('.project-row').first().hover();
+  const preview=page.locator('.project-hover-preview');
+  await expect(preview).toBeVisible();
+  await expect.poll(()=>preview.locator('img').evaluate(img=>img.complete && img.naturalWidth>0)).toBe(true);
+  await expect(preview.locator('video')).toHaveAttribute('data-ready','false');
+  await expect(page.getByRole('link',{name:'relic',exact:true})).toHaveAttribute('href','https://tryrelic.io');
 });
 
 test('a separate scroll hint fades out and returns at the top',async({page})=>{
@@ -131,7 +175,7 @@ test('live playback bars animate and disappear when listening stops',async({page
   const canvas=page.locator('#manuscript');
   await expect(canvas).toHaveAttribute('data-media-count','3');
   await expect(page.locator('.bio-music .now-playing')).toHaveCount(1);
-  await expect(page.locator('#spotify .now-playing')).toHaveCount(1);
+  await expect(page.locator('#portfolio .now-playing')).toHaveCount(0);
   await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
   const crop=async()=>{
     const box=await canvas.boundingBox();
@@ -230,7 +274,7 @@ test('reduced motion keeps the manuscript static and disables fire',async({page}
   await page.emulateMedia({reducedMotion:'reduce'});await page.clock.install();await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-paused','true');
-  await expect(page.locator('#spotify .now-playing span').first()).toHaveCSS('animation-name','none');
+  await expect(page.locator('.bio-music .now-playing span').first()).toHaveCSS('animation-name','none');
   await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
   const canvas=page.locator('#manuscript'),before=await canvas.screenshot(),frame=await canvas.getAttribute('data-frame');
   await page.mouse.move(100,400);await page.mouse.down();await page.clock.runFor(500);await page.mouse.up();
@@ -295,12 +339,12 @@ test('calendar recovers from failure and supports keyboard navigation',async({pa
 test('Spotify updates and recovers without moving or rewriting projects',async({page})=>{
   await page.emulateMedia({reducedMotion:'reduce'});await page.clock.install();
   await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:{title:null,isPlaying:false}}));
-  await page.goto('/');await expect(page.locator('#spotify')).toHaveAttribute('data-state','empty');
+  await page.goto('/');await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-spotify-state','empty');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
   const before=await page.locator('#manuscript').getAttribute('data-frame');
   const projects=await page.locator('.project-row').allTextContents();
   await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:track}));
-  await page.clock.fastForward(31000);await expect(page.getByRole('link',{name:'Test track',exact:true})).toBeVisible();
+  await page.clock.fastForward(31000);await expect(page.locator('.bio-music')).toContainText('Test track');
   await expect(page.locator('.manuscript-fallback')).toContainText("Right now I'm listening to");
   await expect(page.locator('.manuscript-fallback')).toContainText('Test track');
   await expect(page.locator('.manuscript-fallback')).toContainText('by Test artist');
@@ -312,7 +356,7 @@ test('Spotify updates and recovers without moving or rewriting projects',async({
   await expect(page.getByAltText('Test track album cover')).toHaveAttribute('src',nextCover);
   await expect(page.locator('#manuscript')).toHaveAttribute('data-media-count','3');
   await page.route('**/api/spotify/now-playing',route=>route.fulfill({status:503}));
-  await page.clock.fastForward(31000);await expect(page.locator('#spotify')).toContainText('I last listened to Test track');
+  await page.clock.fastForward(31000);await expect(page.locator('.bio-music')).toContainText('I last listened toTest track');
   await expect(page.locator('.manuscript-fallback')).toContainText('I last listened to');
   await expect(page.locator('#manuscript-scene a')).toHaveCount(0);
   expect(await page.locator('.project-row').allTextContents()).toEqual(projects);
@@ -322,9 +366,10 @@ test('manuscript fallback and portfolio links work without JavaScript',async({br
   const context=await browser.newContext({javaScriptEnabled:false});const page=await context.newPage();
   await page.goto('http://localhost:3001/');
   await expect(page.locator('.manuscript-fallback')).toBeVisible();
-  await expect(page.getByRole('link',{name:'Zidan Kazi',exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:'email',exact:true})).toBeVisible();
   await expect(page.getByRole('link',{name:'relic',exact:true})).toHaveAttribute('href','https://tryrelic.io');
   expect((await request.get('/missing-page')).status()).toBe(404);
+  expect((await request.get('/studio')).status()).toBe(404);
   expect((await (await request.get('/manifest.webmanifest')).json()).name).toBe('Zidan Kazi');
   const video=await request.get('/projects/relic-loop.mp4',{headers:{Range:'bytes=0-100'}});expect(video.status()).toBe(206);
   await context.close();

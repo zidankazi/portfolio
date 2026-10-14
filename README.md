@@ -13,10 +13,12 @@ leaves the viewport. Hold the pointer to breathe fire; touch can still scroll
 the page. After interaction it settles at the last pointer position, including
 after tab switches. Reduced motion keeps the illustration static.
 
-The name, Spotify sentence, projects, links, and GitHub contribution chart sit
-below the manuscript in ordinary server-rendered HTML. They use normal browser
-layout and selection; no canvas or animated text covers their hit areas. The
-studio page uses the same plain portfolio typography without the manuscript.
+Projects, the GitHub contribution chart, and contact links sit below the
+manuscript in ordinary server-rendered HTML. Project hover and keyboard focus
+show the original screenshots and demo clips beside the list when there is
+room. Clips pause when dismissed; reduced motion uses the still posters.
+Phone links keep their ordinary tap behavior. No canvas or preview covers
+their hit areas.
 
 The manuscript uses Furia III from the live reference, with IM Fell English
 for capital I only to distinguish it from J. The local font file comes from the demo’s `/furia-iii.ttf` asset. Furia is a commercial font
