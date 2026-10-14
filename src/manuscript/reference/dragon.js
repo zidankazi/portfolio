@@ -167,6 +167,40 @@ export function updateDragon(dragon, time, mouseX, mouseY, idle = false, restX =
   return true;
 }
 
+// Include the full sprites and wing sweep when meeting the lower page boundary.
+export function getDragonBottom(dragon) {
+  let bottom = -Infinity;
+  function sprite(seg, dim, left, top, sweep = 0.02) {
+    if (!dim) return;
+    for (const x of [left, left + dim.w]) {
+      for (const y of [top, top + dim.h]) {
+        const lo = seg.angle - sweep, hi = seg.angle + sweep;
+        let extent = Math.max(x * Math.sin(lo) + y * Math.cos(lo), x * Math.sin(hi) + y * Math.cos(hi));
+        const peak = Math.atan2(x, y);
+        for (let turn = -2; turn <= 2; turn++) {
+          const angle = peak + turn * Math.PI * 2;
+          if (angle >= lo && angle <= hi) extent = Math.max(extent, Math.hypot(x, y));
+        }
+        bottom = Math.max(bottom, seg.y + extent * dragon.scale + 1);
+      }
+    }
+  }
+  dragon.segments.forEach((seg, i) => {
+    if (i === 0) {
+      sprite(seg, headDim, -headDim.w * .45, -headDim.h / 2);
+      sprite(seg, tongueDim, headDim.w * .3, -tongueDim.h / 2);
+    } else {
+      const dim = bodyDims[i - 1];
+      sprite(seg, dim, -dim.w / 2, -dim.h / 2);
+    }
+    if (i === WING_SEGMENT_INDEX) {
+      sprite(seg, wingBackDim, -wingBackDim.w, -wingBackDim.h, .42);
+      sprite(seg, wingFrontDim, -wingFrontDim.w, -wingFrontDim.h, .42);
+    }
+  });
+  return bottom;
+}
+
 // Get collision rectangles for text exclusion
 export function getDragonExclusions(dragon, top, bottom, padding) {
   let rects = [];
