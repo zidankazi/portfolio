@@ -1,5 +1,6 @@
-import {getRestPose,updateDragonScale,updateDragon,getDragonBounds,drawDragon,drawFire} from './reference/dragon.js';
+import {getRestPose,updateDragonScale,getDragonBounds,drawDragon,drawFire} from './reference/dragon.js';
 import type {createDragon} from './reference/dragon.js';
+import {angleDifference,followDragonBody} from './rig-motion.ts';
 
 type Pose={x:number;y:number;angle:number};
 type Dragon=ReturnType<typeof createDragon>;
@@ -24,16 +25,13 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     turningSpan=Math.max(turningSpan,bounds.right-bounds.left,bounds.bottom-bounds.top);
   }
   turningSpan*=1.1;
-  let width=0,height=0,dpr=0,heroTop=0,goal=0,progress=0,visible=true,frames=0,lastTime=0,lift=0;
+  let width=0,height=0,dpr=0,heroTop=0,goal=0,progress=0,visible=true,frames=0,lastTime=0;
+  let columnLeft=0,headingTop=0,heroBottom=0;
   let target:{poses:Pose[];scale:number;bottom:number;right:number} | null=null;
-  let snapshot:{poses:Pose[];original:Pose[];scale:number;home:Dragon} | null=null;
-  let applied='';
+  let snapshot:{original:Pose[];scale:number;anchor:{x:number;y:number}} | null=null;
   let painted:{left:number;right:number;top:number;bottom:number} | null=null;
   let paintedHeroTop:number | null=null;
   let pointer:{x:number;y:number} | null=null;
-  let follower:Dragon | null=null;
-  let following:Pose[]=[];
-  let destination:{poses:Pose[];fit:number} | null=null;
 
   function restore() {
     if(snapshot) {
@@ -41,12 +39,11 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
       dragon.segments.forEach((segment,index)=>Object.assign(segment,snapshot!.original[index]));
       snapshot=null;
     }
-    applied='';
-    lift=0;
   }
   function sync() {
     const nextDpr=Math.min(devicePixelRatio || 1,2);
     const left=portfolio.getBoundingClientRect().left;
+    columnLeft=left;headingTop=heading.getBoundingClientRect().top;
     const gutter=left-40;
     if(width!==innerWidth || height!==innerHeight || dpr!==nextDpr || canvas.dataset.gutter!==String(left)) {
       width=innerWidth;height=innerHeight;dpr=nextDpr;
@@ -62,11 +59,10 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
         const y=height/2-(box.bottom+box.top)/2;
         target={scale,poses:poses.map(pose=>({...pose,x:pose.x+x,y:pose.y+y})),bottom:box.bottom+y,right:box.right+x};
       } else target=null;
-      applied='';
-      follower=null;
     }
     const heroBox=hero.getBoundingClientRect(),projectBox=projects.getBoundingClientRect();
     heroTop=heroBox.top;
+    heroBottom=heroBox.bottom;
     // Keep full size until projects reach the lower screen; settle as they approach reading height.
     const projectPageTop=projectBox.top-heroTop;
     const start=Math.max(0,projectPageTop-height*.9);
@@ -79,132 +75,95 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
   }
   function update(time:number,animated:boolean):boolean {
     const dt=Math.max(0,Math.min(48,lastTime ? time-lastTime : 16));lastTime=time;
-    const alpha=animated ? 1-Math.exp(-dt/(goal<progress ? 220 : 140)) : 1;
-    progress+= (goal-progress)*alpha;
+    const phaseAlpha=animated ? 1-Math.exp(-dt/(goal<progress ? 220 : 140)) : 1;
+    progress+=(goal-progress)*phaseAlpha;
     if(Math.abs(goal-progress)<.0005) progress=goal;
     if(!target) {const changed=!!snapshot;restore();return changed;}
-    if(!snapshot && !progress && heroTop>=0) return false;
     if(!snapshot) {
       const original=dragon.segments.map(({x,y,angle})=>({x,y,angle}));
-      const poses=original.map(pose=>({...pose,y:pose.y+(paintedHeroTop ?? heroTop)}));
-      snapshot={scale:dragon.scale,original,poses,home:{...dragon,fire:[],segments:poses.map((pose,index)=>({...dragon.segments[index],...pose}))}};
+      snapshot={scale:dragon.scale,original,anchor:{x:original[0].x,y:original[0].y}};
     }
-    let homeMoved=false;
-    if(animated && pointer) {
-      const home=snapshot.home;
-      if(time-home.lastStepTime>=home.stepInterval) {
-        const bottomRoom=Math.max(0,getDragonBounds(home).bottom-home.segments[0].y);
-        updateDragon(home,time,pointer.x,Math.min(pointer.y,height-16-bottomRoom));
-        const overflow=Math.max(0,getDragonBounds(home).bottom-height+16);
-        if(overflow) for(const segment of home.segments) segment.y-=overflow;
-      }
-      snapshot.poses.forEach((pose,index)=>{
-        const end=home.segments[index];
-        const turn=Math.atan2(Math.sin(end.angle-pose.angle),Math.cos(end.angle-pose.angle));
-        if(Math.hypot(end.x-pose.x,end.y-pose.y)>.01 || Math.abs(turn)>.0001) homeMoved=true;
-        pose.x+=(end.x-pose.x)*alpha;pose.y+=(end.y-pose.y)*alpha;pose.angle+=turn*alpha;
-      });
-    }
-    if(!follower) {
-      follower={...dragon,scale:target.scale,fire:[],segments:target.poses.map((pose,index)=>({...dragon.segments[index],...pose}))};
-      updateDragonScale(follower,target.scale);
-      following=target.poses.map(pose=>({...pose}));
-      destination=null;
-    }
-    const moved=animated && pointer && updateDragon(follower,time,pointer.x,pointer.y);
-    // Fit the moving chain inside the left gutter, including its wings at their widest.
-    const columnEdge=portfolio.getBoundingClientRect().left-24;
-    const room={left:16,right:columnEdge-16,top:24,bottom:height-24};
-    // Reuse the fit between reference movement steps; only the cheap pose easing runs each frame.
-    if(moved || !destination) {
-      const box=getDragonBounds(follower);
-      const fit=Math.min(1,(room.right-room.left)/(box.right-box.left),(room.bottom-room.top)/(box.bottom-box.top));
-      const head=follower.segments[0];
-      const poses=follower.segments.map(({x,y,angle})=>({x:head.x+(x-head.x)*fit,y:head.y+(y-head.y)*fit,angle}));
-      const fitted=getDragonBounds({...follower,scale:target.scale*fit,segments:poses});
-      const dx=Math.max(room.left-fitted.left,Math.min(0,room.right-fitted.right));
-      const dy=Math.max(room.top-fitted.top,Math.min(0,room.bottom-fitted.bottom));
-      for(const segment of follower.segments) {segment.x+=dx;segment.y+=dy;}
-      destination={fit,poses:poses.map(pose=>({...pose,x:pose.x+dx,y:pose.y+dy}))};
-    }
-    const {fit,poses}=destination;
-    let followingMoved=false;
-    following.forEach((pose,index)=>{
-      const end=poses[index];
-      const x=end.x,y=end.y;
-      const turn=Math.atan2(Math.sin(end.angle-pose.angle),Math.cos(end.angle-pose.angle));
-      if(Math.hypot(x-pose.x,y-pose.y)>.01 || Math.abs(turn)>.0001) followingMoved=true;
-      pose.x+=(x-pose.x)*alpha;pose.y+=(y-pose.y)*alpha;pose.angle+=turn*alpha;
-    });
-    const key=progress+':'+heroTop+':'+width+':'+height+':'+lift+':'+fit;
-    if(applied===key && canvas.dataset.settled==='true' && !moved && !followingMoved && !homeMoved) return false;
-    applied=key;
     const t=progress*progress*progress*(progress*(progress*6-15)+10);
-    const wantedScale=snapshot.scale+(target.scale*fit-snapshot.scale)*t;
-    const wanted=dragon.segments.map((segment,index)=>{
-      const start=snapshot!.poses[index],end=following[index];
-      const turn=Math.atan2(Math.sin(end.angle-start.angle),Math.cos(end.angle-start.angle));
-      return {...segment,x:start.x+(end.x-start.x)*t,y:start.y+(end.y-start.y)*t,angle:start.angle+turn*t};
-    });
-    // Keep a connected chain throughout growth; blending two entire poses stretched its joints.
-    for(let index=1;index<wanted.length;index++) {
-      const segment=wanted[index],previous=wanted[index-1];
-      const bend=Math.atan2(Math.sin(segment.angle-previous.angle),Math.cos(segment.angle-previous.angle));
-      segment.angle=previous.angle+Math.max(-.25,Math.min(.25,bend));
-      segment.x=previous.x-Math.cos(segment.angle)*30*wantedScale;
-      segment.y=previous.y-Math.sin(segment.angle)*30*wantedScale;
+    const travel=1-(1-t)*(1-t);
+    const positionAlpha=animated ? 1-Math.exp(-dt/130) : 1;
+    const angleAlpha=animated ? 1-Math.exp(-dt/220) : 1;
+    const scaleAlpha=animated ? 1-Math.exp(-dt/160) : 1;
+    const wantedScale=snapshot.scale+(target.scale-snapshot.scale)*t;
+    const nextScale=dragon.scale+(wantedScale-dragon.scale)*scaleAlpha;
+    const scale=Math.abs(nextScale-wantedScale)<.0001 ? wantedScale : nextScale;
+    const ratio=scale/dragon.scale,head=dragon.segments[0];
+    const previousTop=paintedHeroTop ?? heroTop;
+    const scrollShift=(heroTop-previousTop)*(1-travel);
+    // One pose stays alive. Convert it to viewport coordinates and resize about its current head.
+    const headX=head.x,headY=head.y+previousTop+scrollShift;
+    for(const segment of dragon.segments) {
+      segment.x=headX+(segment.x-headX)*ratio;
+      segment.y=headY+(segment.y+previousTop+scrollShift-headY)*ratio;
     }
-    const bounds=getDragonBounds({...dragon,scale:wantedScale,segments:wanted});
-    const projectTop=heading.getBoundingClientRect().top;
-    // Correct the destination, then ease toward it. Never shove the painted creature at a boundary.
-    const dx=t===1 ? Math.max(room.left+8-bounds.left,Math.min(0,room.right-8-bounds.right)) : 0;
-    const dy=t===1 ? Math.max(room.top+8-bounds.top,Math.min(0,room.bottom-8-bounds.bottom)) : 0;
-    const aboveHeading=progress<1 && projectTop>24;
-    lift=aboveHeading && bounds.right+dx>columnEdge ? Math.max(0,bounds.bottom+dy-projectTop+96) : 0;
-    const head=dragon.segments[0],previousTop=paintedHeroTop ?? heroTop;
-    const desiredX=wanted[0].x+dx,desiredY=wanted[0].y+dy-lift;
-    const easing=animated ? 1-Math.exp(-dt/170) : 1;
-    const nextX=head.x+(desiredX-head.x)*easing;
-    // While still large, travel with the page; the settled margin dragon stays fixed.
-    const currentY=head.y+previousTop+(heroTop-previousTop)*(1-t);
-    const nextY=currentY+(desiredY-currentY)*easing;
-    const nextScale=dragon.scale+(wantedScale-dragon.scale)*easing;
-    updateDragonScale(dragon,Math.abs(nextScale-wantedScale)<.0001 ? wantedScale : nextScale);
-    let angleError=0;
-    dragon.segments.forEach((segment,index)=>{
-      const turn=Math.atan2(Math.sin(wanted[index].angle-segment.angle),Math.cos(wanted[index].angle-segment.angle));
-      segment.angle+=turn*easing;angleError=Math.max(angleError,Math.abs(turn));
-      const previous=dragon.segments[index-1];
-      if(previous) {
-        const bend=Math.atan2(Math.sin(segment.angle-previous.angle),Math.cos(segment.angle-previous.angle));
-        segment.angle=previous.angle+Math.max(-.25,Math.min(.25,bend));
-      }
-      segment.x=previous ? previous.x-Math.cos(segment.angle)*30*dragon.scale : nextX;
-      segment.y=previous ? previous.y-Math.sin(segment.angle)*30*dragon.scale : nextY-heroTop;
-    });
-    // The heading is a physical floor during travel; the whole rig can pass below only in the gutter.
+    updateDragonScale(dragon,scale);
+    const columnEdge=columnLeft-24;
+    const room={left:24,right:columnEdge-24,top:32,bottom:height-32};
+    const projectedRatio=target.scale/scale;
+    const projected=dragon.segments.map(segment=>({...segment,x:head.x+(segment.x-head.x)*projectedRatio,y:head.y+(segment.y-head.y)*projectedRatio}));
+    const endBounds=getDragonBounds({...dragon,scale:target.scale,segments:projected});
+    const cursor=pointer ?? {x:snapshot.anchor.x,y:snapshot.anchor.y+heroTop};
+    const restHead=target.poses[0];
+    const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
+    const marginX=clamp(pointer ? cursor.x : restHead.x,room.left-endBounds.left+head.x,room.right-endBounds.right+head.x);
+    const marginY=clamp(pointer ? cursor.y : restHead.y,room.top-endBounds.top+head.y,room.bottom-endBounds.bottom+head.y);
+    let x=cursor.x+(marginX-cursor.x)*travel;
+    let y=cursor.y+(marginY-cursor.y)*travel;
+    const current=getDragonBounds(dragon);
+    if(!progress) y=Math.min(y,height-16-current.bottom+head.y);
+    const aboveHeading=progress<1 && headingTop>24;
+    if(aboveHeading) {
+      const nearText=clamp((x+current.right-head.x-columnEdge+96)/96,0,1);
+      const influence=nearText*nearText*(3-2*nearText)*(1-travel);
+      y-=Math.max(0,y+current.bottom-head.y-headingTop+120)*influence;
+    }
+    if(travel>.95 && current.right-current.left<=room.right-room.left && current.bottom-current.top<=room.bottom-room.top) {
+      x=clamp(x,room.left-current.left+head.x,room.right-current.right+head.x);
+      y=clamp(y,room.top-current.top+head.y,room.bottom-current.bottom+head.y);
+    }
+    const wantedAngle=pointer && Math.hypot(cursor.x-head.x,cursor.y-head.y)>4 ? Math.atan2(cursor.y-head.y,cursor.x-head.x)
+      : pointer ? head.angle : 0;
+    const turn=angleDifference(wantedAngle,head.angle);
+    const maxTurn=animated ? dt*.006 : Infinity;
+    head.angle+=clamp(turn*angleAlpha,-maxTurn,maxTurn);
+    const distance=Math.hypot(x-head.x,y-head.y);
+    const headAlpha=distance ? Math.min(positionAlpha,(animated ? dt*1.2 : Infinity)/distance) : 0;
+    head.x+=(x-head.x)*headAlpha;head.y+=(y-head.y)*headAlpha;
+    const bodyMovement=followDragonBody(dragon,!pointer,angleAlpha,maxTurn);
     const actual=getDragonBounds(dragon);
+    const fitsRoom=actual.right-actual.left<=room.right-room.left && actual.bottom-actual.top<=room.bottom-room.top;
+    const insideRoom=actual.left>=room.left-.25 && actual.right<=room.right+.25 && actual.top>=room.top-.25 && actual.bottom<=room.bottom+.25;
+    // Finish only after the live body has arrived, rather than snapping it into the margin.
+    if(animated && progress===1 && !insideRoom) progress=.9995;
+    let shiftX=0,shiftY=0;
     if(progress===1) {
-      // Turning in the margin never consults the (now offscreen) heading's position.
-      const shiftX=Math.max(room.left+8-actual.left,Math.min(0,room.right-8-actual.right));
-      const shiftY=Math.max(room.top+8-actual.top-heroTop,Math.min(0,room.bottom-8-actual.bottom-heroTop));
-      for(const segment of dragon.segments) {segment.x+=shiftX;segment.y+=shiftY;}
+      shiftX=Math.max(room.left-actual.left,Math.min(0,room.right-actual.right));
+      shiftY=Math.max(room.top-actual.top,Math.min(0,room.bottom-actual.bottom));
+    } else if(travel>.95 && fitsRoom) {
+      const contactSpeed=animated ? dt*.6 : Infinity;
+      shiftX=clamp(Math.max(room.left-actual.left,Math.min(0,room.right-actual.right)),-contactSpeed,contactSpeed);
+      shiftY=clamp(Math.max(room.top-actual.top,Math.min(0,room.bottom-actual.bottom)),-contactSpeed,contactSpeed);
     } else if(aboveHeading && actual.right>columnEdge) {
-      const overflow=Math.max(0,actual.bottom+heroTop-projectTop+24);
-      if(overflow) for(const segment of dragon.segments) segment.y-=overflow;
+      // Ease contact with the heading; a turn must never teleport the entire body upward.
+      const overflow=Math.max(0,actual.bottom-headingTop+24);
+      shiftY=-Math.min(overflow,animated ? dt*.9 : Infinity);
     }
-    const settled=progress===goal && Math.hypot(desiredX-nextX,desiredY-nextY)<.3 && Math.abs(wantedScale-dragon.scale)<.0001 && angleError<.002;
-    if(settled && !progress && heroTop>=0) {
-      // Cursor tracking takes over from exactly the final painted pose.
-      updateDragonScale(dragon,snapshot.scale);dragon.lastStepTime=time;snapshot=null;applied='';
-    }
+    for(const segment of dragon.segments) {segment.x+=shiftX;segment.y+=shiftY-heroTop;}
+    const settled=progress===goal && Math.hypot(x-head.x,y-head.y-heroTop)<.4
+      && Math.abs(wantedScale-scale)<.0001 && Math.abs(turn)<.002 && bodyMovement<.05;
+    if(animated && time-dragon.lastStepTime>=dragon.stepInterval) {dragon.lastStepTime=time;dragon.jitterSeed=Math.random()*1000;}
     canvas.dataset.settled=String(settled);
-    return true;
+    return Math.abs(heroTop-previousTop)>.01 || Math.abs(ratio-1)>.00001 || distance*headAlpha>.01
+      || Math.abs(turn*angleAlpha)>.0001 || bodyMovement>.01 || Math.abs(shiftX)+Math.abs(shiftY)>.01;
   }
   function draw(animated:boolean) {
     const local=getDragonBounds(dragon);
     const bounds={...local,top:local.top+heroTop,bottom:local.bottom+heroTop};
-    const fireTop=Math.max(0,hero.getBoundingClientRect().bottom);
+    const fireTop=Math.max(0,heroBottom);
     const ink={...bounds};
     // Include visible flames in the dirty rectangle so fading particles leave no trails.
     if(target && heroTop<0) for(const particle of dragon.fire) {
@@ -225,11 +184,11 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
       ctx.translate(0,heroTop);drawFire(ctx,dragon);ctx.restore();
     }
     ctx.save();
-    if(!snapshot) {ctx.beginPath();ctx.rect(0,0,width,Math.max(0,hero.getBoundingClientRect().bottom));ctx.clip();}
+    if(!progress) {ctx.beginPath();ctx.rect(0,0,width,Math.max(0,heroBottom));ctx.clip();}
     ctx.translate(0,heroTop);drawDragon(ctx,dragon,animated);ctx.restore();
     canvas.dataset.bounds=JSON.stringify(bounds);
     canvas.dataset.scale=String(dragon.scale);canvas.dataset.frame=String(++frames);
-    canvas.dataset.mode=!visible ? 'hidden' : progress===0 && !snapshot ? 'hero' : progress===1 && canvas.dataset.settled==='true' ? 'margin' : 'transition';
+    canvas.dataset.mode=!visible ? 'hidden' : progress===0 && dragon.scale===snapshot?.scale ? 'hero' : progress===1 && Math.abs(dragon.scale-(target?.scale ?? 0))<.0001 ? 'margin' : 'transition';
     canvas.dataset.drawnMode=canvas.dataset.mode;
     canvas.dataset.drawnScroll=String(-heroTop);
     canvas.dataset.paused=String(!animated);
@@ -240,8 +199,11 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
   }
   window.addEventListener('scroll',sync,{passive:true});
   window.addEventListener('resize',sync);
-  window.addEventListener('pointermove',event=>{pointer={x:event.clientX,y:event.clientY};if(snapshot && canvas.dataset.paused!=='true') onChange();},{passive:true});
+  window.addEventListener('pointermove',event=>{
+    if(event.clientX<0 || event.clientX>width || event.clientY<0 || event.clientY>height) return;
+    pointer={x:event.clientX,y:event.clientY};if(snapshot && canvas.dataset.paused!=='true') onChange();
+  },{passive:true});
   new ResizeObserver(sync).observe(portfolio);
   sync();
-  return {canvas,sync,update,draw,restore,get active(){return !!target && (heroTop<0 || progress>0 || !!snapshot);},get fireAllowed(){return !!target && visible && heroTop<0;},get visible(){return visible;}};
+  return {canvas,sync,update,draw,restore,get active(){return !!target;},get fireAllowed(){return !!target && visible && heroTop<0;},get visible(){return visible;}};
 }
