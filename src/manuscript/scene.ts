@@ -52,6 +52,7 @@ export async function mountScene():Promise<void> {
   let prepared=fitBio();
   let lines:Line[]=[];
   let pictures:Picture[]=[];
+  let initial:{x:number;y:number;width:number;height:number} | null=null;
   let musicGroup:{x:number;y:number;width:number;height:number;detailsX:number;statusY:number;titleY:number;artistY:number | null;iconY:number} | null=null;
   let dirty=true, frame=0, frames=0, visible=true;
   let mouse={x:0,y:0}, hasPointer=false, held=false;
@@ -81,7 +82,7 @@ export async function mountScene():Promise<void> {
       const estimated=candidate.reduce((height,block)=>{
         if (block.music) return height+musicGeometry(block,Math.min(360,layout.pageWidth-2*layout.margin)).height+block.gap;
         const stats=measureRichInlineStats(block.prepared,layout.pageWidth-2*layout.margin);
-        return height+stats.lineCount*block.lineHeight+Math.max(0,block.imageSize-block.lineHeight)+block.gap;
+        return height+stats.lineCount*Math.max(block.lineHeight,block.initial?.height ?? 0)+Math.max(0,block.imageSize-block.lineHeight)+block.gap;
       },0);
       // Leave room for the illuminated initial and the dragon crossing the text.
       if (estimated<=contentBottom()-layout.margin-(width<=600 ? 110 : 52)) break;
@@ -104,7 +105,8 @@ export async function mountScene():Promise<void> {
       const color=block.accent ? '#744338' : block.kind==='label' ? '#6c665a' : TEXT_COLOR;
       const imageSize=block.image ? (block.music ? (width<=600 ? 48 : 64) : pictureSize(block.image,bodySize)) : 0;
       const parts=biographyInline(index===0 ? {...block,text:block.text.slice(1)} : block);
-      const items=parts.map(part=>({text:part.text,font,...(part.noBreak ? {break:'never' as const} : {}),...(part.image ? {extraWidth:imageSize+8} : {})}));
+      const initial=block.kind==='name' ? dropCapSize(fontSize) : null;
+      const items=parts.map(part=>({text:part.text,font,...(part.noBreak || initial ? {break:'never' as const} : {}),...(initial ? {extraWidth:initial.width} : part.image ? {extraWidth:imageSize+8} : {})}));
       const music=block.music ? [
         {text:block.music.status,fontSize:Math.max(12,bodySize*.78),color:'#6c665a',indent:block.music.isPlaying ? 40 : 20},
         {text:block.music.title,fontSize:Math.max(18,bodySize*1.25),color:TEXT_COLOR,indent:0},
@@ -114,7 +116,7 @@ export async function mountScene():Promise<void> {
         return {...row,font,lineHeight:Math.round(row.fontSize*1.25),prepared:prepareRichInline([{text:row.text,font}])};
       }) : null;
       const imageIndex=parts.findIndex(part=>part.image);
-      return {prepared:prepareRichInline(items),itemCount:items.length,font,fontSize,lineHeight,color,gap:block.gap*bodySize/21*paragraphSpacing(),image:block.image,imageSize,imageIndex,parts,music};
+      return {prepared:prepareRichInline(items),itemCount:items.length,font,fontSize,lineHeight,color,gap:block.gap*bodySize/21*paragraphSpacing(),image:block.image,imageSize,imageIndex,parts,music,initial};
     });
   }
   function musicGeometry(block:ReturnType<typeof prepareBio>[number],cardWidth:number) {
@@ -126,9 +128,7 @@ export async function mountScene():Promise<void> {
   }
   function contentBottom() {return Math.min(layout.pageHeight-layout.margin,height-offset.y-72);}
   function flowRanges(y:number,lineHeight:number):Range[] {
-    const cap=dropCapSize();
     let ranges:Range[]=[{left:layout.margin,right:layout.pageWidth-layout.margin}];
-    if (y<layout.margin-4+cap.height) ranges=subtractRanges(ranges,{left:layout.margin-4,right:layout.margin-4+cap.width});
     const top=y+offset.y,bottom=top+lineHeight;
     for (const exclusion of [...getDragonExclusions(dragon,top,bottom,10),...getFireExclusions(dragon,top,bottom,6)]) {
       ranges=subtractRanges(ranges,{left:exclusion.left-offset.x,right:exclusion.right-offset.x});
@@ -158,10 +158,10 @@ export async function mountScene():Promise<void> {
     bitmap.onerror=()=>{dirty=true;schedule();};
     bitmap.src=image.src;
   }
-  function dropCapSize() {
-    const height=layout.lineHeight*2.5;
+  function dropCapSize(fontSize=Math.max(26,layout.fontSize*1.7)) {
+    const height=Math.round(fontSize*1.4);
     const drawWidth=dropCap.naturalWidth*height/dropCap.naturalHeight;
-    return {width:drawWidth+12,height,drawWidth};
+    return {width:drawWidth+fontSize*.12,height,drawWidth};
   }
   function restPosition() {
     return {x:width<=600 ? width*.72 : offset.x+layout.margin+dropCapSize().width*.8-115*scale,y:offset.y+layout.margin+24*scale};
@@ -191,7 +191,7 @@ export async function mountScene():Promise<void> {
     dirty=true; schedule();
   }
   function layoutText() {
-    lines=[];pictures=[];musicGroup=null;
+    lines=[];pictures=[];musicGroup=null;initial=null;
     let cursor={itemIndex:0,segmentIndex:0,graphemeIndex:0},paragraphIndex=0;
     let y=layout.margin;
     while (paragraphIndex<prepared.length) {
@@ -233,7 +233,7 @@ export async function mountScene():Promise<void> {
         continue;
       }
       const imageSize=block.imageSize;
-      const lineHeight=block.image && cursor.itemIndex<=block.imageIndex ? Math.max(block.lineHeight,imageSize) : block.lineHeight;
+      const lineHeight=block.initial ? Math.max(block.lineHeight,block.initial.height) : block.image && cursor.itemIndex<=block.imageIndex ? Math.max(block.lineHeight,imageSize) : block.lineHeight;
       if (y+lineHeight>contentBottom()) break;
       const baselineOffset=(lineHeight-fontSize*.857)/2;
       const ranges=flowRanges(y,lineHeight);
@@ -247,7 +247,10 @@ export async function mountScene():Promise<void> {
         for (const fragment of line.fragments) {
           x+=fragment.gapBefore;
           let textX=x;
-          if (block.image && fragment.itemIndex===block.imageIndex) {
+          if (block.initial) {
+            initial={x,y:y+(lineHeight-block.initial.height)/2,width:block.initial.drawWidth,height:block.initial.height};
+            textX+=block.initial.width;
+          } else if (block.image && fragment.itemIndex===block.imageIndex) {
             loadPicture(block.image);textX+=imageSize+8;
             pictures.push({image:block.image,x,y:y+(lineHeight-imageSize)/2,size:imageSize,textX,textY:y+baselineOffset});
           }
@@ -266,8 +269,7 @@ export async function mountScene():Promise<void> {
   }
   function drawText(time:number) {
     ctx!.save(); ctx!.translate(offset.x,offset.y); ctx!.textBaseline='top';
-    const cap=dropCapSize();
-    ctx!.drawImage(dropCap,layout.margin,layout.margin,cap.drawWidth,cap.height);
+    if(initial) ctx!.drawImage(dropCap,initial.x,initial.y,initial.width,initial.height);
     for (const picture of pictures) {
       const {x,y,size,image}=picture;
       const bitmap=media.get(image.src);
