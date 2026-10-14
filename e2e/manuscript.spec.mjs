@@ -41,7 +41,7 @@ test('a separate scroll hint fades out and returns at the top',async({page})=>{
   await page.goto('/');
   const hint=page.locator('.scroll-hint'),surface=page.locator('#manuscript-scene');
   await expect(surface).toHaveAttribute('data-ready','true');
-  await expect(hint).toHaveText('scroll for projects↓');
+  await expect(hint).toHaveText('↓');
   await expect(hint).toHaveCSS('opacity','1');
   const hintBox=await hint.boundingBox(),heroBox=await surface.boundingBox();
   expect(Math.abs(hintBox.x+hintBox.width/2-heroBox.width/2)).toBeLessThan(1);
