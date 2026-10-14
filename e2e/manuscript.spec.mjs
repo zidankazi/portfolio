@@ -13,6 +13,7 @@ test('manuscript sits above a normal portfolio with live widgets and project lin
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  await expect(page.getByRole('heading',{name:"a few things i've built"})).toBeVisible();
   await expect(page.locator('#manuscript-scene a')).toHaveCount(0);
   await expect(page.locator('.bio-cue')).toHaveCount(0);
   await expect(page.locator('.manuscript-fallback')).toContainText('I like trying new foods.');
@@ -29,7 +30,8 @@ test('manuscript sits above a normal portfolio with live widgets and project lin
   await expect(page.locator('#portfolio .intro-copy,#portfolio #spotify')).toHaveCount(0);
   await expect(page.locator('#portfolio')).not.toContainText('I design and build');
   await expect(page.locator('.text-fragment')).toHaveCount(0);
-  await expect(page.locator('nav,h1,h2,h3,header,footer,details')).toHaveCount(0);
+  await expect(page.locator('nav,h1,h3,header,footer,details')).toHaveCount(0);
+  await expect(page.locator('h2')).toHaveCount(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await expect(page.getByRole('link',{name:'studio',exact:true})).toHaveCount(0);
   expect(errors).toEqual([]);
@@ -428,6 +430,46 @@ test('return growth and cursor handback never reset to the saved hero position',
   await expect(dragon).toHaveAttribute('data-mode','hero');await expect(dragon).toHaveCount(1);
 });
 
+test('project-margin fire stays clear of fixed text, previews, and native links',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','The project dragon needs a desktop gutter');
+  await page.clock.install();await page.goto('/');
+  const dragon=page.locator('#project-dragon');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.evaluate(()=>window.scrollTo(0,document.querySelector('#manuscript-scene').offsetHeight+40));
+  await expect.poll(async()=>{await page.clock.runFor(500);return dragon.getAttribute('data-drawn-mode');}).toBe('margin');
+  const positions=()=>page.locator('.project-row').evaluateAll(rows=>rows.map(row=>{const b=row.getBoundingClientRect();return [b.x,b.y,b.width,b.height,row.textContent];}));
+  const before=await positions();
+  await page.mouse.click(80,500);await page.clock.runFor(100);
+  expect(Number(await dragon.getAttribute('data-fire-count'))).toBeGreaterThan(0);
+  await page.mouse.down();await page.mouse.move(120,480);await page.clock.runFor(850);
+  expect(Number(await dragon.getAttribute('data-fire-count'))).toBeGreaterThan(15);
+  expect(await positions()).toEqual(before);
+  expect(await page.evaluate(()=>window.getSelection()?.toString())).toBe('');
+  const pixels=()=>dragon.evaluate(canvas=>{
+    const dpr=canvas.width/innerWidth,edge=document.querySelector('#portfolio').getBoundingClientRect().left-24;
+    const ctx=canvas.getContext('2d'),data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    let flames=0,overText=0;
+    for(let y=0;y<canvas.height;y++) for(let x=0;x<canvas.width;x++) {
+      const i=(y*canvas.width+x)*4;
+      if(!data[i+3]) continue;
+      if(x/dpr>=edge) overText++;
+      if(data[i+3]>10 && data[i]>175 && data[i+1]>100 && data[i+2]<90) flames++;
+    }
+    return {flames,overText};
+  });
+  expect((await pixels()).flames).toBeGreaterThan(3);expect((await pixels()).overText).toBe(0);
+  await page.screenshot({path:info.outputPath('projects-fire.png')});
+  await page.mouse.up();await page.clock.runFor(1800);
+  expect(await dragon.getAttribute('data-fire-count')).toBe('0');expect((await pixels()).flames).toBe(0);
+  await page.route('https://github.com/zidankazi/roster',route=>route.fulfill({body:'<p>Repository</p>'}));
+  const link=page.locator('.project-link').first(),opened=page.waitForEvent('popup');
+  await link.click();const popup=await opened;await expect(popup).toHaveURL('https://github.com/zidankazi/roster');await popup.close();
+  expect(await positions()).toEqual(before);
+  await page.emulateMedia({reducedMotion:'reduce'});await page.clock.runFor(100);
+  await page.mouse.click(80,500);await page.clock.runFor(500);expect(await dragon.getAttribute('data-fire-count')).toBe('0');
+});
+
 test('growth remains continuous when scrolling reverses before the dragon settles',async({page},info)=>{
   test.skip(info.project.name!=='desktop','The margin needs a desktop screen');
   await page.setViewportSize({width:1512,height:698});
@@ -471,8 +513,12 @@ test('every project title and secondary link opens after cursor movement',async(
   test.setTimeout(60_000);
   await context.route(/^https:\/\/(tryrelic\.io|github\.com|roster-dev\.vercel\.app|sponge-alpha\.vercel\.app|zilean\.app|youtu\.be|x\.com|arxiv\.org)(?:\/.*)?$/,route=>route.fulfill({contentType:'text/html',body:'<p>Project destination</p>'}));
   await page.goto('/');await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
-  const links=page.locator('.project-row a');await expect(links).toHaveCount(12);
-  for(let index=0;index<12;index++) {
+  const links=page.locator('.project-row a');await expect(links).toHaveCount(13);
+  await expect(page.getByRole('link',{name:"openai's 2019 paper"})).toHaveAttribute('href','https://arxiv.org/abs/1909.07528');
+  expect(await page.locator('.project-link').evaluateAll(nodes=>nodes.map(node=>[node.textContent,node.href]))).toEqual([
+    ['github','https://github.com/zidankazi/roster'],['github','https://github.com/zidankazi/hide-and-seek'],['github','https://github.com/zidankazi/sponge'],['github','https://github.com/zidankazi/sage'],['github','https://github.com/zidankazi/orbital'],
+  ]);
+  for(let index=0;index<13;index++) {
     const link=links.nth(index);await link.scrollIntoViewIfNeeded();const box=await link.boundingBox();
     await page.mouse.move(box.x+280,box.y+120);await page.mouse.move(box.x+box.width/2,box.y+box.height/2,{steps:8});
     const expected=new URL(await link.getAttribute('href')).href,opened=page.waitForEvent('popup');
