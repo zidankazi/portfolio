@@ -1,7 +1,7 @@
 // Canvas composition adapted from Illustrated Manuscript (ISC).
 // The portfolio below this surface uses ordinary browser layout and links.
 import {prepareRichInline,layoutNextRichInlineLineRange,materializeRichInlineLineRange,measureRichInlineStats} from '@chenglou/pretext/rich-inline';
-import {biographyBlocks,biographyInline,type BioTrack,type BioImage} from './bio.ts';
+import {biographyBlocks,biographyInline,biographyMarkup,type BioTrack,type BioImage} from './bio.ts';
 import {BG_COLOR, TEXT_COLOR, getResponsiveLayout, getPageOffset, getPageScale} from './reference/config.js';
 import {loadDragonSprites, createDragon, updateDragonScale, updateDragon, getDragonExclusions, getFireExclusions, getFireInfluence, spawnFire, hasActiveFire, updateFire, drawDragon, drawFire} from './reference/dragon.js';
 
@@ -33,22 +33,13 @@ export async function mountScene():Promise<void> {
     const next=JSON.stringify(biographyBlocks(track));
     if (next===bio) return;
     bio=next;
-    if (fallback) fallback.replaceChildren(...biographyBlocks(track).map(block=>{
-      const paragraph=document.createElement('p');paragraph.className='bio-'+block.kind+(block.accent ? ' bio-accent' : '');
-      paragraph.style.marginBottom=block.gap+'px';
-      for (const part of biographyInline(block)) {
-        if (!part.image) {paragraph.append(document.createTextNode(part.text));continue;}
-        const span=document.createElement('span');span.className='bio-inline';
-        const image=document.createElement('img');image.className='bio-media bio-media-'+part.image.kind;image.src=part.image.src;image.alt=part.image.alt;
-        span.append(image,document.createTextNode(part.text));paragraph.append(span);
-      }
-      return paragraph;
-    }));
+    if (fallback) fallback.innerHTML=biographyMarkup(track);
     refreshText?.();
   });
+  const spotifyIcon=new Image();spotifyIcon.src='/manuscript/spotify.svg';
   const dropCap=new Image();
   dropCap.src='/manuscript/dropcap.webp';
-  await Promise.all([document.fonts.load('21px "Furia"'), document.fonts.load('21px "Manuscript Initial"','I'), loadDragonSprites(), dropCap.decode()]);
+  await Promise.all([document.fonts.load('21px "Furia"'), document.fonts.load('21px "Manuscript Initial"','I'), loadDragonSprites(), dropCap.decode(), spotifyIcon.decode()]);
   const motion=matchMedia('(prefers-reduced-motion: reduce)');
   let width=surface.clientWidth, height=surface.clientHeight;
   let layout=sceneLayout();
@@ -59,6 +50,7 @@ export async function mountScene():Promise<void> {
   let prepared=fitBio();
   let lines:Line[]=[];
   let pictures:Picture[]=[];
+  let musicGroup:{x:number;y:number;width:number;height:number;detailsX:number;statusY:number;titleY:number;artistY:number | null;iconY:number} | null=null;
   let dirty=true, frame=0, frames=0, visible=true;
   let mouse={x:0,y:0}, hasPointer=false, held=false;
   let bounds=surface.getBoundingClientRect();
@@ -84,6 +76,7 @@ export async function mountScene():Promise<void> {
     let candidate=prepareBio(bodySize);
     while (bodySize>12) {
       const estimated=candidate.reduce((height,block)=>{
+        if (block.music) return height+musicGeometry(block,Math.min(360,layout.pageWidth-2*layout.margin)).height+block.gap;
         const stats=measureRichInlineStats(block.prepared,layout.pageWidth-2*layout.margin);
         return height+stats.lineCount*block.lineHeight+Math.max(0,block.imageSize-block.lineHeight)+block.gap;
       },0);
@@ -102,27 +95,41 @@ export async function mountScene():Promise<void> {
     return biographyBlocks(track).map((block,index)=>{
       let fontSize=bodySize;
       if (block.kind==='name') fontSize=Math.max(26,bodySize*1.7);
-      else if (block.kind==='song') fontSize=Math.max(17,bodySize*(block.text.length>48 ? 1 : 1.15));
-      else if (block.kind==='artist') fontSize=Math.max(12,bodySize*.85);
       else if (block.kind==='label' || block.kind==='cue') fontSize=Math.max(12,bodySize*.8);
       const lineHeight=Math.round(fontSize*lineSpacing());
       const font=`${fontSize}px "Manuscript Initial", "Furia", Georgia, serif`;
-      const color=block.accent ? '#744338' : ['artist','label','cue'].includes(block.kind) ? '#6c665a' : TEXT_COLOR;
-      const imageSize=block.image ? pictureSize(block.image,bodySize) : 0;
-      const parts=biographyInline(index===0 ? {...block,text:block.text.slice(1)} : block).flatMap(part=>{
-        if (part.image?.kind!=='album') return [part];
-        // A very long first word must not block the entire remaining biography.
-        ctx!.font=font;
-        const limit=layout.pageWidth-2*layout.margin-imageSize-8;
-        const characters=Array.from(part.text);
-        let end=characters.length;
-        while (end>1 && ctx!.measureText(characters.slice(0,end).join('')).width>limit) end--;
-        return end===characters.length ? [part] : [{...part,text:characters.slice(0,end).join('')},{text:characters.slice(end).join('')}];
-      });
-      const items=parts.map(part=>({text:part.text,font,...(part.image ? {break:'never' as const,extraWidth:imageSize+8} : {})}));
+      const color=block.accent ? '#744338' : ['label','cue'].includes(block.kind) ? '#6c665a' : TEXT_COLOR;
+      const imageSize=block.image ? (block.music ? (width<=600 ? 48 : 64) : pictureSize(block.image,bodySize)) : 0;
+      const parts=biographyInline(index===0 ? {...block,text:block.text.slice(1)} : block);
+      const items=parts.map(part=>({text:part.text,font,...(part.noBreak ? {break:'never' as const} : {}),...(part.image ? {extraWidth:imageSize+8} : {})}));
+      const music=block.music ? [
+        {text:block.music.status,fontSize:Math.max(12,bodySize*.78),color:'#6c665a',indent:20},
+        {text:block.music.title,fontSize:Math.max(18,bodySize*1.25),color:TEXT_COLOR,indent:0},
+        ...(block.music.artist ? [{text:'by '+block.music.artist,fontSize:Math.max(12,bodySize*.85),color:'#6c665a',indent:0}] : []),
+      ].map(row=>{
+        const font=`${row.fontSize}px "Manuscript Initial", "Furia", Georgia, serif`;
+        return {...row,font,lineHeight:Math.round(row.fontSize*1.25),prepared:prepareRichInline([{text:row.text,font}])};
+      }) : null;
       const imageIndex=parts.findIndex(part=>part.image);
-      return {prepared:prepareRichInline(items),itemCount:items.length,font,fontSize,lineHeight,color,gap:block.gap*bodySize/21*paragraphSpacing(),image:block.image,imageSize,imageIndex};
+      return {prepared:prepareRichInline(items),itemCount:items.length,font,fontSize,lineHeight,color,gap:block.gap*bodySize/21*paragraphSpacing(),image:block.image,imageSize,imageIndex,parts,music};
     });
+  }
+  function musicGeometry(block:ReturnType<typeof prepareBio>[number],cardWidth:number) {
+    const coverWidth=block.imageSize ? block.imageSize+12 : 0;
+    const textWidth=cardWidth-coverWidth;
+    const rows=block.music!.map(row=>({...row,count:measureRichInlineStats(row.prepared,Math.max(1,textWidth-row.indent)).lineCount}));
+    const textHeight=rows.reduce((height,row)=>height+row.count*row.lineHeight,0)+4;
+    return {rows,textWidth,textHeight,height:Math.max(block.imageSize,textHeight),coverWidth};
+  }
+  function flowRanges(y:number,lineHeight:number):Range[] {
+    const cap=dropCapSize();
+    let ranges:Range[]=[{left:layout.margin,right:layout.pageWidth-layout.margin}];
+    if (y<layout.margin-4+cap.height) ranges=subtractRanges(ranges,{left:layout.margin-4,right:layout.margin-4+cap.width});
+    const top=y+offset.y,bottom=top+lineHeight;
+    for (const exclusion of [...getDragonExclusions(dragon,top,bottom,10),...getFireExclusions(dragon,top,bottom,6)]) {
+      ranges=subtractRanges(ranges,{left:exclusion.left-offset.x,right:exclusion.right-offset.x});
+    }
+    return ranges;
   }
   function loadPicture(image:BioImage) {
     if (mediaRequests.has(image.src)) return;
@@ -179,23 +186,52 @@ export async function mountScene():Promise<void> {
     dirty=true; schedule();
   }
   function layoutText() {
-    lines=[];pictures=[];
-    const cap=dropCapSize();
+    lines=[];pictures=[];musicGroup=null;
     let cursor={itemIndex:0,segmentIndex:0,graphemeIndex:0},paragraphIndex=0;
     let y=layout.margin;
     while (paragraphIndex<prepared.length) {
       const block=prepared[paragraphIndex];
       const {fontSize,font,color,gap}=block;
+      if (block.music) {
+        const idealWidth=Math.min(360,layout.pageWidth-2*layout.margin);
+        const ideal=musicGeometry(block,idealWidth);
+        let placed=false;
+        for (const range of flowRanges(y,ideal.height)) {
+          const cardWidth=Math.min(idealWidth,Math.floor(range.right-range.left));
+          if (cardWidth<Math.min(210,idealWidth)) continue;
+          const geometry=musicGeometry(block,cardWidth);
+          if (y+geometry.height>layout.pageHeight-layout.margin) continue;
+          if (!flowRanges(y,geometry.height).some(space=>space.left<=range.left && space.right>=range.left+cardWidth)) continue;
+          const x=range.left,detailsX=x+geometry.coverWidth;
+          let rowY=y+(geometry.height-geometry.textHeight)/2;
+          const rowYs:number[]=[];
+          for (const [index,row] of geometry.rows.entries()) {
+            rowYs.push(rowY+(row.lineHeight-row.fontSize*.857)/2);
+            let rowCursor={itemIndex:0,segmentIndex:0,graphemeIndex:0};
+            while(rowCursor.itemIndex<1) {
+              const next=layoutNextRichInlineLineRange(row.prepared,geometry.textWidth-row.indent,rowCursor);
+              if (!next) break;
+              const materialized=materializeRichInlineLineRange(row.prepared,next);
+              lines.push({text:materialized.fragments.map(fragment=>fragment.text).join(''),x:detailsX+row.indent,y:rowY+(row.lineHeight-row.fontSize*.857)/2,font:row.font,fontSize:row.fontSize,color:row.color});
+              rowCursor=next.end;rowY+=row.lineHeight;
+            }
+            if(index<2) rowY+=2;
+          }
+          if(block.image) {
+            loadPicture(block.image);
+            pictures.push({image:block.image,x,y:y+(geometry.height-block.imageSize)/2,size:block.imageSize,textX:detailsX,textY:rowYs[1]});
+          }
+          musicGroup={x,y,width:cardWidth,height:geometry.height,detailsX,statusY:rowYs[0],titleY:rowYs[1],artistY:rowYs[2] ?? null,iconY:rowYs[0]};
+          y+=geometry.height+gap;paragraphIndex++;cursor={itemIndex:0,segmentIndex:0,graphemeIndex:0};placed=true;break;
+        }
+        if(!placed) {if(y+ideal.height>layout.pageHeight-layout.margin) break;y+=block.lineHeight;}
+        continue;
+      }
       const imageSize=block.imageSize;
       const lineHeight=block.image && cursor.itemIndex<=block.imageIndex ? Math.max(block.lineHeight,imageSize) : block.lineHeight;
       if (y+lineHeight>layout.pageHeight-layout.margin) break;
       const baselineOffset=(lineHeight-fontSize*.857)/2;
-      let ranges:Range[]=[{left:layout.margin,right:layout.pageWidth-layout.margin}];
-      if (y<layout.margin-4+cap.height) ranges=subtractRanges(ranges,{left:layout.margin-4,right:layout.margin-4+cap.width});
-      const top=y+offset.y,bottom=top+lineHeight;
-      for (const exclusion of [...getDragonExclusions(dragon,top,bottom,10),...getFireExclusions(dragon,top,bottom,6)]) {
-        ranges=subtractRanges(ranges,{left:exclusion.left-offset.x,right:exclusion.right-offset.x});
-      }
+      const ranges=flowRanges(y,lineHeight);
       for (const range of ranges.filter(range=>range.right-range.left>=Math.max(40,fontSize*3))) {
         const geometry=layoutNextRichInlineLineRange(block.prepared,range.right-range.left,cursor);
         if (!geometry) {paragraphIndex++;cursor={itemIndex:0,segmentIndex:0,graphemeIndex:0};y+=gap;break;}
@@ -210,7 +246,7 @@ export async function mountScene():Promise<void> {
             loadPicture(block.image);textX+=imageSize+8;
             pictures.push({image:block.image,x,y:y+(lineHeight-imageSize)/2,size:imageSize,textX,textY:y+baselineOffset});
           }
-          lines.push({text:fragment.text,x:textX,y:y+baselineOffset,font,fontSize,color});
+          lines.push({text:fragment.text,x:textX,y:y+baselineOffset,font,fontSize,color:block.parts[fragment.itemIndex]?.accent ? '#744338' : color});
           x+=fragment.occupiedWidth;
         }
         cursor=line.end;
@@ -233,6 +269,7 @@ export async function mountScene():Promise<void> {
       if (bitmap) ctx!.drawImage(bitmap,x,y,size,size);
       if (image.kind!=='league') {ctx!.strokeStyle='rgba(0,0,0,.1)';ctx!.strokeRect(x+.5,y+.5,size-1,size-1);}
     }
+    if (musicGroup) ctx!.drawImage(spotifyIcon,musicGroup.detailsX,musicGroup.iconY,14,14*spotifyIcon.naturalHeight/spotifyIcon.naturalWidth);
     for (const line of lines) {
       ctx!.font=line.font;
       if (!hasActiveFire(dragon)) {ctx!.fillStyle=line.color;ctx!.fillText(line.text,Math.round(line.x),Math.round(line.y));continue;}
@@ -274,6 +311,7 @@ export async function mountScene():Promise<void> {
     surface!.dataset.ready='true';
     canvas!.dataset.frame=String(++frames);canvas!.dataset.headX=String(Math.round(dragon.segments[0].x));
     canvas!.dataset.headY=String(Math.round(dragon.segments[0].y));canvas!.dataset.fireCount=String(dragon.fire.length);
+    canvas!.dataset.musicGroup=JSON.stringify(musicGroup);
     canvas!.dataset.mediaCount=String(pictures.filter(picture=>media.has(picture.image.src)).length);
     canvas!.dataset.inlineMedia=JSON.stringify(pictures.map(picture=>({kind:picture.image.kind,x:picture.x,y:picture.y,size:picture.size,textX:picture.textX,textY:picture.textY})));
     if (animated) schedule();
