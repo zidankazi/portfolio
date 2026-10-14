@@ -425,13 +425,17 @@ function jitterLine(ctx, x1, y1, x2, y2, seed, jitter) {
   }
 }
 
-export function drawFire(ctx, dragon) {
+export function drawFire(ctx, dragon, fadeRight = Infinity, fadeWidth = 72) {
   for (let p of dragon.fire) {
+    // Fade the entire particle before its outer edge reaches the protected text column.
+    let edge = Math.max(0, Math.min(1, (fadeRight - p.x - p.size * 1.2) / fadeWidth));
+    let alpha = Math.min(1, p.life * 1.5) * edge * edge * (3 - 2 * edge);
+    if (alpha < 0.001) continue;
     let angle = Math.atan2(p.vy, p.vx);
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(angle);
-    ctx.globalAlpha = Math.min(1, p.life * 1.5);
+    ctx.globalAlpha = alpha;
     let decay = 1 - p.life;
     ctx.fillStyle = FIRE_COLORS[decay < 0.33 ? 0 : decay < 0.66 ? 1 : 2];
     let r = p.size / 2;
