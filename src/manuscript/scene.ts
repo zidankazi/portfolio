@@ -4,7 +4,7 @@ import {prepareRichInline,layoutNextRichInlineLineRange,materializeRichInlineLin
 import {biographyBlocks,biographyInline,biographyMarkup,type BioTrack,type BioImage} from './bio.ts';
 import {playbackBars} from './playing.ts';
 import {BG_COLOR, TEXT_COLOR, getResponsiveLayout, getPageOffset, getPageScale} from './reference/config.js';
-import {loadDragonSprites, createDragon, updateDragonScale, updateDragon, getDragonExclusions, getFireExclusions, getFireInfluence, spawnFire, hasActiveFire, updateFire, drawDragon, drawFire} from './reference/dragon.js';
+import {loadDragonSprites, createDragon, updateDragonScale, updateDragon, getDragonBottom, getDragonExclusions, getFireExclusions, getFireInfluence, spawnFire, hasActiveFire, updateFire, drawDragon, drawFire} from './reference/dragon.js';
 
 type Range = {left:number; right:number};
 type Picture = {image:BioImage; x:number; y:number; size:number; textX:number; textY:number};
@@ -82,7 +82,7 @@ export async function mountScene():Promise<void> {
         return height+stats.lineCount*block.lineHeight+Math.max(0,block.imageSize-block.lineHeight)+block.gap;
       },0);
       // Leave room for the illuminated initial and the dragon crossing the text.
-      if (estimated<=layout.pageHeight-2*layout.margin-(width<=600 ? 110 : 52)) break;
+      if (estimated<=contentBottom()-layout.margin-(width<=600 ? 110 : 52)) break;
       bodySize-=.5;candidate=prepareBio(bodySize);
     }
     layout.fontSize=bodySize;layout.lineHeight=Math.round(bodySize*lineSpacing());
@@ -96,10 +96,10 @@ export async function mountScene():Promise<void> {
     return biographyBlocks(track).map((block,index)=>{
       let fontSize=bodySize;
       if (block.kind==='name') fontSize=Math.max(26,bodySize*1.7);
-      else if (block.kind==='label' || block.kind==='cue') fontSize=Math.max(12,bodySize*.8);
+      else if (block.kind==='label') fontSize=Math.max(12,bodySize*.8);
       const lineHeight=Math.round(fontSize*lineSpacing());
       const font=`${fontSize}px "Manuscript Initial", "Furia", Georgia, serif`;
-      const color=block.accent ? '#744338' : ['label','cue'].includes(block.kind) ? '#6c665a' : TEXT_COLOR;
+      const color=block.accent ? '#744338' : block.kind==='label' ? '#6c665a' : TEXT_COLOR;
       const imageSize=block.image ? (block.music ? (width<=600 ? 48 : 64) : pictureSize(block.image,bodySize)) : 0;
       const parts=biographyInline(index===0 ? {...block,text:block.text.slice(1)} : block);
       const items=parts.map(part=>({text:part.text,font,...(part.noBreak ? {break:'never' as const} : {}),...(part.image ? {extraWidth:imageSize+8} : {})}));
@@ -122,6 +122,7 @@ export async function mountScene():Promise<void> {
     const textHeight=rows.reduce((height,row)=>height+row.count*row.lineHeight,0)+4;
     return {rows,textWidth,textHeight,height:Math.max(block.imageSize,textHeight),coverWidth};
   }
+  function contentBottom() {return Math.min(layout.pageHeight-layout.margin,height-offset.y-72);}
   function flowRanges(y:number,lineHeight:number):Range[] {
     const cap=dropCapSize();
     let ranges:Range[]=[{left:layout.margin,right:layout.pageWidth-layout.margin}];
@@ -201,7 +202,7 @@ export async function mountScene():Promise<void> {
           const cardWidth=Math.min(idealWidth,Math.floor(range.right-range.left));
           if (cardWidth<Math.min(210,idealWidth)) continue;
           const geometry=musicGeometry(block,cardWidth);
-          if (y+geometry.height>layout.pageHeight-layout.margin) continue;
+          if (y+geometry.height>contentBottom()) continue;
           if (!flowRanges(y,geometry.height).some(space=>space.left<=range.left && space.right>=range.left+cardWidth)) continue;
           const x=range.left,detailsX=x+geometry.coverWidth;
           let rowY=y+(geometry.height-geometry.textHeight)/2;
@@ -225,12 +226,12 @@ export async function mountScene():Promise<void> {
           musicGroup={x,y,width:cardWidth,height:geometry.height,detailsX,statusY:rowYs[0],titleY:rowYs[1],artistY:rowYs[2] ?? null,iconY:rowYs[0]};
           y+=geometry.height+gap;paragraphIndex++;cursor={itemIndex:0,segmentIndex:0,graphemeIndex:0};placed=true;break;
         }
-        if(!placed) {if(y+ideal.height>layout.pageHeight-layout.margin) break;y+=block.lineHeight;}
+        if(!placed) {if(y+ideal.height>contentBottom()) break;y+=block.lineHeight;}
         continue;
       }
       const imageSize=block.imageSize;
       const lineHeight=block.image && cursor.itemIndex<=block.imageIndex ? Math.max(block.lineHeight,imageSize) : block.lineHeight;
-      if (y+lineHeight>layout.pageHeight-layout.margin) break;
+      if (y+lineHeight>contentBottom()) break;
       const baselineOffset=(lineHeight-fontSize*.857)/2;
       const ranges=flowRanges(y,lineHeight);
       for (const range of ranges.filter(range=>range.right-range.left>=Math.max(40,fontSize*3))) {
@@ -308,7 +309,17 @@ export async function mountScene():Promise<void> {
     if (!visible || document.hidden) return;
     const animated=!motion.matches;
     const rest=restPosition();
-    const moved=animated && updateDragon(dragon,time,mouse.x,mouse.y,!hasPointer,rest.x,rest.y);
+    const bottomLimit=height-16;
+    const headRoom=Math.max(0,getDragonBottom(dragon)-dragon.segments[0].y);
+    const targetY=Math.min(mouse.y,bottomLimit-headRoom);
+    const moved=animated && updateDragon(dragon,time,mouse.x,targetY,!hasPointer,rest.x,rest.y);
+    if (hasPointer) {
+      const overflow=Math.max(0,getDragonBottom(dragon)-bottomLimit);
+      if (overflow) {
+        for (const segment of dragon.segments) segment.y-=overflow;
+        dirty=true;
+      }
+    }
     // Keep the reference's sustained breath without unbounded particle work.
     if (animated && held && dragon.fire.length<180) spawnFire(dragon);
     const fire=hasActiveFire(dragon);
@@ -319,6 +330,7 @@ export async function mountScene():Promise<void> {
     surface!.dataset.ready='true';
     canvas!.dataset.frame=String(++frames);canvas!.dataset.headX=String(Math.round(dragon.segments[0].x));
     canvas!.dataset.headY=String(Math.round(dragon.segments[0].y));canvas!.dataset.fireCount=String(dragon.fire.length);
+    canvas!.dataset.dragonBottom=String(getDragonBottom(dragon));
     canvas!.dataset.musicGroup=JSON.stringify(musicGroup);
     canvas!.dataset.mediaCount=String(pictures.filter(picture=>media.has(picture.image.src)).length);
     canvas!.dataset.inlineMedia=JSON.stringify(pictures.map(picture=>({kind:picture.image.kind,x:picture.x,y:picture.y,size:picture.size,textX:picture.textX,textY:picture.textY})));
@@ -351,7 +363,7 @@ export async function mountScene():Promise<void> {
   new IntersectionObserver(entries=>{
     visible=entries[0].isIntersecting;surface.dataset.running=String(visible && !motion.matches);
     if (visible) schedule();
-    else {release();dragon.fire=[];if (frame) cancelAnimationFrame(frame);frame=0;}
+    else {release();dragon.fire=[];canvas.dataset.fireCount='0';if (frame) cancelAnimationFrame(frame);frame=0;}
   }).observe(surface);
   new ResizeObserver(resize).observe(surface);
   surface.dataset.paused=String(motion.matches);

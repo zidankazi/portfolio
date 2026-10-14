@@ -3,7 +3,7 @@ import {playingMarkup} from './playing.ts';
 
 export type BioTrack = Pick<Track,'title' | 'artist' | 'isPlaying' | 'albumArt'>;
 export type BioImage = {src:string; alt:string; kind:'league' | 'cs2' | 'album'};
-export type BioBlock = {kind:'name' | 'body' | 'label' | 'hobby' | 'music' | 'cue'; text:string; gap:number; accent?:boolean; image?:BioImage; music?:{status:string;title:string;artist:string | null;isPlaying:boolean}};
+export type BioBlock = {kind:'name' | 'body' | 'label' | 'hobby' | 'music'; text:string; gap:number; accent?:boolean; image?:BioImage; music?:{status:string;title:string;artist:string | null;isPlaying:boolean}};
 
 export function biographyBlocks(track:BioTrack | null=null):BioBlock[] {
   const album=track?.albumArt?.startsWith('https://i.scdn.co/image/') ? track.albumArt : null;
@@ -24,7 +24,6 @@ export function biographyBlocks(track:BioTrack | null=null):BioBlock[] {
       music:{status:track.isPlaying ? "Right now I'm listening to" : 'I last listened to',title:track.title,artist:track.artist ?? null,isPlaying:track.isPlaying},
       ...(album ? {image:{src:album,alt:track.title+' album cover',kind:'album' as const}} : {}),
     }] : []),
-    {kind:'cue',text:'A few things I’ve built ↓',gap:0},
   ];
 }
 

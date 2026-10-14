@@ -31,7 +31,7 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--link);outline-offse
 .bio-media-album{width:64px;height:64px}
 .manuscript-fallback .bio-name{font-size:max(26px,1.7em)}
 .manuscript-fallback .bio-music-artist{font-size:max(12px,.85em);color:var(--muted)}
-.manuscript-fallback .bio-label,.manuscript-fallback .bio-cue{font-size:max(12px,.8em);color:var(--muted)}
+.manuscript-fallback .bio-label{font-size:max(12px,.8em);color:var(--muted)}
 .manuscript-fallback .bio-music-song{font-size:max(18px,1.25em)}
 .bio-word-accent{color:var(--link)}
 .manuscript-fallback .bio-music{display:flex;align-items:center;gap:12px}
@@ -53,6 +53,12 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--link);outline-offse
 .manuscript-surface:not([data-ready="true"]) #manuscript{visibility:hidden}
 .manuscript-surface[data-ready="true"] .manuscript-fallback{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .manuscript-surface + main{margin-top:80px}
+.scroll-hint{position:absolute;bottom:max(12px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;color:var(--ink);font:15px/20px "IM Fell English",Georgia,serif;pointer-events:none;transition:opacity 180ms ease-out}
+.scroll-hint-arrow{font:30px/30px Georgia,serif;animation:scroll-nudge 2.4s ease-in-out infinite}
+.scroll-hint[data-hidden="true"]{opacity:0}
+.scroll-hint[data-hidden="true"] .scroll-hint-arrow{animation-play-state:paused}
+@keyframes scroll-nudge{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+@media(prefers-reduced-motion:reduce){.scroll-hint-arrow{animation:none}.scroll-hint{transition:none}}
 #github-activity{padding-top:10px;margin:0 0 28px;font-size:13px;line-height:20px}
 .calendar-status{margin:0;color:var(--muted);min-height:130px;display:flex;align-items:center}
 .calendar-scroll{overflow-x:auto;scrollbar-width:thin;scrollbar-color:#c6baa1 transparent;padding:0 2px 8px;overscroll-behavior-x:contain}

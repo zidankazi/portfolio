@@ -142,6 +142,11 @@ function mountCalendar() {
   void load();
 }
 
+const scrollHint=document.querySelector<HTMLElement>('.scroll-hint');
+if (scrollHint) {
+  const updateHint=()=>{scrollHint.dataset.hidden=String(window.scrollY>12);};
+  updateHint();window.addEventListener('scroll',updateHint,{passive:true});
+}
 mountSpotify(); mountCalendar();
 void mountScene().catch(() => {
   document.querySelector('#manuscript-scene')?.setAttribute('data-ready','false');
