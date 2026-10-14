@@ -105,8 +105,7 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     const moved=animated && pointer && updateDragon(follower,time,pointer.x,pointer.y);
     // Fit the moving chain inside the left gutter, including its wings at their widest.
     const columnEdge=portfolio.getBoundingClientRect().left-24;
-    // Reserve a short breath lane between the small rig and the flame fade-out.
-    const room={left:16,right:columnEdge-80,top:24,bottom:height-24};
+    const room={left:16,right:columnEdge-16,top:24,bottom:height-24};
     // Reuse the fit between reference movement steps; only the cheap pose easing runs each frame.
     if(moved || !destination) {
       const box=getDragonBounds(follower);
@@ -184,13 +183,13 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
   function draw(animated:boolean) {
     const local=getDragonBounds(dragon);
     const bounds={...local,top:local.top+heroTop,bottom:local.bottom+heroTop};
-    const fireTop=Math.max(0,hero.getBoundingClientRect().bottom),fireRight=Math.max(0,portfolio.getBoundingClientRect().left-24);
+    const fireTop=Math.max(0,hero.getBoundingClientRect().bottom);
     const ink={...bounds};
     // Include visible flames in the dirty rectangle so fading particles leave no trails.
     if(target && heroTop<0) for(const particle of dragon.fire) {
       const radius=particle.size*2,y=particle.y+heroTop;
-      if(particle.x-radius>=fireRight || particle.x+radius<=0 || y+radius<=fireTop || y-radius>=height) continue;
-      ink.left=Math.min(ink.left,Math.max(0,particle.x-radius));ink.right=Math.max(ink.right,Math.min(fireRight,particle.x+radius));
+      if(particle.x-radius>=width || particle.x+radius<=0 || y+radius<=fireTop || y-radius>=height) continue;
+      ink.left=Math.min(ink.left,Math.max(0,particle.x-radius));ink.right=Math.max(ink.right,Math.min(width,particle.x+radius));
       ink.top=Math.min(ink.top,Math.max(fireTop,y-radius));ink.bottom=Math.max(ink.bottom,Math.min(height,y+radius));
     }
     const left=Math.max(0,Math.min(painted?.left ?? ink.left,ink.left)-2);
@@ -201,8 +200,8 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     painted=ink;
     if(!visible) return;
     if(target && heroTop<0 && fireTop<height) {
-      ctx.save();ctx.beginPath();ctx.rect(0,fireTop,fireRight,height-fireTop);ctx.clip();
-      ctx.translate(0,heroTop);drawFire(ctx,dragon,fireRight-12,Math.min(72,fireRight*.3));ctx.restore();
+      ctx.save();ctx.beginPath();ctx.rect(0,fireTop,width,height-fireTop);ctx.clip();
+      ctx.translate(0,heroTop);drawFire(ctx,dragon);ctx.restore();
     }
     ctx.save();
     if(!snapshot) {ctx.beginPath();ctx.rect(0,0,width,Math.max(0,hero.getBoundingClientRect().bottom));ctx.clip();}
