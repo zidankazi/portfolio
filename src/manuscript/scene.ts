@@ -3,6 +3,7 @@
 import {prepareRichInline,layoutNextRichInlineLineRange,materializeRichInlineLineRange,measureRichInlineStats} from '@chenglou/pretext/rich-inline';
 import {biographyBlocks,biographyInline,biographyMarkup,type BioTrack,type BioImage} from './bio.ts';
 import {playbackBars} from './playing.ts';
+import {mountMarginDragon} from './margin-dragon.ts';
 import {BG_COLOR, TEXT_COLOR, getResponsiveLayout, getPageOffset, getPageScale} from './reference/config.js';
 import {loadDragonSprites, createDragon, updateDragonScale, updateDragon, getDragonBottom, getDragonExclusions, getFireExclusions, getFireInfluence, spawnFire, hasActiveFire, updateFire, drawDragon, drawFire} from './reference/dragon.js';
 
@@ -41,6 +42,7 @@ export async function mountScene():Promise<void> {
   const dropCap=new Image();
   dropCap.src='/manuscript/dropcap.webp';
   await Promise.all([document.fonts.load('21px "Furia"'), document.fonts.load('21px "Manuscript Initial"','I'), loadDragonSprites(), dropCap.decode(), spotifyIcon.decode()]);
+  mountMarginDragon();
   const motion=matchMedia('(prefers-reduced-motion: reduce)');
   let width=surface.clientWidth, height=surface.clientHeight;
   let layout=sceneLayout();

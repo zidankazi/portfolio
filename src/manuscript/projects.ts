@@ -25,7 +25,8 @@ export function mountProjectPreviews():void {
     if (!project || !hover.matches || document.hidden) {dismiss();return;}
     const box=row.getBoundingClientRect();
     const gap=24,inset=16;
-    const rightSpace=innerWidth-box.right-gap-inset,leftSpace=box.left-gap-inset;
+    const rightSpace=innerWidth-box.right-gap-inset;
+    const leftSpace=document.querySelector('#project-dragon[data-visible="true"]') ? 0 : box.left-gap-inset;
     const side=rightSpace>=180 ? 'right' : leftSpace>=180 ? 'left' : null;
     // Keep the preview beside the list; never cover text or links to fit it in.
     if (!side || box.bottom<=0 || box.top>=innerHeight) {dismiss();return;}
