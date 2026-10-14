@@ -326,7 +326,7 @@ export async function mountScene():Promise<void> {
       }
     }
     // Keep the reference's sustained breath without unbounded particle work.
-    if(transferring) {release();dragon.fire=[];}
+    if(!visible) {release();dragon.fire=[];}
     if (animated && held && dragon.fire.length<180) spawnFire(dragon);
     const fire=hasActiveFire(dragon);
     if (fire) updateFire(dragon,time);
@@ -358,6 +358,8 @@ export async function mountScene():Promise<void> {
   canvas.addEventListener('pointerdown',event=>{
     if (event.button!==0 || motion.matches) return;
     point(event);held=true;
+    // A short click can finish before the next frame; start its burst on pointer-down.
+    if(dragon.fire.length<180) spawnFire(dragon);
     if (event.pointerType==='touch') canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener('pointerleave',release);
@@ -365,7 +367,7 @@ export async function mountScene():Promise<void> {
   canvas.addEventListener('lostpointercapture',release);
   window.addEventListener('pointerup',release);
   window.addEventListener('blur',release);
-  window.addEventListener('scroll',()=>{bounds=surface.getBoundingClientRect();},{passive:true});
+  window.addEventListener('scroll',()=>{release();bounds=surface.getBoundingClientRect();},{passive:true});
   document.addEventListener('visibilitychange',()=>{release();if (!document.hidden) schedule();});
   motion.addEventListener('change',()=>{
     release();dragon.fire=[];margin?.restore();placeDragon();dirty=true;
