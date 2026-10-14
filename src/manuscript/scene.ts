@@ -2,6 +2,7 @@
 // The portfolio below this surface uses ordinary browser layout and links.
 import {prepareRichInline,layoutNextRichInlineLineRange,materializeRichInlineLineRange,measureRichInlineStats} from '@chenglou/pretext/rich-inline';
 import {biographyBlocks,biographyInline,biographyMarkup,type BioTrack,type BioImage} from './bio.ts';
+import {playbackBars} from './playing.ts';
 import {BG_COLOR, TEXT_COLOR, getResponsiveLayout, getPageOffset, getPageScale} from './reference/config.js';
 import {loadDragonSprites, createDragon, updateDragonScale, updateDragon, getDragonExclusions, getFireExclusions, getFireInfluence, spawnFire, hasActiveFire, updateFire, drawDragon, drawFire} from './reference/dragon.js';
 
@@ -103,7 +104,7 @@ export async function mountScene():Promise<void> {
       const parts=biographyInline(index===0 ? {...block,text:block.text.slice(1)} : block);
       const items=parts.map(part=>({text:part.text,font,...(part.noBreak ? {break:'never' as const} : {}),...(part.image ? {extraWidth:imageSize+8} : {})}));
       const music=block.music ? [
-        {text:block.music.status,fontSize:Math.max(12,bodySize*.78),color:'#6c665a',indent:20},
+        {text:block.music.status,fontSize:Math.max(12,bodySize*.78),color:'#6c665a',indent:block.music.isPlaying ? 40 : 20},
         {text:block.music.title,fontSize:Math.max(18,bodySize*1.25),color:TEXT_COLOR,indent:0},
         ...(block.music.artist ? [{text:'by '+block.music.artist,fontSize:Math.max(12,bodySize*.85),color:'#6c665a',indent:0}] : []),
       ].map(row=>{
@@ -259,7 +260,7 @@ export async function mountScene():Promise<void> {
     surface!.dataset.bioComplete=String(paragraphIndex>=prepared.length);
     dirty=false;
   }
-  function drawText() {
+  function drawText(time:number) {
     ctx!.save(); ctx!.translate(offset.x,offset.y); ctx!.textBaseline='top';
     const cap=dropCapSize();
     ctx!.drawImage(dropCap,layout.margin,layout.margin,cap.drawWidth,cap.height);
@@ -270,6 +271,13 @@ export async function mountScene():Promise<void> {
       if (image.kind!=='league') {ctx!.strokeStyle='rgba(0,0,0,.1)';ctx!.strokeRect(x+.5,y+.5,size-1,size-1);}
     }
     if (musicGroup) ctx!.drawImage(spotifyIcon,musicGroup.detailsX,musicGroup.iconY,14,14*spotifyIcon.naturalHeight/spotifyIcon.naturalWidth);
+    if (musicGroup && track?.isPlaying) {
+      ctx!.fillStyle='#744338';
+      playbackBars(motion.matches ? 0 : time).forEach((bar,index)=>{
+        const height=12*bar;
+        ctx!.fillRect(musicGroup!.detailsX+20+index*4,musicGroup!.iconY+12-height,2,height);
+      });
+    }
     for (const line of lines) {
       ctx!.font=line.font;
       if (!hasActiveFire(dragon)) {ctx!.fillStyle=line.color;ctx!.fillText(line.text,Math.round(line.x),Math.round(line.y));continue;}
@@ -307,7 +315,7 @@ export async function mountScene():Promise<void> {
     if (fire) updateFire(dragon,time);
     if (dirty || moved || fire) layoutText();
     ctx!.fillStyle=BG_COLOR;ctx!.fillRect(0,0,width,height);
-    drawText();drawFire(ctx,dragon);drawDragon(ctx,dragon,animated);
+    drawText(time);drawFire(ctx,dragon);drawDragon(ctx,dragon,animated);
     surface!.dataset.ready='true';
     canvas!.dataset.frame=String(++frames);canvas!.dataset.headX=String(Math.round(dragon.segments[0].x));
     canvas!.dataset.headY=String(Math.round(dragon.segments[0].y));canvas!.dataset.fireCount=String(dragon.fire.length);

@@ -1,5 +1,6 @@
 import {mountScene} from './scene.js';
 import type {Track} from './spotify.js';
+import {playingMarkup} from './playing.js';
 
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text = ''): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag); node.className=className; node.textContent=text; return node;
@@ -23,6 +24,10 @@ function mountSpotify() {
     signature=nextSignature;
     const label=element('span', '', next.title ? next.isPlaying ? "Right now I'm listening to " : 'I last listened to ' : 'I listen to a lot of music.');
     const parts: Node[]=[label];
+    if (next.title && next.isPlaying) {
+      const indicator=document.createElement('template');indicator.innerHTML=playingMarkup;
+      parts.unshift(indicator.content);
+    }
     if (next.title) {
       if (safeUrl(next.url)) {const link=element('a', '', next.title); link.href=next.url; link.target='_blank'; link.rel='noopener noreferrer'; parts.push(link);}
       else parts.push(document.createTextNode(next.title));

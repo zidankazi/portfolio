@@ -38,6 +38,15 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--link);outline-offse
 .bio-music-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
 .bio-music-status{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:max(12px,.78em)}
 .bio-spotify{width:14px;height:14px;flex:none;object-fit:contain}
+.now-playing{display:inline-flex;align-items:flex-end;gap:2px;width:14px;height:12px;flex:none;vertical-align:baseline;color:var(--link)}
+#spotify .now-playing{margin-right:8px}
+.now-playing span{display:block;width:2px;height:12px;background:currentColor;transform-origin:bottom;animation:playback 1.2s ease-in-out infinite}
+.now-playing span:nth-child(2){animation-delay:-.18s}
+.now-playing span:nth-child(3){animation-delay:-.36s}
+.now-playing span:nth-child(4){animation-delay:-.12s}
+@keyframes playback{0%,100%{transform:scaleY(.2)}50%{transform:scaleY(.85)}}
+.manuscript-surface[data-ready="true"] .now-playing span{animation:none;transform:scaleY(.4)}
+@media(prefers-reduced-motion:reduce){.now-playing span{animation:none;transform:scaleY(.4)}}
 .bio-music .bio-media{flex:none;margin:0}
 .bio-music-song{overflow-wrap:anywhere}
 .manuscript-fallback .bio-accent{color:var(--link)}
