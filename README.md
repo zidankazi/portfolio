@@ -22,15 +22,16 @@ their hit areas. One persistent dragon follows the scroll from the manuscript,
 shrinking and moving its existing pose into the left margin beside projects.
 It stays full-size through the early scroll and starts shrinking when projects
 reach the lower screen. Position, rotation, and size ease toward the scroll
-target together. The joints keep their spacing throughout growth. The larger
-dragon travels with the page and stays above the visible projects heading until
-its whole body fits in the gutter. Joint bends retain the reference rig's limits.
-Reverse scrolling grows it into its live cursor-following pose without resetting
-its position. In the margin it still looks and follows at a constant size chosen
+target together. One live chain follows its previous joints instead of blending
+two poses. The same motion runs at the top and in the margin; each joint keeps
+its spacing and has a bounded turn speed while growing or shrinking. The larger
+dragon travels with the page and eases away from the visible projects heading
+until its whole body fits in the gutter. Boundary corrections during the handoff
+are rate limited, including abrupt scroll reversals. Reverse scrolling grows it
+from its current position and shape. In the margin it still looks and follows at a constant size chosen
 to accommodate turns. Its bounds are independent of the heading, so circling
 the cursor cannot push it back into the intro. Its whole body stays in the left
-gutter. It stays
-clear of the list and right-side previews; narrow screens keep it in the hero.
+gutter, clear of the list and right-side previews; narrow screens keep it in the hero.
 Reduced motion keeps the wings still; hidden scenes do not run animation frames.
 Clicks and holds also breathe fire beside projects, using the same particles
 and natural fade as the intro. Flames can cross the text, while project layout,

@@ -290,7 +290,10 @@ test('one dragon continuously shrinks into the gutter and returns with reverse s
   }
   await scrollTo(440);
   const reversed=JSON.parse(await dragon.getAttribute('data-bounds'));
-  for(const edge of ['left','right','top','bottom']) expect(Math.abs(reversed[edge]-frames[9][edge])).toBeLessThan(1);
+  // A live chain carries its turning history back upward rather than restoring a stored pose.
+  expect(Number(await dragon.getAttribute('data-scale'))).toBeCloseTo(scales[9],4);
+  const heading=await page.locator('#projects-heading').boundingBox(),column=await page.locator('#portfolio').boundingBox();
+  expect(reversed.right<=column.x-24 || reversed.bottom<=heading.y-24).toBe(true);
   await scrollTo(0);
   await expect(dragon).toHaveAttribute('data-mode','hero');
   expect(await dragon.getAttribute('data-scale')).toBe('1');
@@ -508,16 +511,16 @@ test('growth remains continuous when scrolling reverses before the dragon settle
   await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
   await page.mouse.move(950,280);await page.clock.runFor(3000);
   const frames=[];
+  const sample=async()=>{
+    await page.clock.runFor(16);
+    const frame=await dragon.evaluate(canvas=>({head:JSON.parse(canvas.dataset.head),scale:Number(canvas.dataset.scale),scroll:Number(canvas.dataset.drawnScroll)}));
+    frames.push(frame);return String(frame.scroll);
+  };
   for(const scroll of [300,550,250,600,100,500,0]) {
     await page.evaluate(y=>window.scrollTo(0,y),scroll);
-    await expect.poll(async()=>{await page.clock.runFor(16);return dragon.getAttribute('data-drawn-scroll');}).toBe(String(scroll));
-    for(let frame=0;frame<14;frame++) {
-      await page.clock.runFor(16);
-      const bounds=JSON.parse(await dragon.getAttribute('data-bounds'));
-      const column=await page.locator('#portfolio').boundingBox(),heading=await page.locator('#projects-heading').boundingBox();
-      if(heading.y>24 && bounds.right>column.x-24) expect(bounds.bottom).toBeLessThanOrEqual(heading.y-23.99);
-      frames.push({head:JSON.parse(await dragon.getAttribute('data-head')),scale:Number(await dragon.getAttribute('data-scale')),scroll});
-    }
+    // Keep samples taken while waiting for native scroll delivery too; otherwise several frames go missing.
+    await expect.poll(sample).toBe(String(scroll));
+    for(let frame=0;frame<14;frame++) await sample();
   }
   for(let index=1;index<frames.length;index++) {
     const before=frames[index-1],after=frames[index];
@@ -529,6 +532,81 @@ test('growth remains continuous when scrolling reverses before the dragon settle
   }
   await page.clock.runFor(3000);await expect(dragon).toHaveAttribute('data-mode','hero');
   await page.screenshot({path:info.outputPath('smooth-dragon-return.png')});
+});
+
+for(const viewport of [{width:1440,height:1000},{width:1200,height:698},{width:1512,height:440}]) test(`scroll reversals with simultaneous cursor circles keep a continuous dragon (${viewport.width}x${viewport.height})`,async({page},info)=>{
+  test.skip(info.project.name!=='desktop','The handoff requires a desktop gutter');
+  test.setTimeout(45_000);await page.setViewportSize(viewport);
+  await page.clock.install();await page.goto('/');
+  const dragon=page.locator('#project-dragon');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.mouse.move(viewport.width*.7,viewport.height*.4);await page.clock.runFor(3000);
+  const positions=()=>page.locator('.project-row').evaluateAll(rows=>rows.map(row=>[row.offsetTop,row.offsetHeight,row.textContent]));
+  const before=await positions(),end=await page.locator('#manuscript-scene').evaluate(node=>node.offsetHeight+160);
+  const columnLeft=(await page.locator('#portfolio').boundingBox()).x;
+  const frames=[];
+  // Two uninterrupted round trips. Cursor motion continues through both handoffs and their reversals.
+  for(let frame=0;frame<=240;frame++) {
+    const scroll=Math.round(end*(1-Math.cos(frame*Math.PI/60))/2),angle=frame*Math.PI/24;
+    await page.evaluate(y=>window.scrollTo(0,y),scroll);
+    await page.mouse.move(viewport.width/2+(viewport.width/2-60)*Math.cos(angle),viewport.height/2+(viewport.height/2-64)*Math.sin(angle));
+    await page.clock.runFor(16);
+    const state=await dragon.evaluate(canvas=>({head:JSON.parse(canvas.dataset.head),scale:Number(canvas.dataset.scale),scroll:Number(canvas.dataset.drawnScroll),progress:Number(canvas.dataset.renderedProgress),bounds:JSON.parse(canvas.dataset.bounds)}));
+    frames.push(state);
+    if(frame===105) await page.screenshot({path:info.outputPath('combined-scroll-cursor.png')});
+  }
+  for(let index=1;index<frames.length;index++) {
+    const previous=frames[index-1],current=frames[index],scrollDelta=Math.abs(current.scroll-previous.scroll);
+    expect(Math.hypot(current.head.x-previous.head.x,current.head.y-previous.head.y)).toBeLessThan(48+scrollDelta);
+    expect(Math.abs(current.scale-previous.scale)).toBeLessThan(.04);
+    expect(Math.abs(Math.atan2(Math.sin(current.head.angle-previous.head.angle),Math.cos(current.head.angle-previous.head.angle)))).toBeLessThan(.2);
+    if(current.progress===1) {
+      expect(current.bounds.left).toBeGreaterThanOrEqual(23.99);
+      expect(current.bounds.right).toBeLessThanOrEqual(columnLeft-47.99);
+      expect(current.bounds.top).toBeGreaterThanOrEqual(31.99);
+      expect(current.bounds.bottom).toBeLessThanOrEqual(viewport.height-31.99);
+    }
+  }
+  expect(frames.some(frame=>frame.scale<.5)).toBe(true);
+  expect(frames.some(frame=>frame.scale>.5 && frame.scale<.9)).toBe(true);
+  await page.clock.runFor(4000);await expect(dragon).toHaveAttribute('data-mode','hero');
+  expect(await dragon.getAttribute('data-scale')).toBe('1');
+  expect(await positions()).toEqual(before);await expect(dragon).toHaveCount(1);
+});
+
+test('real Retina animation frames never force the dragon into the margin at the end of a handoff',async({browser},info)=>{
+  test.skip(info.project.name!=='desktop','The regression needs the desktop gutter');
+  const page=await browser.newPage({viewport:{width:1512,height:982},deviceScaleFactor:2});
+  try {
+    await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:{title:null}}));
+    await page.route('**/github-contributions-api.jogruber.de/**',route=>route.fulfill({json:calendar}));
+    await page.goto(process.env.TEST_URL ?? 'http://localhost:3001/');
+    await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+    const frames=await page.evaluate(async()=>{
+      const canvas=document.querySelector('#project-dragon'),end=document.querySelector('#manuscript-scene').offsetHeight+160;
+      const states=[];
+      // Use real RAF and native scroll delivery; fake-clock steps miss this finish-line jump.
+      for(let frame=0;frame<=300;frame++) {
+        await new Promise(resolve=>requestAnimationFrame(resolve));
+        const angle=frame*Math.PI/25,x=innerWidth/2+(innerWidth/2-60)*Math.cos(angle),y=innerHeight/2+(innerHeight/2-64)*Math.sin(angle);
+        window.scrollTo(0,Math.round(end*(1-Math.cos(frame*Math.PI/75))/2));
+        document.elementFromPoint(x,y)?.dispatchEvent(new PointerEvent('pointermove',{clientX:x,clientY:y,bubbles:true,pointerType:'mouse'}));
+        states.push({head:JSON.parse(canvas.dataset.head),scale:Number(canvas.dataset.scale),scroll:Number(canvas.dataset.drawnScroll)});
+      }
+      return states;
+    });
+    expect(frames.some(frame=>frame.scale<.5)).toBe(true);
+    for(let index=1;index<frames.length;index++) {
+      const before=frames[index-1],after=frames[index];
+      expect(Math.hypot(after.head.x-before.head.x,after.head.y-before.head.y)-Math.abs(after.scroll-before.scroll)).toBeLessThan(80);
+      expect(Math.abs(after.scale-before.scale)).toBeLessThan(.075);
+      expect(Math.abs(Math.atan2(Math.sin(after.head.angle-before.head.angle),Math.cos(after.head.angle-before.head.angle)))).toBeLessThan(.3);
+    }
+    await page.evaluate(()=>window.scrollTo(0,1050));await page.mouse.move(1200,330);
+    await expect(page.locator('#project-dragon')).toHaveAttribute('data-mode','margin');
+    await page.screenshot({path:info.outputPath('retina-continuous-dragon.png')});
+  } finally {await page.close();}
 });
 
 test('full-strength margin flames can cross project text without blocking its links',async({page},info)=>{
