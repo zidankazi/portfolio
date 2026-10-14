@@ -16,6 +16,7 @@ a:hover{color:var(--link);text-decoration-color:currentColor}
 .project-title:hover{text-decoration:underline}
 .project-link{font-size:.85em;color:var(--muted)}
 .project-list{margin-bottom:42px}
+.projects-label{margin:0 0 26px;font-size:26px;line-height:34px;font-weight:400;font-style:italic;color:var(--ink)}
 .project-row{padding:17px 0 18px;border-bottom:1px solid rgba(0,0,0,.09)}
 .project-row:first-child{padding-top:0}
 .project-row:last-child{border-bottom:0;padding-bottom:0}

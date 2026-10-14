@@ -1,4 +1,4 @@
-import {projects} from './data.js';
+import {projects,type Project} from './data.js';
 import {biographyMarkup} from './bio.js';
 
 export function escapeHtml(value: string): string {
@@ -7,8 +7,16 @@ export function escapeHtml(value: string): string {
 
 const external = (href: string, label: string, className = '') => `<a class="${className}" href="${escapeHtml(href)}" ${href.startsWith('https://') ? 'target="_blank" rel="noopener noreferrer"' : ''}>${escapeHtml(label)}</a>`;
 
+function description(project:Project):string {
+  const link=project.descriptionLink;
+  if(!link) return escapeHtml(project.description);
+  const index=project.description.indexOf(link.text);
+  if(index<0) return escapeHtml(project.description);
+  return escapeHtml(project.description.slice(0,index))+external(link.href,link.text)+escapeHtml(project.description.slice(index+link.text.length));
+}
+
 function home(): string {
-  return `<section id="projects" aria-label="Projects"><div class="project-list">${projects.map((project, index) => `<article class="project-row" data-project="${index}"><div class="project-heading">${external(project.links[0].href, project.title, 'project-title')}<span class="project-links">${project.links.slice(1).map(link => external(link.href, link.label, 'project-link')).join(' / ')}</span></div><p class="project-description">${escapeHtml(project.description)}</p></article>`).join('\n')}</div></section>
+  return `<section id="projects" aria-labelledby="projects-heading"><h2 id="projects-heading" class="projects-label">a few things i've built</h2><div class="project-list">${projects.map((project, index) => `<article class="project-row" data-project="${index}"><div class="project-heading">${external(project.links[0].href, project.title, 'project-title')}<span class="project-links">${project.links.filter(link=>link.label==='github').map(link => external(link.href, link.label, 'project-link')).join(' / ')}</span></div><p class="project-description">${description(project)}</p></article>`).join('\n')}</div></section>
     <div id="github-activity" data-slot="github-activity" aria-label="GitHub contribution chart" aria-busy="true"><p class="calendar-status">Loading GitHub contributions…</p></div>
     <p class="contact-copy">${external('https://github.com/zidankazi', 'github')} / ${external('https://twitter.com/zidaaaaaaaannnn', 'twitter')} / <a href="mailto:hi@zidankazi.com">email</a></p>`;
 }
