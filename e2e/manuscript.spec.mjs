@@ -223,6 +223,29 @@ test('touch supports sustained fire and normal page scrolling',async({page,conte
   await input.detach();
 });
 
+test('quick clicks and holds still breathe fire during scroll handoffs',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','Desktop handoffs need a left gutter');
+  await page.clock.install();await page.goto('/');
+  const canvas=page.locator('#manuscript'),dragon=page.locator('#project-dragon');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  for(const scroll of [0,40,350,0]) {
+    await page.evaluate(y=>window.scrollTo(0,y),scroll);
+    await expect.poll(async()=>{await page.clock.runFor(16);return dragon.getAttribute('data-drawn-scroll');}).toBe(String(scroll));
+    await page.mouse.click(700,150);await page.clock.runFor(100);
+    expect(Number(await canvas.getAttribute('data-fire-count'))).toBeGreaterThan(0);
+    await page.mouse.down();await page.mouse.move(720,160);await page.clock.runFor(500);
+    expect(Number(await canvas.getAttribute('data-fire-count'))).toBeGreaterThan(15);
+    if(scroll===40) await page.screenshot({path:info.outputPath('dragon-fire-after-scroll.png')});
+    await page.mouse.up();await page.clock.runFor(1800);
+    expect(await canvas.getAttribute('data-fire-count')).toBe('0');
+  }
+  await page.mouse.down();await page.clock.runFor(100);
+  await page.evaluate(()=>window.scrollTo(0,1100));
+  await expect.poll(async()=>{await page.clock.runFor(500);return canvas.getAttribute('data-fire-count');}).toBe('0');
+  await page.mouse.up();
+});
+
 test('idle wings keep moving while the pointer is still',async({page})=>{
   await page.clock.install();await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
