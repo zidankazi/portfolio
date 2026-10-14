@@ -115,6 +115,11 @@ function getRestPose(startX, startY, scale) {
   return poses;
 }
 
+export function setDragonRestPose(dragon, x = 0, y = 0) {
+  const poses = getRestPose(x, y, dragon.scale);
+  dragon.segments.forEach((segment, index) => Object.assign(segment, poses[index]));
+}
+
 export function updateDragon(dragon, time, mouseX, mouseY, idle = false, restX = 0, restY = 0) {
   if (time - dragon.lastStepTime < dragon.stepInterval) return false;
   dragon.lastStepTime = time;
@@ -168,20 +173,33 @@ export function updateDragon(dragon, time, mouseX, mouseY, idle = false, restX =
 }
 
 // Include the full sprites and wing sweep when meeting the lower page boundary.
-export function getDragonBottom(dragon) {
-  let bottom = -Infinity;
+export function getDragonBounds(dragon, verticalOnly = false) {
+  const bounds = {left: Infinity, right: -Infinity, top: Infinity, bottom: -Infinity};
+  function projection(cosine, sine, lo, hi) {
+    const start = cosine * Math.cos(lo) + sine * Math.sin(lo);
+    const end = cosine * Math.cos(hi) + sine * Math.sin(hi);
+    let min = Math.min(start, end), max = Math.max(start, end);
+    const peak = Math.atan2(sine, cosine);
+    const first = Math.ceil((lo - peak) / Math.PI);
+    for (let turn = first; peak + turn * Math.PI <= hi; turn++) {
+      const value = (turn % 2 === 0 ? 1 : -1) * Math.hypot(cosine, sine);
+      min = Math.min(min, value); max = Math.max(max, value);
+    }
+    return {min, max};
+  }
   function sprite(seg, dim, left, top, sweep = 0.02) {
     if (!dim) return;
     for (const x of [left, left + dim.w]) {
       for (const y of [top, top + dim.h]) {
         const lo = seg.angle - sweep, hi = seg.angle + sweep;
-        let extent = Math.max(x * Math.sin(lo) + y * Math.cos(lo), x * Math.sin(hi) + y * Math.cos(hi));
-        const peak = Math.atan2(x, y);
-        for (let turn = -2; turn <= 2; turn++) {
-          const angle = peak + turn * Math.PI * 2;
-          if (angle >= lo && angle <= hi) extent = Math.max(extent, Math.hypot(x, y));
+        const vertical = projection(y, x, lo, hi);
+        if (!verticalOnly) {
+          const horizontal = projection(x, -y, lo, hi);
+          bounds.left = Math.min(bounds.left, seg.x + horizontal.min * dragon.scale - 1);
+          bounds.right = Math.max(bounds.right, seg.x + horizontal.max * dragon.scale + 1);
         }
-        bottom = Math.max(bottom, seg.y + extent * dragon.scale + 1);
+        bounds.top = Math.min(bounds.top, seg.y + vertical.min * dragon.scale - 1);
+        bounds.bottom = Math.max(bounds.bottom, seg.y + vertical.max * dragon.scale + 1);
       }
     }
   }
@@ -198,8 +216,10 @@ export function getDragonBottom(dragon) {
       sprite(seg, wingFrontDim, -wingFrontDim.w, -wingFrontDim.h, .42);
     }
   });
-  return bottom;
+  return bounds;
 }
+
+export function getDragonBottom(dragon) { return getDragonBounds(dragon, true).bottom; }
 
 // Get collision rectangles for text exclusion
 export function getDragonExclusions(dragon, top, bottom, padding) {
