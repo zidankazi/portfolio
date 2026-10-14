@@ -430,6 +430,37 @@ test('return growth and cursor handback never reset to the saved hero position',
   await expect(dragon).toHaveAttribute('data-mode','hero');await expect(dragon).toHaveCount(1);
 });
 
+for(const viewport of [{width:1200,height:698},{width:1512,height:440}]) test(`circling the cursor in projects never sends the margin dragon back above the heading (${viewport.width}x${viewport.height})`,async({page},info)=>{
+  test.skip(info.project.name!=='desktop','Cursor circles need the desktop gutter');
+  await page.setViewportSize(viewport);
+  await page.clock.install();await page.goto('/');
+  const dragon=page.locator('#project-dragon');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.evaluate(()=>window.scrollTo(0,1000));
+  await expect.poll(async()=>{await page.clock.runFor(500);return dragon.getAttribute('data-drawn-mode');}).toBe('margin');
+  const positions=()=>page.locator('.project-row').evaluateAll(rows=>rows.map(row=>[row.offsetTop,row.offsetHeight,row.textContent]));
+  const before=await positions(),scale=Number(await dragon.getAttribute('data-scale'));
+  const column=await page.locator('#portfolio').boundingBox();let previous=null;
+  for(let point=0;point<80;point++) {
+    const angle=point*Math.PI/8;
+    await page.mouse.move(viewport.width/2+(viewport.width/2-60)*Math.cos(angle),viewport.height/2+(viewport.height/2-64)*Math.sin(angle));
+    for(let frame=0;frame<4;frame++) {
+      await page.clock.runFor(16);
+      const head=JSON.parse(await dragon.getAttribute('data-head'));
+      const bounds=JSON.parse(await dragon.getAttribute('data-bounds'));
+      expect(head.y).toBeGreaterThanOrEqual(20);expect(head.y).toBeLessThanOrEqual(viewport.height-20);
+      expect(bounds.left).toBeGreaterThanOrEqual(15.99);expect(bounds.right).toBeLessThanOrEqual(column.x-24);
+      expect(bounds.top).toBeGreaterThanOrEqual(23.99);expect(bounds.bottom).toBeLessThanOrEqual(viewport.height-23.99);
+      expect(Math.abs(Number(await dragon.getAttribute('data-scale'))-scale)).toBeLessThan(.0001);
+      if(previous) expect(Math.hypot(head.x-previous.x,head.y-previous.y)).toBeLessThan(45);
+      previous=head;
+    }
+  }
+  expect(await positions()).toEqual(before);
+  await page.screenshot({path:info.outputPath('cursor-circles.png')});
+});
+
 test('project-margin fire preserves fixed text, previews, and native links',async({page},info)=>{
   test.skip(info.project.name!=='desktop','The project dragon needs a desktop gutter');
   await page.clock.install();await page.goto('/');
@@ -484,7 +515,7 @@ test('growth remains continuous when scrolling reverses before the dragon settle
       await page.clock.runFor(16);
       const bounds=JSON.parse(await dragon.getAttribute('data-bounds'));
       const column=await page.locator('#portfolio').boundingBox(),heading=await page.locator('#projects-heading').boundingBox();
-      if(bounds.right>column.x-24) expect(bounds.bottom).toBeLessThanOrEqual(heading.y-23.99);
+      if(heading.y>24 && bounds.right>column.x-24) expect(bounds.bottom).toBeLessThanOrEqual(heading.y-23.99);
       frames.push({head:JSON.parse(await dragon.getAttribute('data-head')),scale:Number(await dragon.getAttribute('data-scale')),scroll});
     }
   }
