@@ -99,7 +99,7 @@ export function updateDragonScale(dragon, scale) {
   }
 }
 
-function getRestPose(startX, startY, scale) {
+export function getRestPose(startX, startY, scale) {
   let poses = [];
   let spacing = DRAGON_SEGMENT_SPACING * scale;
   poses.push({ x: startX, y: startY - 2, angle: 0 });
