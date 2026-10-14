@@ -5,7 +5,7 @@ import {biographyBlocks,biographyInline,biographyMarkup,type BioTrack,type BioIm
 import {playbackBars} from './playing.ts';
 import {mountMarginDragon} from './margin-dragon.ts';
 import {BG_COLOR, TEXT_COLOR, getResponsiveLayout, getPageOffset, getPageScale} from './reference/config.js';
-import {loadDragonSprites, createDragon, updateDragonScale, updateDragon, getDragonBottom, getDragonExclusions, getFireExclusions, getFireInfluence, spawnFire, hasActiveFire, updateFire, drawDragon, drawFire} from './reference/dragon.js';
+import {loadDragonSprites, createDragon, updateDragonScale, updateDragon, getDragonBottom, getDragonExclusions, getFireExclusions, getFireInfluence, spawnFire, hasActiveFire, updateFire, drawFire} from './reference/dragon.js';
 
 type Range = {left:number; right:number};
 type Picture = {image:BioImage; x:number; y:number; size:number; textX:number; textY:number};
@@ -42,7 +42,6 @@ export async function mountScene():Promise<void> {
   const dropCap=new Image();
   dropCap.src='/manuscript/dropcap.webp';
   await Promise.all([document.fonts.load('21px "Furia"'), document.fonts.load('21px "Manuscript Initial"','I'), loadDragonSprites(), dropCap.decode(), spotifyIcon.decode()]);
-  mountMarginDragon();
   const motion=matchMedia('(prefers-reduced-motion: reduce)');
   let width=surface.clientWidth, height=surface.clientHeight;
   let layout=sceneLayout();
@@ -59,6 +58,7 @@ export async function mountScene():Promise<void> {
   let bounds=surface.getBoundingClientRect();
   const glyphWidths=new Map<string,number>();
   const dragon=createDragon(0,0,scale);
+  let margin:ReturnType<typeof mountMarginDragon> | null=null;
   refreshText=()=>{
     const active=new Set(biographyBlocks(track).flatMap(block=>block.image ? [block.image.src] : []));
     for (const src of media.keys()) if (!active.has(src)) {media.delete(src);mediaRequests.delete(src);}
@@ -176,6 +176,7 @@ export async function mountScene():Promise<void> {
     });
   }
   function resize() {
+    margin?.restore();
     const nextWidth=surface!.clientWidth, nextHeight=surface!.clientHeight;
     const changed=nextWidth!==width;
     width=nextWidth; height=nextHeight; bounds=surface!.getBoundingClientRect();
@@ -308,14 +309,16 @@ export async function mountScene():Promise<void> {
   }
   function render(time:number) {
     frame=0;
-    if (!visible || document.hidden) return;
+    if ((!visible && !margin?.visible) || document.hidden) return;
     const animated=!motion.matches;
     const rest=restPosition();
+    const transferring=!!margin?.progress;
+    const transferred=margin?.update() ?? false;
     const bottomLimit=height-16;
     const headRoom=Math.max(0,getDragonBottom(dragon)-dragon.segments[0].y);
     const targetY=Math.min(mouse.y,bottomLimit-headRoom);
-    const moved=animated && updateDragon(dragon,time,mouse.x,targetY,!hasPointer,rest.x,rest.y);
-    if (hasPointer) {
+    const moved=!transferring && animated && updateDragon(dragon,time,mouse.x,targetY,!hasPointer,rest.x,rest.y);
+    if (hasPointer && !transferring) {
       const overflow=Math.max(0,getDragonBottom(dragon)-bottomLimit);
       if (overflow) {
         for (const segment of dragon.segments) segment.y-=overflow;
@@ -323,14 +326,19 @@ export async function mountScene():Promise<void> {
       }
     }
     // Keep the reference's sustained breath without unbounded particle work.
+    if(transferring) {release();dragon.fire=[];}
     if (animated && held && dragon.fire.length<180) spawnFire(dragon);
     const fire=hasActiveFire(dragon);
     if (fire) updateFire(dragon,time);
-    if (dirty || moved || fire) layoutText();
-    ctx!.fillStyle=BG_COLOR;ctx!.fillRect(0,0,width,height);
-    drawText(time);drawFire(ctx,dragon);drawDragon(ctx,dragon,animated);
+    if (visible && (dirty || moved || transferred || fire)) layoutText();
+    if (visible) {
+      ctx!.fillStyle=BG_COLOR;ctx!.fillRect(0,0,width,height);
+      drawText(time);drawFire(ctx,dragon);
+    }
+    margin?.draw(animated);
     surface!.dataset.ready='true';
-    canvas!.dataset.frame=String(++frames);canvas!.dataset.headX=String(Math.round(dragon.segments[0].x));
+    if(visible) canvas!.dataset.frame=String(++frames);
+    canvas!.dataset.headX=String(Math.round(dragon.segments[0].x));
     canvas!.dataset.headY=String(Math.round(dragon.segments[0].y));canvas!.dataset.fireCount=String(dragon.fire.length);
     canvas!.dataset.dragonBottom=String(getDragonBottom(dragon));
     canvas!.dataset.musicGroup=JSON.stringify(musicGroup);
@@ -338,10 +346,10 @@ export async function mountScene():Promise<void> {
     canvas!.dataset.inlineMedia=JSON.stringify(pictures.map(picture=>({kind:picture.image.kind,x:picture.x,y:picture.y,size:picture.size,textX:picture.textX,textY:picture.textY})));
     if (animated) schedule();
   }
-  function schedule() {if (!frame && visible && !document.hidden) frame=requestAnimationFrame(render);}
+  function schedule() {if (!frame && (visible || margin?.visible) && !document.hidden) frame=requestAnimationFrame(render);}
   function release() {held=false;}
   function point(event:PointerEvent) {
-    if (motion.matches) return;
+    if (motion.matches || margin?.progress) return;
     mouse={x:Math.max(0,Math.min(width,event.clientX-bounds.left)),y:Math.max(0,Math.min(height,event.clientY-bounds.top))};
     hasPointer=true;schedule();
   }
@@ -359,15 +367,18 @@ export async function mountScene():Promise<void> {
   window.addEventListener('scroll',()=>{bounds=surface.getBoundingClientRect();},{passive:true});
   document.addEventListener('visibilitychange',()=>{release();if (!document.hidden) schedule();});
   motion.addEventListener('change',()=>{
-    release();dragon.fire=[];placeDragon();dirty=true;
+    release();dragon.fire=[];margin?.restore();placeDragon();dirty=true;
+    if(margin) margin.canvas.dataset.paused=String(motion.matches);
     surface.dataset.paused=String(motion.matches);surface.dataset.running=String(visible && !motion.matches);schedule();
   });
   new IntersectionObserver(entries=>{
     visible=entries[0].isIntersecting;surface.dataset.running=String(visible && !motion.matches);
     if (visible) schedule();
-    else {release();dragon.fire=[];canvas.dataset.fireCount='0';if (frame) cancelAnimationFrame(frame);frame=0;}
+    else {release();dragon.fire=[];canvas.dataset.fireCount='0';if(!margin?.visible) {if (frame) cancelAnimationFrame(frame);frame=0;}}
   }).observe(surface);
   new ResizeObserver(resize).observe(surface);
   surface.dataset.paused=String(motion.matches);
-  placeDragon();resize();
+  placeDragon();
+  margin=mountMarginDragon(dragon,()=>{dirty=true;schedule();});
+  resize();
 }

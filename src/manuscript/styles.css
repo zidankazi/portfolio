@@ -28,7 +28,7 @@ a:hover{color:var(--link);text-decoration-color:currentColor}
 .project-hover-preview img,.project-hover-preview video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .project-preview-motion{opacity:0;transition:opacity 140ms ease-out}
 .project-preview-motion[data-ready="true"]{opacity:1}
-.margin-dragon{position:fixed;z-index:1;pointer-events:none;opacity:0;visibility:hidden;transition:opacity 220ms ease-out}
+.margin-dragon{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;opacity:0;visibility:hidden}
 .margin-dragon[data-visible="true"]{opacity:1;visibility:visible}
 @media(prefers-reduced-motion:reduce){.margin-dragon{transition:none}}
 @media print{.margin-dragon,.project-hover-preview{display:none}}
