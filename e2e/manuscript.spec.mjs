@@ -14,6 +14,7 @@ test('manuscript sits above a normal portfolio with live widgets and project lin
   await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
   await expect(page.locator('#manuscript-scene a')).toHaveCount(0);
+  await expect(page.locator('.bio-cue')).toHaveCount(0);
   await expect(page.locator('.manuscript-fallback')).toContainText('I like trying new foods.');
   await expect(page.locator('.manuscript-fallback')).toContainText('I also collect CS2 skins. Right now I have a FN Damascus Steel Karambit and MW Snow Leopards.');
   await expect(page.locator('.manuscript-fallback')).toContainText('I used to be Challenger (top 300 out of 3,000,000).');
@@ -34,6 +35,45 @@ test('manuscript sits above a normal portfolio with live widgets and project lin
   await expect(page.getByRole('link',{name:'OMU',exact:true})).toBeVisible();
   await page.getByRole('link',{name:'Zidan Kazi',exact:true}).click();
   await expect(page).toHaveURL('/');expect(errors).toEqual([]);
+});
+
+test('a separate scroll hint fades out and returns at the top',async({page})=>{
+  await page.goto('/');
+  const hint=page.locator('.scroll-hint'),surface=page.locator('#manuscript-scene');
+  await expect(surface).toHaveAttribute('data-ready','true');
+  await expect(hint).toHaveText('scroll for projects↓');
+  await expect(hint).toHaveCSS('opacity','1');
+  const hintBox=await hint.boundingBox(),heroBox=await surface.boundingBox();
+  expect(Math.abs(hintBox.x+hintBox.width/2-heroBox.width/2)).toBeLessThan(1);
+  expect(hintBox.y).toBeGreaterThan(heroBox.height-90);
+  await page.evaluate(()=>window.scrollTo(0,100));
+  await expect(hint).toHaveCSS('opacity','0');
+  await page.evaluate(()=>window.scrollTo(0,0));
+  await expect(hint).toHaveCSS('opacity','1');
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await expect(page.locator('.scroll-hint-arrow')).toHaveCSS('animation-name','none');
+});
+
+test('the entire dragon stops above the lower manuscript edge while scrolling',async({page})=>{
+  await page.clock.install();await page.goto('/');
+  const canvas=page.locator('#manuscript'),surface=page.locator('#manuscript-scene');
+  await expect(surface).toHaveAttribute('data-ready','true');
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  const hero=await canvas.boundingBox();
+  for (const x of [.8,.5,.2]) {
+    await page.mouse.move(hero.width*x,hero.height-2);await page.clock.runFor(1600);
+    expect(Number(await canvas.getAttribute('data-dragon-bottom'))).toBeLessThanOrEqual(hero.height-15.9);
+  }
+  await page.evaluate(height=>window.scrollTo(0,height*.35),hero.height);
+  await page.mouse.move(hero.width*.8,hero.height*.65-2);await page.clock.runFor(1600);
+  expect(Number(await canvas.getAttribute('data-dragon-bottom'))).toBeLessThanOrEqual(hero.height-15.9);
+  // The boundary has clear parchment below it, rather than slicing any sprite.
+  const darkPixels=await canvas.evaluate(node=>{
+    const pixels=node.getContext('2d').getImageData(0,node.height-12,node.width,12).data;
+    let count=0;for(let i=0;i<pixels.length;i+=4) if(pixels[i]<100 && pixels[i+1]<100 && pixels[i+2]<100) count++;
+    return count;
+  });
+  expect(darkPixels).toBe(0);
 });
 
 test('real game logos and album artwork flow together with their text',async({page})=>{
