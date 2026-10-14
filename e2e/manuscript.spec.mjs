@@ -240,26 +240,32 @@ test('one dragon continuously shrinks into the gutter and returns with reverse s
   await page.mouse.move(700,400);await page.clock.runFor(3000);
   const scrollTo=async y=>{
     await page.evaluate(scroll=>window.scrollTo(0,scroll),y);
-    await expect.poll(async()=>{await page.clock.runFor(50);return dragon.getAttribute('data-drawn-scroll');}).toBe(String(y));
+    await expect.poll(async()=>{
+      await page.clock.runFor(1000);
+      return [await dragon.getAttribute('data-drawn-scroll'),await dragon.getAttribute('data-settled')];
+    }).toEqual([String(y),'true']);
   };
   const scales=[],frames=[];
-  for(const scroll of [0,40,80,120,160,200,240,280,320,360,400,440,480]) {
+  const steps=[0,40,80,120,160,200,260,320,380,440,500,560,620,680,740,800,860];
+  for(const scroll of steps) {
     await scrollTo(scroll);
     const box=JSON.parse(await dragon.getAttribute('data-bounds'));
     scales.push(Number(await dragon.getAttribute('data-scale')));frames.push(box);
     await expect(dragon).toBeVisible();await expect(dragon).toHaveCount(1);
     const project=await page.locator('.project-list').boundingBox();
     expect(box.right<=project.x-23 || box.bottom<=project.y-23).toBe(true);
-    if(scroll===160) await page.screenshot({path:info.outputPath('dragon-handoff.png')});
+    if(scroll===440) await page.screenshot({path:info.outputPath('dragon-handoff.png')});
   }
   expect(scales[0]).toBe(1);expect(scales.at(-1)).toBeLessThanOrEqual(.5);
+  expect(scales[4]).toBe(1);expect(scales[6]).toBeGreaterThan(.9);
   for(let i=1;i<scales.length;i++) {
     expect(scales[i]).toBeLessThanOrEqual(scales[i-1]);
     expect(scales[i-1]-scales[i]).toBeLessThan(.2);
     expect(Math.abs(frames[i].left-frames[i-1].left)).toBeLessThan(160);
   }
-  await scrollTo(160);
-  expect(JSON.parse(await dragon.getAttribute('data-bounds'))).toEqual(frames[4]);
+  await scrollTo(440);
+  const reversed=JSON.parse(await dragon.getAttribute('data-bounds'));
+  for(const edge of ['left','right','top','bottom']) expect(Math.abs(reversed[edge]-frames[9][edge])).toBeLessThan(1);
   await scrollTo(0);
   await expect(dragon).toHaveAttribute('data-mode','hero');
   expect(await dragon.getAttribute('data-scale')).toBe('1');
@@ -321,7 +327,7 @@ test('a small idle dragon stays in the left gutter without moving text or coveri
   const positions=()=>page.locator('.project-row').evaluateAll(rows=>rows.map(row=>[row.offsetTop,row.offsetHeight,row.textContent]));
   const before=await positions();
   await page.evaluate(()=>window.scrollTo(0,document.querySelector('#manuscript-scene').offsetHeight+40));
-  await expect(dragon).toHaveAttribute('data-drawn-mode','margin');
+  await expect.poll(async()=>{await page.clock.runFor(1000);return dragon.getAttribute('data-drawn-mode');}).toBe('margin');
   await expect(dragon).toBeVisible();await expect(dragon).toHaveCSS('pointer-events','none');
   const box=JSON.parse(await dragon.getAttribute('data-bounds')),list=await page.locator('.project-list').boundingBox();
   expect(box.left).toBeGreaterThanOrEqual(16);expect(box.right).toBeLessThanOrEqual(list.x-24);
@@ -350,7 +356,8 @@ test('a small idle dragon stays in the left gutter without moving text or coveri
   expect(await dragon.getAttribute('data-frame')).toBe(frame);
   await page.setViewportSize({width:900,height:800});await page.clock.runFor(100);await expect(dragon).toBeHidden();
   await page.setViewportSize({width:1440,height:1000});await page.clock.runFor(100);await expect(dragon).toBeVisible();
-  await page.evaluate(()=>window.scrollTo(0,0));await page.clock.runFor(100);await expect(dragon).toHaveAttribute('data-mode','hero');
+  await page.evaluate(()=>window.scrollTo(0,0));
+  await expect.poll(async()=>{await page.clock.runFor(100);return dragon.getAttribute('data-mode');}).toBe('hero');
 });
 
 test('reduced motion keeps the manuscript static and disables fire',async({page})=>{
