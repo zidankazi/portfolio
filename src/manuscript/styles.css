@@ -12,14 +12,27 @@ p{margin:0 0 24px}
 .person-name,.project-title{font-style:italic}
 a{color:inherit;text-decoration-color:#2b282266;text-underline-offset:4px;text-decoration-thickness:1px;text-decoration-skip-ink:auto}
 a:hover{color:var(--link);text-decoration-color:currentColor}
-.project-title{color:var(--link);text-decoration:none}
+.project-title{color:var(--ink);text-decoration:none;font-size:23px;line-height:29px}
 .project-title:hover{text-decoration:underline}
 .project-link{font-size:.85em;color:var(--muted)}
+.project-list{margin-bottom:42px}
+.project-row{padding:17px 0 18px;border-bottom:1px solid rgba(0,0,0,.09)}
+.project-row:first-child{padding-top:0}
+.project-row:last-child{border-bottom:0;padding-bottom:0}
+.project-heading{display:flex;align-items:baseline;justify-content:space-between;gap:20px;margin-bottom:4px}
+.project-links{flex:none;color:var(--muted);font-size:16px;white-space:nowrap}
+.project-description{margin:0;color:var(--muted);font-size:17px;line-height:25px;max-width:58ch}
+.project-row[data-preview-active="true"] .project-title{color:var(--link)}
+.project-hover-preview{position:fixed;left:0;top:0;z-index:3;pointer-events:none;opacity:0;visibility:hidden;transition:opacity 140ms ease-out;overflow:hidden;border-radius:4px;background:#161618;outline:1px solid rgba(0,0,0,.1);box-shadow:0 6px 20px rgba(0,0,0,.08)}
+.project-hover-preview[data-visible="true"]{opacity:1;visibility:visible}
+.project-hover-preview img,.project-hover-preview video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.project-preview-motion{opacity:0;transition:opacity 140ms ease-out}
+.project-preview-motion[data-ready="true"]{opacity:1}
+@media(prefers-reduced-motion:reduce){.project-hover-preview,.project-preview-motion{transition:none}}
 a:focus-visible,button:focus-visible{outline:1px solid var(--link);outline-offset:4px}
 ::selection{color:var(--paper);background:var(--link)}
-#spotify,.contact-copy{font-size:17px;line-height:27px;color:var(--muted)}
-#spotify{margin-bottom:32px}
-#spotify a,.contact-copy a{color:var(--ink)}
+.contact-copy{font-size:17px;line-height:27px;color:var(--muted)}
+.contact-copy a{color:var(--ink)}
 .contact-copy{margin-bottom:0}
 .manuscript-surface{position:relative;height:100svh;overflow:hidden;isolation:isolate;user-select:none;-webkit-user-select:none}
 #manuscript{display:block;position:absolute;inset:0;width:100%;height:100%;touch-action:pan-y}
@@ -39,7 +52,6 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--link);outline-offse
 .bio-music-status{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:max(12px,.78em)}
 .bio-spotify{width:14px;height:14px;flex:none;object-fit:contain}
 .now-playing{display:inline-flex;align-items:flex-end;gap:2px;width:14px;height:12px;flex:none;vertical-align:baseline;color:var(--link)}
-#spotify .now-playing{margin-right:8px}
 .now-playing span{display:block;width:2px;height:12px;background:currentColor;transform-origin:bottom;animation:playback 1.2s ease-in-out infinite}
 .now-playing span:nth-child(2){animation-delay:-.18s}
 .now-playing span:nth-child(3){animation-delay:-.36s}
@@ -52,12 +64,12 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--link);outline-offse
 .manuscript-fallback .bio-accent{color:var(--link)}
 .manuscript-surface:not([data-ready="true"]) #manuscript{visibility:hidden}
 .manuscript-surface[data-ready="true"] .manuscript-fallback{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-.manuscript-surface + main{margin-top:80px}
+.manuscript-surface + main{margin-top:64px}
 .scroll-hint{position:absolute;bottom:max(14px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;color:var(--muted);font:12px/17px "IM Fell English",Georgia,serif;pointer-events:none;transition:opacity 180ms ease-out}
 .scroll-hint-arrow{font:28px/34px "Furia","IM Fell English",serif;animation:scroll-nudge 3.6s ease-in-out infinite}
 .scroll-hint[data-hidden="true"]{opacity:0}
 .scroll-hint[data-hidden="true"] .scroll-hint-arrow{animation-play-state:paused}
-@keyframes scroll-nudge{0%,65%,100%{transform:translateY(0)}80%{transform:translateY(2px)}}
+@keyframes scroll-nudge{0%,65%,100%{transform:translateY(0)}80%{transform:translateY(4px)}}
 @media(prefers-reduced-motion:reduce){.scroll-hint{transition:none}.scroll-hint-arrow{animation:none}}
 #github-activity{padding-top:10px;margin:0 0 28px;font-size:13px;line-height:20px}
 .calendar-status{margin:0;color:var(--muted);min-height:130px;display:flex;align-items:center}
@@ -72,6 +84,6 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--link);outline-offse
 .calendar-error{min-height:130px;display:flex;align-items:center;justify-content:space-between;gap:15px}
 .calendar-error p{margin:0;color:var(--muted)}
 .calendar-error button{background:none;border:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;white-space:nowrap}
-@media(max-width:600px){body{font-size:18px;line-height:28px}main{margin:44px auto 44px;width:calc(100% - 44px)}.intro-copy{font-size:21px;line-height:32px}#spotify,.contact-copy{font-size:16px;line-height:25px}}
+@media(max-width:600px){body{font-size:18px;line-height:28px}main{margin:44px auto 44px;width:calc(100% - 44px)}.contact-copy{font-size:16px;line-height:25px}.project-title{font-size:21px;line-height:27px}.project-heading{gap:12px}.project-links{font-size:15px}.project-description{font-size:16px;line-height:24px}}
 @media(max-width:600px){.manuscript-surface{height:100svh}.manuscript-fallback{font-size:17px;width:calc(100% - 44px);padding:0;margin-top:24px}}
 @media print{.manuscript-surface{display:none}body{background:white}main{margin:0 auto}p{break-inside:avoid}}

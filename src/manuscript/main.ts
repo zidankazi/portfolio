@@ -1,15 +1,13 @@
 import {mountScene} from './scene.js';
 import type {Track} from './spotify.js';
-import {playingMarkup} from './playing.js';
+import {mountProjectPreviews} from './projects.js';
 
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text = ''): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag); node.className=className; node.textContent=text; return node;
 }
-const safeUrl = (value: unknown): value is string => typeof value === 'string' && value.startsWith('https://');
-
 function mountSpotify() {
-  const container = document.querySelector<HTMLElement>('#spotify');
-  if (!container) return;
+  const surface = document.querySelector<HTMLElement>('#manuscript-scene');
+  if (!surface) return;
   let track: Track | null = null;
   let synced = Date.now();
   let signature = '';
@@ -18,23 +16,10 @@ function mountSpotify() {
 
   function paint(next: Track) {
     track=next; synced=Date.now(); ended=false;
-    container!.dataset.state=next.title ? 'track' : 'empty';
+    surface!.dataset.spotifyState=next.title ? 'track' : 'empty';
     const nextSignature=JSON.stringify([next.title, next.artist, next.albumArt, next.url, next.isPlaying]);
     if (nextSignature === signature) return;
     signature=nextSignature;
-    const label=element('span', '', next.title ? next.isPlaying ? "Right now I'm listening to " : 'I last listened to ' : 'I listen to a lot of music.');
-    const parts: Node[]=[label];
-    if (next.title && next.isPlaying) {
-      const indicator=document.createElement('template');indicator.innerHTML=playingMarkup;
-      parts.unshift(indicator.content);
-    }
-    if (next.title) {
-      if (safeUrl(next.url)) {const link=element('a', '', next.title); link.href=next.url; link.target='_blank'; link.rel='noopener noreferrer'; parts.push(link);}
-      else parts.push(document.createTextNode(next.title));
-      if (next.artist) parts.push(document.createTextNode(' by '+next.artist));
-      parts.push(document.createTextNode(' on Spotify.'));
-    }
-    container!.replaceChildren(...parts);
     document.dispatchEvent(new CustomEvent('manuscript-track',{detail:{title:next.title,artist:next.artist,isPlaying:next.isPlaying,albumArt:next.albumArt}}));
   }
   async function poll() {
@@ -147,7 +132,7 @@ if (scrollHint) {
   const updateHint=()=>{scrollHint.dataset.hidden=String(window.scrollY>12);};
   updateHint();window.addEventListener('scroll',updateHint,{passive:true});
 }
-mountSpotify(); mountCalendar();
+mountSpotify(); mountCalendar(); mountProjectPreviews();
 void mountScene().catch(() => {
   document.querySelector('#manuscript-scene')?.setAttribute('data-ready','false');
 });
