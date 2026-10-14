@@ -57,12 +57,33 @@ test('real game logos and album artwork flow together with their text',async({pa
     await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-bio-complete','true');
     for (const image of images) {
       // The occupied inline item carries both artwork and adjacent words.
-      expect(image.textX-image.x).toBe(image.size+8);
-      expect(Math.abs(image.textY-image.y)).toBeLessThan(image.size/2);
+      expect(image.textX-image.x).toBe(image.size+(image.kind==='album' ? 12 : 8));
+      if(image.kind!=='album') expect(Math.abs(image.textY-image.y)).toBeLessThan(image.size/2);
     }
+    const music=JSON.parse(await canvas.getAttribute('data-music-group'));
+    const album=images.find(image=>image.kind==='album');
+    expect(music.detailsX).toBe(album.textX);
+    expect(music.titleY).toBeGreaterThan(music.statusY);
+    expect(music.artistY).toBeGreaterThan(music.titleY);
+    expect(album.y).toBeGreaterThanOrEqual(music.y);
+    expect(album.y+album.size).toBeLessThanOrEqual(music.y+music.height);
     moved ||= images.some(image=>{const before=initial.find(item=>item.kind===image.kind);return image.x!==before.x || image.y!==before.y;});
   }
   expect(moved).toBe(true);
+});
+
+test('music stays readable when artwork or artist metadata is missing',async({page})=>{
+  await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:{...track,albumArt:null,artist:null,isPlaying:false}}));
+  await page.goto('/');
+  const canvas=page.locator('#manuscript'),music=page.locator('.bio-music');
+  await expect(music).toContainText('I last listened to');
+  await expect(music).toContainText('Test track');
+  await expect(music.locator('img')).toHaveCount(1);
+  await expect(music.getByAltText('Spotify')).toHaveAttribute('src','/manuscript/spotify.svg');
+  await expect(canvas).toHaveAttribute('data-media-count','2');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-bio-complete','true');
+  const group=JSON.parse(await canvas.getAttribute('data-music-group'));
+  expect(group.artistY).toBeNull();expect(group.detailsX).toBe(group.x);
 });
 
 test('holding the manuscript sustains fire until release',async({page})=>{
