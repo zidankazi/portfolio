@@ -85,7 +85,7 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     }
     const t=progress*progress*progress*(progress*(progress*6-15)+10);
     const travel=1-(1-t)*(1-t);
-    const positionAlpha=animated ? 1-Math.exp(-dt/130) : 1;
+    const positionAlpha=animated ? 1-Math.exp(-dt/100) : 1;
     const angleAlpha=animated ? 1-Math.exp(-dt/220) : 1;
     const scaleAlpha=animated ? 1-Math.exp(-dt/160) : 1;
     const wantedScale=snapshot.scale+(target.scale-snapshot.scale)*t;
@@ -131,7 +131,7 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     const maxTurn=animated ? dt*.006 : Infinity;
     head.angle+=clamp(turn*angleAlpha,-maxTurn,maxTurn);
     const distance=Math.hypot(x-head.x,y-head.y);
-    const headAlpha=distance ? Math.min(positionAlpha,(animated ? dt*1.2 : Infinity)/distance) : 0;
+    const headAlpha=distance ? Math.min(positionAlpha,(animated ? dt*1.5 : Infinity)/distance) : 0;
     head.x+=(x-head.x)*headAlpha;head.y+=(y-head.y)*headAlpha;
     const bodyMovement=followDragonBody(dragon,!pointer,angleAlpha,maxTurn);
     const actual=getDragonBounds(dragon);
