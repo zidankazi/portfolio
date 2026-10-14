@@ -29,11 +29,17 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--link);outline-offse
 .bio-media{width:32px;height:32px;object-fit:cover;vertical-align:middle;margin-right:8px;outline:1px solid rgba(0,0,0,.1)}
 .bio-media-league{object-fit:contain;outline:0}
 .bio-media-album{width:64px;height:64px}
-.bio-song .bio-inline{white-space:normal;overflow-wrap:anywhere}
 .manuscript-fallback .bio-name{font-size:max(26px,1.7em)}
-.manuscript-fallback .bio-artist{font-size:max(12px,.85em);color:var(--muted)}
+.manuscript-fallback .bio-music-artist{font-size:max(12px,.85em);color:var(--muted)}
 .manuscript-fallback .bio-label,.manuscript-fallback .bio-cue{font-size:max(12px,.8em);color:var(--muted)}
-.manuscript-fallback .bio-song{font-size:max(17px,1.15em)}
+.manuscript-fallback .bio-music-song{font-size:max(18px,1.25em)}
+.bio-word-accent{color:var(--link)}
+.manuscript-fallback .bio-music{display:flex;align-items:center;gap:12px}
+.bio-music-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
+.bio-music-status{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:max(12px,.78em)}
+.bio-spotify{width:14px;height:14px;flex:none;object-fit:contain}
+.bio-music .bio-media{flex:none;margin:0}
+.bio-music-song{overflow-wrap:anywhere}
 .manuscript-fallback .bio-accent{color:var(--link)}
 .manuscript-surface:not([data-ready="true"]) #manuscript{visibility:hidden}
 .manuscript-surface[data-ready="true"] .manuscript-fallback{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
