@@ -86,6 +86,28 @@ test('music stays readable when artwork or artist metadata is missing',async({pa
   expect(group.artistY).toBeNull();expect(group.detailsX).toBe(group.x);
 });
 
+test('live playback bars animate and disappear when listening stops',async({page})=>{
+  await page.clock.install();await page.goto('/');
+  const canvas=page.locator('#manuscript');
+  await expect(canvas).toHaveAttribute('data-media-count','3');
+  await expect(page.locator('.bio-music .now-playing')).toHaveCount(1);
+  await expect(page.locator('#spotify .now-playing')).toHaveCount(1);
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  const crop=async()=>{
+    const box=await canvas.boundingBox();
+    const music=JSON.parse(await canvas.getAttribute('data-music-group'));
+    return page.screenshot({clip:{x:box.x+Math.round((box.width-Math.min(760,box.width-16))/2)+music.detailsX+20,y:box.y+20+music.iconY,width:14,height:12}});
+  };
+  const before=await crop();await page.clock.runFor(240);
+  expect(await crop()).not.toEqual(before);
+  await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:{...track,isPlaying:false}}));
+  await page.clock.runFor(31000);
+  await expect(page.locator('.bio-music')).toContainText('I last listened to');
+  await expect(page.locator('.now-playing')).toHaveCount(0);
+  const paused=await crop();await page.clock.runFor(240);
+  expect(await crop()).toEqual(paused);
+});
+
 test('holding the manuscript sustains fire until release',async({page})=>{
   await page.clock.install();await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
@@ -168,6 +190,7 @@ test('reduced motion keeps the manuscript static and disables fire',async({page}
   await page.emulateMedia({reducedMotion:'reduce'});await page.clock.install();await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-paused','true');
+  await expect(page.locator('#spotify .now-playing span').first()).toHaveCSS('animation-name','none');
   await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
   const canvas=page.locator('#manuscript'),before=await canvas.screenshot(),frame=await canvas.getAttribute('data-frame');
   await page.mouse.move(100,400);await page.mouse.down();await page.clock.runFor(500);await page.mouse.up();
