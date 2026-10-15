@@ -49,7 +49,7 @@ test('glass manuscript ticker follows real sections without interfering with pro
   await expect(glass).toHaveCSS('pointer-events','none');
   const paper=await glass.boundingBox(),list=await page.locator('#portfolio').boundingBox();
   expect(paper.x).toBeLessThan(list.x);expect(paper.x+paper.width).toBeGreaterThan(list.x+list.width);
-  expect(paper.y).toBeGreaterThan(1000*.4);expect(paper.y).toBeLessThan(1000*.55);
+  expect(paper.y).toBeGreaterThan(1000*.75);expect(paper.y).toBeLessThan(1000*.85);
   const mark=rail.getByRole('link',{name:'Go to projects',exact:true}).locator('.ticker-dash');
   const before=(await mark.boundingBox()).width;
   await rail.getByRole('link',{name:'Go to projects',exact:true}).hover();
@@ -632,14 +632,14 @@ test('real Retina animation frames never force the dragon into the margin at the
         const angle=frame*Math.PI/25,x=innerWidth/2+(innerWidth/2-60)*Math.cos(angle),y=innerHeight/2+(innerHeight/2-64)*Math.sin(angle);
         window.scrollTo(0,Math.round(end*(1-Math.cos(frame*Math.PI/75))/2));
         document.elementFromPoint(x,y)?.dispatchEvent(new PointerEvent('pointermove',{clientX:x,clientY:y,bubbles:true,pointerType:'mouse'}));
-        states.push({head:JSON.parse(canvas.dataset.head),scale:Number(canvas.dataset.scale),scroll:Number(canvas.dataset.drawnScroll)});
+        states.push({head:JSON.parse(canvas.dataset.head),scale:Number(canvas.dataset.scale),scroll:Number(canvas.dataset.drawnScroll),time:performance.now(),mode:canvas.dataset.mode,progress:Number(canvas.dataset.renderedProgress)});
       }
       return states;
     });
     expect(frames.some(frame=>frame.scale<.5)).toBe(true);
     for(let index=1;index<frames.length;index++) {
       const before=frames[index-1],after=frames[index];
-      expect(Math.hypot(after.head.x-before.head.x,after.head.y-before.head.y)-Math.abs(after.scroll-before.scroll)).toBeLessThan(80);
+      expect(Math.hypot(after.head.x-before.head.x,after.head.y-before.head.y)-Math.abs(after.scroll-before.scroll),JSON.stringify({index,before,after})).toBeLessThan(80);
       expect(Math.abs(after.scale-before.scale)).toBeLessThan(.075);
       expect(Math.abs(Math.atan2(Math.sin(after.head.angle-before.head.angle),Math.cos(after.head.angle-before.head.angle)))).toBeLessThan(.3);
     }

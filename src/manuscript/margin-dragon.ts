@@ -152,6 +152,15 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
       const overflow=Math.max(0,actual.bottom-headingTop+24);
       shiftY=-Math.min(overflow,animated ? dt*.9 : Infinity);
     }
+    if(animated && progress<1) {
+      // Cursor following and boundary contact share one travel budget.
+      const dx=head.x-headX+shiftX,dy=head.y-headY+shiftY;
+      const distance=Math.hypot(dx,dy),limit=dt*1.5;
+      if(distance>limit) {
+        shiftX=dx*limit/distance-(head.x-headX);
+        shiftY=dy*limit/distance-(head.y-headY);
+      }
+    }
     for(const segment of dragon.segments) {segment.x+=shiftX;segment.y+=shiftY-heroTop;}
     const settled=progress===goal && Math.hypot(x-head.x,y-head.y-heroTop)<.4
       && Math.abs(wantedScale-scale)<.0001 && Math.abs(turn)<.002 && bodyMovement<.05;
