@@ -103,15 +103,15 @@ export async function mountScene():Promise<void> {
       else if (block.kind==='label') fontSize=Math.max(12,bodySize*.8);
       const lineHeight=Math.round(fontSize*lineSpacing());
       const font=`${fontSize}px "Manuscript Initial", "Furia", Georgia, serif`;
-      const color=block.accent ? '#744338' : block.kind==='label' ? '#494134' : TEXT_COLOR;
+      const color=block.accent ? '#64382e' : block.kind==='label' ? '#352e25' : TEXT_COLOR;
       const imageSize=block.image ? (block.music ? (width<=600 ? 48 : 64) : pictureSize(block.image,bodySize)) : 0;
       const parts=biographyInline(index===0 ? {...block,text:block.text.slice(1)} : block);
       const initial=block.kind==='name' ? dropCapSize(fontSize,bodySize) : null;
       const items=parts.map(part=>({text:part.text,font,...(part.noBreak || initial ? {break:'never' as const} : {}),...(initial ? {extraWidth:initial.width} : part.image ? {extraWidth:imageSize+8} : {})}));
       const music=block.music ? [
-        {text:block.music.status,fontSize:Math.max(12,bodySize*.78),color:'#494134',indent:block.music.isPlaying ? 40 : 20},
+        {text:block.music.status,fontSize:Math.max(12,bodySize*.78),color:'#352e25',indent:block.music.isPlaying ? 40 : 20},
         {text:block.music.title,fontSize:Math.max(18,bodySize*1.25),color:TEXT_COLOR,indent:0},
-        ...(block.music.artist ? [{text:'by '+block.music.artist,fontSize:Math.max(12,bodySize*.85),color:'#494134',indent:0}] : []),
+        ...(block.music.artist ? [{text:'by '+block.music.artist,fontSize:Math.max(12,bodySize*.85),color:'#352e25',indent:0}] : []),
       ].map(row=>{
         const font=`${row.fontSize}px "Manuscript Initial", "Furia", Georgia, serif`;
         return {...row,font,lineHeight:Math.round(row.fontSize*1.25),prepared:prepareRichInline([{text:row.text,font}])};
@@ -259,7 +259,7 @@ export async function mountScene():Promise<void> {
             loadPicture(block.image);textX+=imageSize+8;
             pictures.push({image:block.image,x,y:y+(lineHeight-imageSize)/2,size:imageSize,textX,textY:y+baselineOffset});
           }
-          lines.push({text:fragment.text,x:textX,y:y+baselineOffset,font,fontSize,color:block.parts[fragment.itemIndex]?.accent ? '#744338' : color});
+          lines.push({text:fragment.text,x:textX,y:y+baselineOffset,font,fontSize,color:block.parts[fragment.itemIndex]?.accent ? '#64382e' : color});
           x+=fragment.occupiedWidth;
         }
         cursor=line.end;
@@ -283,7 +283,7 @@ export async function mountScene():Promise<void> {
     }
     if (musicGroup) ctx!.drawImage(spotifyIcon,musicGroup.detailsX,musicGroup.iconY,14,14*spotifyIcon.naturalHeight/spotifyIcon.naturalWidth);
     if (musicGroup && track?.isPlaying) {
-      ctx!.fillStyle='#744338';
+      ctx!.fillStyle='#64382e';
       playbackBars(motion.matches ? 0 : time).forEach((bar,index)=>{
         const height=12*bar;
         ctx!.fillRect(musicGroup!.detailsX+20+index*4,musicGroup!.iconY+12-height,2,height);
