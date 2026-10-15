@@ -484,6 +484,12 @@ test('real Retina scroll reversals preserve one full-size live dragon through th
     await page.evaluate(()=>window.scrollTo(0,0));await page.mouse.move(900,300);
     await expect(page.locator('#project-dragon')).toHaveAttribute('data-mode','hero');
     await expect.poll(async()=>Math.abs(JSON.parse(await page.locator('#project-dragon').getAttribute('data-head')).x-900)).toBeLessThan(5);
+    // Stop the cursor: passive following alone used to leave the landing coil stuck.
+    await expect.poll(()=>page.evaluate(()=>{
+      const rig=window.dragonRig(),head=rig[0],tail=rig.at(-1);
+      return head && tail ? Math.hypot(tail.x-head.x,tail.y-head.y) : 0;
+    })).toBeGreaterThan(480);
+    await page.screenshot({path:info.outputPath('unwound-dragon.png')});
     await expect(page.locator('#project-dragon')).toHaveCount(1);
   } finally {await page.close();}
 });

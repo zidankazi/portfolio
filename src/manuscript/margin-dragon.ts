@@ -14,7 +14,7 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
   const canvas=document.createElement('canvas');canvas.id='project-dragon';
   canvas.className='margin-dragon';canvas.setAttribute('aria-hidden','true');document.body.append(canvas);
   const ctx=canvas.getContext('2d')!;
-  let width=0,height=0,dpr=0,heroTop=0,goal=0,progress=0,poseProgress=0,visible=true,frames=0,lastTime=0;
+  let width=0,height=0,dpr=0,heroTop=0,goal=0,progress=0,poseProgress=0,release=0,visible=true,frames=0,lastTime=0;
   let columnLeft=0,headingTop=0,heroBottom=0;
   let target:{x:number;y:number} | null=null;
   let snapshot:{original:Pose[];scale:number;anchor:{x:number;y:number}} | null=null;
@@ -23,7 +23,7 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
   let pointer:{x:number;y:number} | null=null;
 
   function restore() {
-    dragon.perch=0;poseProgress=0;
+    dragon.perch=0;poseProgress=0;release=0;
     if(snapshot) {
       updateDragonScale(dragon,snapshot.scale);
       dragon.segments.forEach((segment,index)=>Object.assign(segment,snapshot!.original[index]));
@@ -55,6 +55,9 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
   function update(time:number,animated:boolean):boolean {
     const dt=Math.max(0,Math.min(48,lastTime ? time-lastTime : 16));lastTime=time;
     const phaseAlpha=animated ? 1-Math.exp(-dt/(goal<progress ? 420 : 500)) : 1;
+    if(goal<progress && poseProgress>.001) release=1;
+    else release*=Math.exp(-dt/1200);
+    if(release<.001) release=0;
     progress+=(goal-progress)*phaseAlpha;
     if(Math.abs(goal-progress)<.0005) progress=goal;
     if(!target) {const changed=!!snapshot;restore();return changed;}
@@ -79,8 +82,8 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     const perchX=target.x-offsetX,perchY=target.y-offsetY;
     // Approach first, then slowly fold into the resting pose as the head reaches the rim.
     const arrival=clamp(1-Math.hypot(perchX-head.x,perchY-head.y)/220,0,1);
-    const poseGoal=travel*Math.max(arrival,poseProgress);
-    const poseAlpha=animated ? 1-Math.exp(-dt/(poseGoal<poseProgress ? 380 : 750)) : 1;
+    const poseGoal=goal===0 ? 0 : travel*Math.max(arrival,poseProgress);
+    const poseAlpha=animated ? 1-Math.exp(-dt/(poseGoal<poseProgress ? 180 : 750)) : 1;
     poseProgress+=(poseGoal-poseProgress)*poseAlpha;
     if(Math.abs(poseGoal-poseProgress)<.0001) poseProgress=poseGoal;
     dragon.perch=poseProgress;
@@ -97,8 +100,10 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     const distance=Math.hypot(x-head.x,y-head.y);
     const headAlpha=distance ? Math.min(positionAlpha,(animated ? dt*1.5 : Infinity)/distance) : 0;
     head.x+=(x-head.x)*headAlpha;head.y+=(y-head.y)*headAlpha;
-    const bodyMovement=poseProgress ? perchDragonBody(dragon,poseProgress,angleAlpha,maxTurn)
-      : followDragonBody(dragon,!pointer,angleAlpha,maxTurn);
+    const unwind=release*(1-poseProgress);
+    const bodyAlpha=1-Math.pow(1-angleAlpha,1+3*unwind);
+    const bodyMovement=poseProgress ? perchDragonBody(dragon,poseProgress,bodyAlpha,maxTurn,unwind)
+      : followDragonBody(dragon,!pointer,bodyAlpha,maxTurn,unwind);
     for(const segment of dragon.segments) segment.y-=heroTop;
     const settled=progress===goal && Math.hypot(x-head.x,y-head.y-heroTop)<.5
       && Math.abs(turn)<.002 && bodyMovement<.05;
