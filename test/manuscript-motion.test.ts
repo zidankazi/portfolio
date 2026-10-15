@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createDragon,updateDragon,updateDragonScale,getRestPose,spawnFire,updateFire,getFireInfluence} from '../src/manuscript/reference/dragon.js';
-import {followDragonBody,perchDragonBody} from '../src/manuscript/rig-motion.ts';
+import {followDragonBody,perchDragonBody,perchLookAngle} from '../src/manuscript/rig-motion.ts';
 
 const angleDifference=(to:number,from:number)=>Math.atan2(Math.sin(to-from),Math.cos(to-from));
 
@@ -9,21 +9,27 @@ test('a full-size perched dragon rests its body while its head watches the curso
   const dragon=createDragon(900,250,1);
   getRestPose(900,250,1).forEach((pose,index)=>Object.assign(dragon.segments[index],pose));
   for(let frame=0;frame<600;frame++) {
-    dragon.segments[0].angle=.8+Math.sin(frame*.04);
-    perchDragonBody(dragon,1,1-Math.exp(-16/140),.096);
+    const head=dragon.segments[0],before=dragon.segments.map(segment=>segment.angle);
+    const aim=frame<300 ? perchLookAngle(Math.sin(frame*.04)*Math.PI) : -.65;
+    head.angle+=Math.max(-.048,Math.min(.048,angleDifference(aim,head.angle)));
+    perchDragonBody(dragon,1,1-Math.exp(-16/140),.048);
     for(let index=1;index<dragon.segments.length;index++) {
       const segment=dragon.segments[index],parent=dragon.segments[index-1];
       assert.ok(Math.abs(Math.hypot(segment.x-parent.x,segment.y-parent.y)-30)<.001);
-      if(index>1) assert.ok(Math.abs(angleDifference(segment.angle,parent.angle))<=.250001);
+      assert.ok(Math.abs(angleDifference(segment.angle,parent.angle))<=.250001,'the head must obey the same bend limit as every other joint');
+      assert.ok(Math.abs(angleDifference(segment.angle,before[index]))<=.048001);
     }
   }
   assert.equal(dragon.scale,1);
   const xs=dragon.segments.map(segment=>segment.x),ys=dragon.segments.map(segment=>segment.y);
   assert.ok(Math.max(...ys)>dragon.segments[0].y+180,'the head stays raised above the resting chest');
   assert.ok(Math.max(...xs)-Math.min(...xs)<300,'the body coils compactly instead of stretching along the ledge');
-  const wing={...dragon.segments[5]};dragon.segments[0].angle=2.3;
-  for(let frame=0;frame<60;frame++) perchDragonBody(dragon,1,1-Math.exp(-16/140),.096);
-  assert.ok(Math.hypot(dragon.segments[5].x-wing.x,dragon.segments[5].y-wing.y)<.1,'watching the cursor must not drag the resting wings around');
+  const wingAngle=dragon.segments[5].angle;
+  for(let frame=0;frame<180;frame++) {
+    dragon.segments[0].angle+=Math.max(-.048,Math.min(.048,angleDifference(-2.2,dragon.segments[0].angle)));
+    perchDragonBody(dragon,1,1-Math.exp(-16/140),.048);
+  }
+  assert.ok(Math.abs(angleDifference(dragon.segments[5].angle,wingAngle))<.001,'the neck should turn without rotating the resting shoulder and wings');
 });
 
 test('landing and taking off respect every joint turn limit even across angle wraps',()=>{
@@ -33,14 +39,16 @@ test('landing and taking off respect every joint turn limit even across angle wr
     const before=dragon.segments.map(segment=>({...segment})),head=dragon.segments[0];
     const amount=frame<300 ? 0 : frame<900 ? (1-Math.cos((frame-300)*Math.PI/600))/2
       : frame<1200 ? 1 : (1+Math.cos((frame-1200)*Math.PI/600))/2;
-    head.angle+=.08;head.x+=6*Math.cos(frame*.05);head.y+=4*Math.sin(frame*.05);
     const maxTurn=16*(.006-.003*amount);
+    head.angle+=maxTurn*.9;head.x+=6*Math.cos(frame*.05);head.y+=4*Math.sin(frame*.05);
     if(amount) perchDragonBody(dragon,amount,1-Math.exp(-16/140),maxTurn);
     else followDragonBody(dragon,false,1-Math.exp(-16/140),maxTurn);
     for(let index=1;index<dragon.segments.length;index++) {
       const segment=dragon.segments[index],parent=dragon.segments[index-1];
       assert.ok(Math.abs(angleDifference(segment.angle,before[index].angle))<=maxTurn+.000001,
         `joint ${index} snapped at frame ${frame}, landing amount ${amount}`);
+      assert.ok(Math.abs(angleDifference(segment.angle,parent.angle))<=.250001,
+        `joint ${index} folded at frame ${frame}, landing amount ${amount}`);
       assert.ok(Math.abs(Math.hypot(segment.x-parent.x,segment.y-parent.y)-30)<.001);
     }
   }
