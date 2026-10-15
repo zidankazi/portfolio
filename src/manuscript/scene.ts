@@ -103,15 +103,15 @@ export async function mountScene():Promise<void> {
       else if (block.kind==='label') fontSize=Math.max(12,bodySize*.8);
       const lineHeight=Math.round(fontSize*lineSpacing());
       const font=`${fontSize}px "Manuscript Initial", "Furia", Georgia, serif`;
-      const color=block.accent ? '#744338' : block.kind==='label' ? '#6c665a' : TEXT_COLOR;
+      const color=block.accent ? '#744338' : block.kind==='label' ? '#494134' : TEXT_COLOR;
       const imageSize=block.image ? (block.music ? (width<=600 ? 48 : 64) : pictureSize(block.image,bodySize)) : 0;
       const parts=biographyInline(index===0 ? {...block,text:block.text.slice(1)} : block);
       const initial=block.kind==='name' ? dropCapSize(fontSize,bodySize) : null;
       const items=parts.map(part=>({text:part.text,font,...(part.noBreak || initial ? {break:'never' as const} : {}),...(initial ? {extraWidth:initial.width} : part.image ? {extraWidth:imageSize+8} : {})}));
       const music=block.music ? [
-        {text:block.music.status,fontSize:Math.max(12,bodySize*.78),color:'#6c665a',indent:block.music.isPlaying ? 40 : 20},
+        {text:block.music.status,fontSize:Math.max(12,bodySize*.78),color:'#494134',indent:block.music.isPlaying ? 40 : 20},
         {text:block.music.title,fontSize:Math.max(18,bodySize*1.25),color:TEXT_COLOR,indent:0},
-        ...(block.music.artist ? [{text:'by '+block.music.artist,fontSize:Math.max(12,bodySize*.85),color:'#6c665a',indent:0}] : []),
+        ...(block.music.artist ? [{text:'by '+block.music.artist,fontSize:Math.max(12,bodySize*.85),color:'#494134',indent:0}] : []),
       ].map(row=>{
         const font=`${row.fontSize}px "Manuscript Initial", "Furia", Georgia, serif`;
         return {...row,font,lineHeight:Math.round(row.fontSize*1.25),prepared:prepareRichInline([{text:row.text,font}])};
