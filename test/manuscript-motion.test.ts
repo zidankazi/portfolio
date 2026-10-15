@@ -1,9 +1,29 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createDragon,updateDragon,updateDragonScale,getRestPose,spawnFire,updateFire,getFireInfluence} from '../src/manuscript/reference/dragon.js';
-import {followDragonBody} from '../src/manuscript/rig-motion.ts';
+import {followDragonBody,perchDragonBody} from '../src/manuscript/rig-motion.ts';
 
 const angleDifference=(to:number,from:number)=>Math.atan2(Math.sin(to-from),Math.cos(to-from));
+
+test('a full-size perched dragon rests its body while its head watches the cursor',()=>{
+  const dragon=createDragon(900,250,1);
+  getRestPose(900,250,1).forEach((pose,index)=>Object.assign(dragon.segments[index],pose));
+  for(let frame=0;frame<600;frame++) {
+    dragon.segments[0].angle=.8+Math.sin(frame*.04);
+    perchDragonBody(dragon,1,1-Math.exp(-16/140),.096);
+    for(let index=1;index<dragon.segments.length;index++) {
+      const segment=dragon.segments[index],parent=dragon.segments[index-1];
+      assert.ok(Math.abs(Math.hypot(segment.x-parent.x,segment.y-parent.y)-30)<.001);
+      if(index>1) assert.ok(Math.abs(angleDifference(segment.angle,parent.angle))<=.250001);
+    }
+  }
+  assert.equal(dragon.scale,1);
+  assert.ok(dragon.segments.at(-1)!.y>dragon.segments[0].y+100,'the tail hangs below the ledge');
+  assert.ok(dragon.segments.at(-1)!.x<dragon.segments[0].x-450,'the body spans the glass');
+  const wing={...dragon.segments[5]};dragon.segments[0].angle=2.3;
+  for(let frame=0;frame<60;frame++) perchDragonBody(dragon,1,1-Math.exp(-16/140),.096);
+  assert.ok(Math.hypot(dragon.segments[5].x-wing.x,dragon.segments[5].y-wing.y)<.1,'watching the cursor must not drag the resting wings around');
+});
 
 test('reference tracking retains its cadence and direct cursor orientation',()=>{
   const dragon=createDragon(900,100,.8);
