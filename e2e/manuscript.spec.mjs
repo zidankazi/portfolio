@@ -247,6 +247,35 @@ test('holding the manuscript sustains fire until release',async({page})=>{
   expect(await canvas.getAttribute('data-fire-count')).toBe('0');
 });
 
+test('fire works on the painting before scrolling and survives crossing the glass edge',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','Desktop pointer follows the dragon over the painting');
+  await page.clock.install();await page.goto('/');
+  const hero=page.locator('#manuscript-scene'),dragon=page.locator('#project-dragon');
+  await expect(hero).toHaveAttribute('data-ready','true');
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  expect(await page.evaluate(()=>scrollY)).toBe(0);
+  const entry=await hero.boundingBox();expect(entry.y).toBeGreaterThan(0);
+  await page.mouse.move(700,240);await page.clock.runFor(2000);await page.mouse.down();await page.clock.runFor(800);
+  expect(Number(await dragon.getAttribute('data-fire-count'))).toBeGreaterThan(15);
+  const flamePixels=()=>dragon.evaluate(canvas=>{
+    const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+    let count=0;
+    for(let i=0;i<pixels.length;i+=4) if(pixels[i+3]>10 && pixels[i]>175 && pixels[i+1]>100 && pixels[i+2]<90) count++;
+    return count;
+  });
+  expect(await flamePixels()).toBeGreaterThan(10);
+  await page.mouse.move(780,entry.y+80);await page.clock.runFor(500);
+  await page.mouse.move(700,240);await page.clock.runFor(1800);
+  expect(Number(await dragon.getAttribute('data-fire-count'))).toBeGreaterThan(15);
+  expect(await flamePixels()).toBeGreaterThan(10);
+  await page.screenshot({path:info.outputPath('painting-fire.png')});
+  await page.mouse.up();await page.clock.runFor(1800);
+  expect(await dragon.getAttribute('data-fire-count')).toBe('0');expect(await flamePixels()).toBe(0);
+  await page.getByRole('link',{name:'Go to projects',exact:true}).click();await page.clock.runFor(2000);
+  expect(await dragon.getAttribute('data-fire-count')).toBe('0');
+  await expect(page.getByRole('link',{name:'relic',exact:true})).toHaveAttribute('href','https://tryrelic.io');
+});
+
 test('touch supports sustained fire and normal page scrolling',async({page,context},info)=>{
   test.skip(info.project.name!=='mobile','Touch input is verified in the phone configuration');
   await page.clock.install();await page.goto('/');
