@@ -46,7 +46,7 @@ directories.forEach(collect);remember('package.json');
 const watchers=[...directories,'package.json'].map(path=>watch(path,{recursive:directories.includes(path)},(_event,filename)=>{
   if(!filename) return;
   const file=directories.includes(path)?join(path,String(filename)):'package.json';
-  if(!/\.(ts|mjs|css|json)$/.test(file)) return;
+  if(!/\.(ts|m?js|css|json)$/.test(file)) return;
   const next=fingerprint(file);
   if(next===fingerprints.get(file)) return;
   fingerprints.set(file,next);
