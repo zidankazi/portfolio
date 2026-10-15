@@ -49,6 +49,7 @@ test('glass manuscript ticker follows real sections without interfering with pro
   await expect(glass).toHaveCSS('pointer-events','none');
   const paper=await glass.boundingBox(),list=await page.locator('#portfolio').boundingBox();
   expect(paper.x).toBeLessThan(list.x);expect(paper.x+paper.width).toBeGreaterThan(list.x+list.width);
+  expect(paper.y).toBeGreaterThan(1000*.4);expect(paper.y).toBeLessThan(1000*.55);
   const mark=rail.getByRole('link',{name:'Go to projects',exact:true}).locator('.ticker-dash');
   const before=(await mark.boundingBox()).width;
   await rail.getByRole('link',{name:'Go to projects',exact:true}).hover();
@@ -623,7 +624,7 @@ test('real Retina animation frames never force the dragon into the margin at the
     await page.goto(process.env.TEST_URL ?? 'http://localhost:3001/');
     await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
     const frames=await page.evaluate(async()=>{
-      const canvas=document.querySelector('#project-dragon'),end=document.querySelector('#manuscript-scene').offsetHeight+160;
+      const canvas=document.querySelector('#project-dragon'),hero=document.querySelector('#manuscript-scene'),end=hero.offsetTop+hero.offsetHeight+160;
       const states=[];
       // Use real RAF and native scroll delivery; fake-clock steps miss this finish-line jump.
       for(let frame=0;frame<=300;frame++) {
@@ -642,7 +643,7 @@ test('real Retina animation frames never force the dragon into the margin at the
       expect(Math.abs(after.scale-before.scale)).toBeLessThan(.075);
       expect(Math.abs(Math.atan2(Math.sin(after.head.angle-before.head.angle),Math.cos(after.head.angle-before.head.angle)))).toBeLessThan(.3);
     }
-    await page.evaluate(()=>window.scrollTo(0,1050));await page.mouse.move(1200,330);
+    await page.evaluate(()=>{const hero=document.querySelector('#manuscript-scene');window.scrollTo(0,hero.offsetTop+hero.offsetHeight+160);});await page.mouse.move(1200,330);
     await expect(page.locator('#project-dragon')).toHaveAttribute('data-mode','margin');
     await page.screenshot({path:info.outputPath('retina-continuous-dragon.png')});
   } finally {await page.close();}
