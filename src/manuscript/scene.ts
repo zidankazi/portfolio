@@ -52,7 +52,7 @@ export async function mountScene():Promise<void> {
   let prepared=fitBio();
   let lines:Line[]=[];
   let pictures:Picture[]=[];
-  let initial:{x:number;y:number;width:number;height:number} | null=null;
+  let initial:{x:number;y:number;width:number;height:number;clearance:number} | null=null;
   let musicGroup:{x:number;y:number;width:number;height:number;detailsX:number;statusY:number;titleY:number;artistY:number | null;iconY:number} | null=null;
   let dirty=true, frame=0, frames=0, visible=true;
   let mouse={x:0,y:0}, hasPointer=false, held=false;
@@ -83,7 +83,7 @@ export async function mountScene():Promise<void> {
       const estimated=candidate.reduce((height,block)=>{
         if (block.music) return height+musicGeometry(block,Math.min(360,layout.pageWidth-2*layout.margin)).height+block.gap;
         const stats=measureRichInlineStats(block.prepared,layout.pageWidth-2*layout.margin);
-        return height+stats.lineCount*Math.max(block.lineHeight,block.initial?.height ?? 0)+Math.max(0,block.imageSize-block.lineHeight)+block.gap;
+        return height+stats.lineCount*block.lineHeight+Math.max(0,block.imageSize-block.lineHeight)+block.gap;
       },0);
       // Leave room for the illuminated initial and the dragon crossing the text.
       if (estimated<=contentBottom()-layout.margin-(width<=600 ? 110 : 52)) break;
@@ -106,7 +106,7 @@ export async function mountScene():Promise<void> {
       const color=block.accent ? '#744338' : block.kind==='label' ? '#6c665a' : TEXT_COLOR;
       const imageSize=block.image ? (block.music ? (width<=600 ? 48 : 64) : pictureSize(block.image,bodySize)) : 0;
       const parts=biographyInline(index===0 ? {...block,text:block.text.slice(1)} : block);
-      const initial=block.kind==='name' ? dropCapSize(fontSize) : null;
+      const initial=block.kind==='name' ? dropCapSize(fontSize,bodySize) : null;
       const items=parts.map(part=>({text:part.text,font,...(part.noBreak || initial ? {break:'never' as const} : {}),...(initial ? {extraWidth:initial.width} : part.image ? {extraWidth:imageSize+8} : {})}));
       const music=block.music ? [
         {text:block.music.status,fontSize:Math.max(12,bodySize*.78),color:'#6c665a',indent:block.music.isPlaying ? 40 : 20},
@@ -130,6 +130,9 @@ export async function mountScene():Promise<void> {
   function contentBottom() {return Math.min(layout.pageHeight-layout.margin,height-offset.y-72);}
   function flowRanges(y:number,lineHeight:number):Range[] {
     let ranges:Range[]=[{left:layout.margin,right:layout.pageWidth-layout.margin}];
+    if(initial && y<initial.y+initial.height && y+lineHeight>initial.y) {
+      ranges=subtractRanges(ranges,{left:initial.x,right:initial.x+initial.clearance});
+    }
     const top=y+offset.y,bottom=top+lineHeight;
     for (const exclusion of [...getDragonExclusions(dragon,top,bottom,10),...getFireExclusions(dragon,top,bottom,6)]) {
       ranges=subtractRanges(ranges,{left:exclusion.left-offset.x,right:exclusion.right-offset.x});
@@ -159,13 +162,13 @@ export async function mountScene():Promise<void> {
     bitmap.onerror=()=>{dirty=true;schedule();};
     bitmap.src=image.src;
   }
-  function dropCapSize(fontSize=Math.max(26,layout.fontSize*1.7)) {
-    const height=Math.round(fontSize*1.18);
-    const drawWidth=fontSize*.68;
-    return {width:drawWidth+fontSize*.12,height,drawWidth};
+  function dropCapSize(fontSize=Math.max(26,layout.fontSize*1.7),bodySize=layout.fontSize) {
+    const height=Math.round(bodySize*lineSpacing()*(width<=600 ? 3 : 6.5));
+    const drawWidth=height*.44;
+    return {width:drawWidth+Math.max(8,fontSize*.2),height,drawWidth};
   }
   function restPosition() {
-    return {x:width<=600 ? width*(width<=360 ? .82 : .72) : offset.x+layout.margin+dropCapSize().width*.8-115*scale,y:offset.y+layout.margin+24*scale};
+    return {x:width<=600 ? width*(width<=360 ? .82 : .72) : offset.x+layout.margin-92*scale,y:offset.y+layout.margin+24*scale};
   }
   function placeDragon() {
     const rest=hasPointer ? mouse : restPosition();
@@ -234,7 +237,7 @@ export async function mountScene():Promise<void> {
         continue;
       }
       const imageSize=block.imageSize;
-      const lineHeight=block.initial ? Math.max(block.lineHeight,block.initial.height) : block.image && cursor.itemIndex<=block.imageIndex ? Math.max(block.lineHeight,imageSize) : block.lineHeight;
+      const lineHeight=block.image && cursor.itemIndex<=block.imageIndex ? Math.max(block.lineHeight,imageSize) : block.lineHeight;
       if (y+lineHeight>contentBottom()) break;
       const baselineOffset=(lineHeight-fontSize*.857)/2;
       const ranges=flowRanges(y,lineHeight);
@@ -249,8 +252,8 @@ export async function mountScene():Promise<void> {
           x+=fragment.gapBefore;
           let textX=x;
           if (block.initial) {
-            // Align the main stroke with the name; the flourishes extend above and below it.
-            initial={x,y:y+(lineHeight-block.initial.height)/2-fontSize*.04,width:block.initial.drawWidth,height:block.initial.height};
+            // Align the upper stroke with the name and wrap the following paragraphs beside the initial.
+            initial={x,y:y+baselineOffset-fontSize*.035-block.initial.height*.12,width:block.initial.drawWidth,height:block.initial.height,clearance:block.initial.width};
             textX+=block.initial.width;
           } else if (block.image && fragment.itemIndex===block.imageIndex) {
             loadPicture(block.image);textX+=imageSize+8;
