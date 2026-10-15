@@ -4,7 +4,7 @@ import {prepareRichInline,layoutNextRichInlineLineRange,materializeRichInlineLin
 import {biographyBlocks,biographyInline,biographyMarkup,type BioTrack,type BioImage} from './bio.ts';
 import {playbackBars} from './playing.ts';
 import {mountMarginDragon} from './margin-dragon.ts';
-import {BG_COLOR, TEXT_COLOR, getResponsiveLayout, getPageOffset, getPageScale} from './reference/config.js';
+import {TEXT_COLOR, getResponsiveLayout, getPageOffset, getPageScale} from './reference/config.js';
 import {loadDragonSprites, createDragon, updateDragonScale, updateDragon, getDragonBottom, getDragonExclusions, getFireExclusions, getFireInfluence, spawnFire, hasActiveFire, updateFire, drawFire} from './reference/dragon.js';
 
 type Range = {left:number; right:number};
@@ -24,7 +24,7 @@ export function subtractRanges(ranges:Range[], exclusion:Range):Range[] {
 export async function mountScene():Promise<void> {
   const surface=document.querySelector<HTMLElement>('#manuscript-scene');
   const canvas=document.querySelector<HTMLCanvasElement>('#manuscript');
-  const ctx=canvas?.getContext('2d',{alpha:false});
+  const ctx=canvas?.getContext('2d');
   if (!surface || !canvas || !ctx) return;
   const fallback=surface.querySelector<HTMLElement>('.manuscript-fallback');
   let track:BioTrack | null=null;
@@ -339,7 +339,7 @@ export async function mountScene():Promise<void> {
     if (fire) updateFire(dragon,time);
     if (visible && (dirty || moved || transferred || fire)) layoutText();
     if (visible) {
-      ctx!.fillStyle=BG_COLOR;ctx!.fillRect(0,0,width,height);
+      ctx!.clearRect(0,0,width,height);
       drawText(time);drawFire(ctx,dragon);
     }
     margin?.draw(animated);

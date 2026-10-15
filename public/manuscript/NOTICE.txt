@@ -1,3 +1,7 @@
+Background painting: The Story of Nastagio degli Onesti, panel II, Sandro Botticelli.
+Public-domain reproduction from Wikimedia Commons, optimized as WebP:
+https://commons.wikimedia.org/wiki/File:Nastagio_Degli_Onesti_II.jpg
+
 Canvas renderer, drop cap, dragon illustrations, and animation adapted from Illustrated Manuscript:
 https://github.com/dengshu2/illustrated-manuscript
 Original project by River Marchand (@Riyvir), Neither/Nor.
