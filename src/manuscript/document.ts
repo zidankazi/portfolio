@@ -16,7 +16,7 @@ function description(project:Project):string {
 }
 
 function home(): string {
-  return `<section id="projects" aria-labelledby="projects-heading"><h2 id="projects-heading" class="projects-label">a few things i've built</h2><div class="project-list">${projects.map((project, index) => `<article class="project-row" data-project="${index}"><div class="project-heading">${external(project.links[0].href, project.title, 'project-title')}<span class="project-links">${project.links.filter(link=>link.label==='github').map(link => external(link.href, link.label, 'project-link')).join(' / ')}</span></div><p class="project-description">${description(project)}</p></article>`).join('\n')}</div></section>
+  return `<section id="projects" aria-labelledby="projects-heading"><h2 id="projects-heading" class="projects-label">a few things i've built</h2><div class="project-list">${projects.map((project, index) => `<article id="project-${index+1}" class="project-row" data-project="${index}"><div class="project-heading">${external(project.links[0].href, project.title, 'project-title')}<span class="project-links">${project.links.filter(link=>link.label==='github').map(link => external(link.href, link.label, 'project-link')).join(' / ')}</span></div><p class="project-description">${description(project)}</p></article>`).join('\n')}</div></section>
     <div id="github-activity" data-slot="github-activity" aria-label="GitHub contribution chart" aria-busy="true"><p class="calendar-status">Loading GitHub contributions…</p></div>
     <p id="contact" class="contact-copy">${external('https://github.com/zidankazi', 'github')} / ${external('https://twitter.com/zidaaaaaaaannnn', 'twitter')} / <a href="mailto:hi@zidankazi.com">email</a></p>`;
 }

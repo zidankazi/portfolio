@@ -30,11 +30,50 @@ test('manuscript sits above a normal portfolio with live widgets and project lin
   await expect(page.locator('#portfolio .intro-copy,#portfolio #spotify')).toHaveCount(0);
   await expect(page.locator('#portfolio')).not.toContainText('I design and build');
   await expect(page.locator('.text-fragment')).toHaveCount(0);
-  await expect(page.locator('nav,h1,h3,header,footer,details')).toHaveCount(0);
+  await expect(page.getByRole('navigation',{name:'Page sections'})).toHaveCount(1);
+  await expect(page.locator('h1,h3,header,footer,details')).toHaveCount(0);
   await expect(page.locator('h2')).toHaveCount(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await expect(page.getByRole('link',{name:'studio',exact:true})).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+test('glass manuscript ticker follows real sections without interfering with project links',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','The ticker uses spare desktop margin space');
+  await page.goto('/');
+  const hero=page.locator('#manuscript-scene'),rail=page.getByRole('navigation',{name:'Page sections'});
+  await expect(hero).toHaveAttribute('data-ready','true');
+  await expect(rail.getByRole('link')).toHaveCount(11);
+  await expect(rail.getByRole('link',{name:'Go to about',exact:true})).toHaveAttribute('aria-current','location');
+  const glass=page.locator('.reading-glass');
+  await expect(glass).toHaveCSS('pointer-events','none');
+  const paper=await glass.boundingBox(),list=await page.locator('#portfolio').boundingBox();
+  expect(paper.x).toBeLessThan(list.x);expect(paper.x+paper.width).toBeGreaterThan(list.x+list.width);
+  const mark=rail.getByRole('link',{name:'Go to projects',exact:true}).locator('.ticker-dash');
+  const before=(await mark.boundingBox()).width;
+  await rail.getByRole('link',{name:'Go to projects',exact:true}).hover();
+  await expect.poll(async()=>(await mark.boundingBox()).width).toBeGreaterThan(before*1.5);
+  await expect(rail.getByText('projects',{exact:true})).toHaveCSS('opacity','1');
+  await rail.getByRole('link',{name:'Go to projects',exact:true}).click();
+  await expect.poll(()=>page.locator('#projects').evaluate(node=>Math.round(node.getBoundingClientRect().top))).toBe(48);
+  await expect(page).toHaveURL(/#projects$/);
+  await page.mouse.move(1000,400);
+  await expect(page.locator('#project-dragon')).toHaveCount(1);
+  await expect(page.getByRole('link',{name:'relic',exact:true})).toHaveAttribute('href','https://tryrelic.io');
+  await expect(page.getByRole('link',{name:"openai's 2019 paper",exact:true})).toHaveAttribute('href','https://arxiv.org/abs/1909.07528');
+  await page.screenshot({path:info.outputPath('glass-projects.png')});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await rail.getByRole('link',{name:'Go to about',exact:true}).focus();
+  await page.keyboard.press('Enter');
+  expect(await page.evaluate(()=>scrollY)).toBe(0);
+  await expect(rail.getByRole('link',{name:'Go to about',exact:true})).toHaveAttribute('aria-current','location');
+  await expect(mark).toHaveCSS('transform','none');
+  await page.screenshot({path:info.outputPath('glass-manuscript.png')});
+  await page.setViewportSize({width:390,height:844});
+  await expect(rail).toBeHidden();
+  await expect.poll(()=>hero.getAttribute('data-bio-complete')).toBe('true');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:info.outputPath('glass-mobile.png')});
 });
 
 test('project previews stay beside the list and play the original media',async({page},info)=>{

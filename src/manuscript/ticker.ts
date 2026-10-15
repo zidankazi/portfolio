@@ -9,8 +9,7 @@ export function mountTicker():void {
   const sections=[
     {node:hero,label:'about',major:true},
     {node:projects,label:'projects',major:true},
-    ...rows.map((node,index)=>{
-      node.id=`project-${index+1}`;
+    ...rows.map(node=>{
       return {node,label:node.querySelector('.project-title')!.textContent!,major:false};
     }),
     {node:activity,label:'github',major:true},
@@ -21,7 +20,7 @@ export function mountTicker():void {
   rail.setAttribute('aria-label','Page sections');
   const links=sections.map(({node,label,major})=>{
     const link=document.createElement('a');link.className='ticker-link';link.href='#'+node.id;
-    link.setAttribute('aria-label',label);link.dataset.major=String(major);
+    link.setAttribute('aria-label','Go to '+label);link.dataset.major=String(major);
     const dash=document.createElement('span');dash.className='ticker-dash';dash.setAttribute('aria-hidden','true');
     const caption=document.createElement('span');caption.className='ticker-label';caption.textContent=label;caption.setAttribute('aria-hidden','true');
     link.append(dash,caption);
