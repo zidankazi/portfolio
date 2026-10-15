@@ -175,8 +175,8 @@ export function updateDragon(dragon, time, mouseX, mouseY, idle = false, restX =
 
 function wingAngle(dragon) {
   const angle=dragon.segments[WING_SEGMENT_INDEX].angle;
-  const upright=Math.atan2(Math.sin(-angle),Math.cos(-angle));
-  return angle+upright*dragon.perch;
+  // Unfold relative to the shoulder, without a shortest-angle branch at +/- pi.
+  return angle+1.9*dragon.perch;
 }
 
 // Include the full sprites and wing sweep when meeting the lower page boundary.
