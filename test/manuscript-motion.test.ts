@@ -54,6 +54,36 @@ test('landing and taking off respect every joint turn limit even across angle wr
   }
 });
 
+test('a perched body unwinds on takeoff even when the cursor and head stop moving',()=>{
+  const dragon=createDragon(900,250,1);
+  getRestPose(900,250,1).forEach((pose,index)=>Object.assign(dragon.segments[index],pose));
+  const alpha=1-Math.exp(-16/140);
+  for(let frame=0;frame<300;frame++) {
+    const head=dragon.segments[0];
+    head.angle+=Math.max(-.048,Math.min(.048,angleDifference(-.65,head.angle)));
+    perchDragonBody(dragon,1,alpha,.048);
+  }
+  const curl=()=>dragon.segments.slice(1).reduce((sum,segment,index)=>sum+Math.abs(angleDifference(segment.angle,dragon.segments[index].angle)),0);
+  assert.ok(curl()>4,'start with the fully curled perched body');
+  let amount=1,release=1;
+  for(let frame=0;frame<180;frame++) {
+    const before=dragon.segments.map(segment=>segment.angle);
+    amount*=Math.exp(-16/180);if(amount<.0001) amount=0;
+    if(amount>.001) release=1;else release*=Math.exp(-16/1200);
+    const unwind=release*(1-amount),bodyAlpha=1-Math.pow(1-alpha,1+3*unwind),maxTurn=16*(.006-.003*amount);
+    if(amount) perchDragonBody(dragon,amount,bodyAlpha,maxTurn,unwind);
+    else followDragonBody(dragon,false,bodyAlpha,maxTurn,unwind);
+    for(let index=1;index<dragon.segments.length;index++) {
+      const segment=dragon.segments[index],parent=dragon.segments[index-1];
+      assert.ok(Math.abs(angleDifference(segment.angle,before[index]))<=maxTurn+.000001);
+      assert.ok(Math.abs(angleDifference(segment.angle,parent.angle))<=.250001);
+      assert.ok(Math.abs(Math.hypot(segment.x-parent.x,segment.y-parent.y)-30)<.001);
+    }
+    if(frame===59) assert.ok(curl()<1.2,'the closed coil must open during the first second');
+  }
+  assert.ok(curl()<.1,'the body must not retain the landing curl after takeoff');
+});
+
 test('reference tracking retains its cadence and direct cursor orientation',()=>{
   const dragon=createDragon(900,100,.8);
   assert.equal(updateDragon(dragon,79,500,350),false);
