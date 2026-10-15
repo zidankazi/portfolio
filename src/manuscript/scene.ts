@@ -46,7 +46,7 @@ export async function mountScene():Promise<void> {
   let width=surface.clientWidth, height=surface.clientHeight;
   let layout=sceneLayout();
   let offset=getPageOffset(layout,width,height);
-  let scale=getPageScale(width);
+  let scale=sceneDragonScale();
   const media=new Map<string,HTMLCanvasElement>();
   const mediaRequests=new Set<string>();
   let prepared=fitBio();
@@ -70,6 +70,7 @@ export async function mountScene():Promise<void> {
     const next=getResponsiveLayout(width,height);
     return {...next,pageWidth:Math.min(760,width-16),pageHeight:height-24,margin:width<=600 ? 6 : 24};
   }
+  function sceneDragonScale() {return getPageScale(width)*(width<=360 ? .72 : 1);}
   function pictureSize(image:BioImage,bodySize:number) {
     return image.kind==='album' ? Math.round(Math.max(40,Math.min(56,bodySize*2.6))) : Math.round(Math.max(24,Math.min(32,bodySize*1.45)));
   }
@@ -159,12 +160,12 @@ export async function mountScene():Promise<void> {
     bitmap.src=image.src;
   }
   function dropCapSize(fontSize=Math.max(26,layout.fontSize*1.7)) {
-    const height=Math.round(fontSize*1.4);
-    const drawWidth=dropCap.naturalWidth*height/dropCap.naturalHeight;
+    const height=Math.round(fontSize*1.18);
+    const drawWidth=fontSize*.68;
     return {width:drawWidth+fontSize*.12,height,drawWidth};
   }
   function restPosition() {
-    return {x:width<=600 ? width*.72 : offset.x+layout.margin+dropCapSize().width*.8-115*scale,y:offset.y+layout.margin+24*scale};
+    return {x:width<=600 ? width*(width<=360 ? .82 : .72) : offset.x+layout.margin+dropCapSize().width*.8-115*scale,y:offset.y+layout.margin+24*scale};
   }
   function placeDragon() {
     const rest=hasPointer ? mouse : restPosition();
@@ -184,7 +185,7 @@ export async function mountScene():Promise<void> {
     canvas!.width=Math.round(width*dpr); canvas!.height=Math.round(height*dpr);
     ctx!.setTransform(dpr,0,0,dpr,0,0);
     layout=sceneLayout(); offset=getPageOffset(layout,width,height);
-    scale=getPageScale(width); updateDragonScale(dragon,scale);
+    scale=sceneDragonScale(); updateDragonScale(dragon,scale);
     prepared=fitBio(); glyphWidths.clear();
     mouse={x:Math.min(width,mouse.x),y:Math.min(height,mouse.y)};
     if (changed && !hasPointer) placeDragon();
@@ -248,7 +249,8 @@ export async function mountScene():Promise<void> {
           x+=fragment.gapBefore;
           let textX=x;
           if (block.initial) {
-            initial={x,y:y+(lineHeight-block.initial.height)/2,width:block.initial.drawWidth,height:block.initial.height};
+            // Align the main stroke with the name; the flourishes extend above and below it.
+            initial={x,y:y+(lineHeight-block.initial.height)/2-fontSize*.04,width:block.initial.drawWidth,height:block.initial.height};
             textX+=block.initial.width;
           } else if (block.image && fragment.itemIndex===block.imageIndex) {
             loadPicture(block.image);textX+=imageSize+8;
