@@ -26,6 +26,26 @@ test('a full-size perched dragon rests its body while its head watches the curso
   assert.ok(Math.hypot(dragon.segments[5].x-wing.x,dragon.segments[5].y-wing.y)<.1,'watching the cursor must not drag the resting wings around');
 });
 
+test('landing and taking off respect every joint turn limit even across angle wraps',()=>{
+  const dragon=createDragon(900,250,1);
+  getRestPose(900,250,1).forEach((pose,index)=>Object.assign(dragon.segments[index],pose));
+  for(let frame=0;frame<1800;frame++) {
+    const before=dragon.segments.map(segment=>({...segment})),head=dragon.segments[0];
+    const amount=frame<300 ? 0 : frame<900 ? (1-Math.cos((frame-300)*Math.PI/600))/2
+      : frame<1200 ? 1 : (1+Math.cos((frame-1200)*Math.PI/600))/2;
+    head.angle+=.08;head.x+=6*Math.cos(frame*.05);head.y+=4*Math.sin(frame*.05);
+    const maxTurn=16*(.006-.003*amount);
+    if(amount) perchDragonBody(dragon,amount,1-Math.exp(-16/140),maxTurn);
+    else followDragonBody(dragon,false,1-Math.exp(-16/140),maxTurn);
+    for(let index=1;index<dragon.segments.length;index++) {
+      const segment=dragon.segments[index],parent=dragon.segments[index-1];
+      assert.ok(Math.abs(angleDifference(segment.angle,before[index].angle))<=maxTurn+.000001,
+        `joint ${index} snapped at frame ${frame}, landing amount ${amount}`);
+      assert.ok(Math.abs(Math.hypot(segment.x-parent.x,segment.y-parent.y)-30)<.001);
+    }
+  }
+});
+
 test('reference tracking retains its cadence and direct cursor orientation',()=>{
   const dragon=createDragon(900,100,.8);
   assert.equal(updateDragon(dragon,79,500,350),false);

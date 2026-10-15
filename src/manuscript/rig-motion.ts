@@ -11,9 +11,10 @@ export function followDragonBody(dragon:Dragon,idle:boolean,alpha:number,maxTurn
     const angle=idle ? segment.angle+angleDifference(-(index/19)*(Math.PI/2)*1.4,segment.angle)*alpha
       : Math.atan2(previous.y-segment.y,previous.x-segment.x);
     const turn=angleDifference(angle,segment.angle);
-    const nextAngle=segment.angle+Math.max(-maxTurn,Math.min(maxTurn,turn));
+    const nextAngle=segment.angle+turn;
     const bend=angleDifference(nextAngle,previous.angle);
-    segment.angle=previous.angle+Math.max(-.25,Math.min(.25,bend));
+    const constrained=previous.angle+Math.max(-.25,Math.min(.25,bend));
+    segment.angle+=Math.max(-maxTurn,Math.min(maxTurn,angleDifference(constrained,segment.angle)));
     const x=previous.x-Math.cos(segment.angle)*30*dragon.scale;
     const y=previous.y-Math.sin(segment.angle)*30*dragon.scale;
     movement=Math.max(movement,Math.hypot(x-segment.x,y-segment.y));
@@ -30,10 +31,12 @@ export function perchDragonBody(dragon:Dragon,amount:number,alpha:number,maxTurn
     const segment=dragon.segments[index],previous=dragon.segments[index-1];
     const following=Math.atan2(previous.y-segment.y,previous.x-segment.x);
     const resting=-.9-(index-1)*.25;
-    const wanted=following+angleDifference(resting,following)*amount;
-    segment.angle+=Math.max(-maxTurn,Math.min(maxTurn,angleDifference(wanted,segment.angle)*alpha));
-    const neck=index===1 ? previous.angle+angleDifference(-.9,previous.angle)*amount : previous.angle;
-    segment.angle=neck+Math.max(-.25,Math.min(.25,angleDifference(segment.angle,neck)));
+    const turn=angleDifference(following,segment.angle)*(1-amount)+angleDifference(resting,segment.angle)*amount;
+    const wanted=segment.angle+turn*alpha;
+    const flex=index===1 ? .25+amount*Math.PI : .25;
+    const constrained=previous.angle+Math.max(-flex,Math.min(flex,angleDifference(wanted,previous.angle)));
+    // Apply the speed limit last: anatomical constraints must never teleport a live joint.
+    segment.angle+=Math.max(-maxTurn,Math.min(maxTurn,angleDifference(constrained,segment.angle)));
     const x=previous.x-Math.cos(segment.angle)*30*dragon.scale;
     const y=previous.y-Math.sin(segment.angle)*30*dragon.scale;
     movement=Math.max(movement,Math.hypot(x-segment.x,y-segment.y));
