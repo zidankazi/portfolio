@@ -3,6 +3,28 @@ const calendar={contributions:Array.from({length:365},(_,index)=>({date:new Date
 const cover='https://i.scdn.co/image/portfolio-test-cover';
 const track={title:'Test track',artist:'Test artist',url:'https://open.spotify.com/track/test',albumArt:cover,isPlaying:true,progressMs:30000,durationMs:120000};
 
+async function observeDragonRig(page) {
+  // Observe actual sprite transforms rather than adding production telemetry.
+  await page.addInitScript(()=>{
+    const prototype=CanvasRenderingContext2D.prototype,draw=prototype.drawImage;
+    let backWing;
+    window.paintedDragon=[];
+    prototype.drawImage=function(...args) {
+      if(this.canvas.id==='project-dragon') {
+        backWing??=args[0];
+        if(args[0]===backWing) window.paintedDragon=[];
+        const m=this.getTransform(),dpr=this.canvas.width/innerWidth;
+        window.paintedDragon.push({x:m.e/dpr,y:m.f/dpr,angle:Math.atan2(m.b,m.a)});
+      }
+      return draw.apply(this,args);
+    };
+    window.dragonRig=()=>{
+      const sprites=window.paintedDragon;
+      return sprites.length===23 ? [sprites[22],...sprites.slice(17,21).reverse(),...sprites.slice(1,16).reverse()] : [];
+    };
+  });
+}
+
 test.beforeEach(async({page})=>{
   await page.route('**/github-contributions-api.jogruber.de/**',route=>route.fulfill({json:calendar}));
   await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:track}));
@@ -331,6 +353,7 @@ test('idle wings keep moving while the pointer is still',async({page})=>{
 
 test('one full-size dragon perches on the project glass with idle wings and a watching head',async({page},info)=>{
   test.skip(info.project.name!=='desktop','The full-size perch needs a wide reading surface');
+  await observeDragonRig(page);
   await page.clock.install();await page.goto('/');
   const hero=page.locator('#manuscript-scene'),dragon=page.locator('#project-dragon');
   await expect(hero).toHaveAttribute('data-ready','true');
@@ -338,22 +361,25 @@ test('one full-size dragon perches on the project glass with idle wings and a wa
   const positions=()=>page.locator('.project-row').evaluateAll(rows=>rows.map(row=>[row.offsetTop,row.offsetHeight,row.textContent]));
   const before=await positions();
   await page.evaluate(()=>{const heading=document.querySelector('#projects-heading');window.scrollTo(0,heading.getBoundingClientRect().top+scrollY-innerHeight*.68);});
-  await page.mouse.move(1100,500);await page.clock.runFor(5000);
+  await page.mouse.move(1100,500);await page.clock.runFor(8000);
   await expect(dragon).toHaveAttribute('data-mode','perched');
   expect(Number(await dragon.getAttribute('data-scale'))).toBe(1);
   const head=JSON.parse(await dragon.getAttribute('data-head')),bounds=JSON.parse(await dragon.getAttribute('data-bounds'));
   const sheet=await page.locator('.portfolio-glass').boundingBox(),heading=await page.locator('#projects-heading').boundingBox();
-  expect(Math.abs(head.x-(sheet.x+sheet.width-150))).toBeLessThan(12);
-  expect(Math.abs(head.y-(sheet.y-190))).toBeLessThan(9);
+  const restingFoot=await page.evaluate(()=>window.dragonRig()[9]);
+  expect(Math.abs(restingFoot.x-(sheet.x+sheet.width-50))).toBeLessThan(8);
+  expect(Math.abs(restingFoot.y-(sheet.y-18))).toBeLessThan(8);
   expect(bounds.bottom-head.y).toBeGreaterThan(160);
   expect(bounds.bottom).toBeLessThan(heading.y-15);
   const resting=await dragon.evaluate(canvas=>canvas.toDataURL());await page.clock.runFor(400);
   expect(await dragon.evaluate(canvas=>canvas.toDataURL())===resting).toBe(false);
   const angle=JSON.parse(await dragon.getAttribute('data-head')).angle;
-  await page.mouse.move(450,800);await page.clock.runFor(1800);
+  await page.mouse.move(450,800);await page.clock.runFor(3000);
   const watching=JSON.parse(await dragon.getAttribute('data-head'));
   expect(Math.abs(watching.angle-angle)).toBeGreaterThan(.1);
-  expect(Math.hypot(watching.x-head.x,watching.y-head.y)).toBeLessThan(24);
+  expect(Math.hypot(watching.x-head.x,watching.y-head.y)).toBeLessThan(180);
+  const watchingFoot=await page.evaluate(()=>window.dragonRig()[9]);
+  expect(Math.hypot(watchingFoot.x-restingFoot.x,watchingFoot.y-restingFoot.y)).toBeLessThan(8);
   expect(await positions()).toEqual(before);await expect(dragon).toHaveCSS('pointer-events','none');
   await page.locator('.project-row').first().hover();await page.clock.runFor(800);
   await expect(page.locator('.project-hover-preview')).toBeVisible();
@@ -412,6 +438,7 @@ test('real Retina scroll reversals preserve one full-size live dragon through th
   test.skip(info.project.name!=='desktop','The perch needs the desktop reading surface');
   const page=await browser.newPage({viewport:{width:1512,height:982},deviceScaleFactor:2});
   try {
+    await observeDragonRig(page);
     await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:{title:null,isPlaying:false}}));
     await page.route('**/github-contributions-api.jogruber.de/**',route=>route.fulfill({json:calendar}));
     await page.goto(process.env.TEST_URL ?? 'http://localhost:3001/');
@@ -428,17 +455,32 @@ test('real Retina scroll reversals preserve one full-size live dragon through th
           : (1-Math.cos((frame-480)*Math.PI/80))/2;
         window.scrollTo(0,Math.round(end*portion));
         document.elementFromPoint(x,y)?.dispatchEvent(new PointerEvent('pointermove',{clientX:x,clientY:y,bubbles:true,pointerType:'mouse'}));
-        states.push({head:JSON.parse(canvas.dataset.head),scale:Number(canvas.dataset.scale),scroll:Number(canvas.dataset.drawnScroll),progress:Number(canvas.dataset.renderedProgress)});
+        states.push({head:JSON.parse(canvas.dataset.head),rig:window.dragonRig(),scale:Number(canvas.dataset.scale),scroll:Number(canvas.dataset.drawnScroll),progress:Number(canvas.dataset.renderedProgress)});
       }
       return states;
     });
     expect(frames.some(frame=>frame.progress>.99)).toBe(true);
+    let completeRigs=0,maxJointTurn=0,maxBend=0,maxStretch=0;
     for(let index=1;index<frames.length;index++) {
       const before=frames[index-1],after=frames[index];
       expect(after.scale).toBe(1);
       expect(Math.hypot(after.head.x-before.head.x,after.head.y-before.head.y)-Math.abs(after.scroll-before.scroll),JSON.stringify({index,before,after})).toBeLessThan(80);
       expect(Math.abs(Math.atan2(Math.sin(after.head.angle-before.head.angle),Math.cos(after.head.angle-before.head.angle)))).toBeLessThan(.3);
+      if(after.rig.length===20) completeRigs++;
+      for(let joint=0;joint<after.rig.length;joint++) {
+        const current=after.rig[joint],previous=before.rig[joint],parent=after.rig[joint-1];
+        const difference=(to,from)=>Math.abs(Math.atan2(Math.sin(to-from),Math.cos(to-from)));
+        if(previous) maxJointTurn=Math.max(maxJointTurn,difference(current.angle,previous.angle));
+        if(parent) {
+          maxBend=Math.max(maxBend,difference(current.angle,parent.angle));
+          maxStretch=Math.max(maxStretch,Math.abs(Math.hypot(current.x-parent.x,current.y-parent.y)-30));
+        }
+      }
     }
+    expect(completeRigs).toBe(frames.length-1);
+    expect(maxJointTurn,'no visible joint may snap').toBeLessThan(.34);
+    expect(maxBend,'the rendered head and body must stay connected').toBeLessThan(.291);
+    expect(maxStretch,'no visible link may stretch').toBeLessThan(2.2);
     await page.evaluate(()=>window.scrollTo(0,0));await page.mouse.move(900,300);
     await expect(page.locator('#project-dragon')).toHaveAttribute('data-mode','hero');
     await expect.poll(async()=>Math.abs(JSON.parse(await page.locator('#project-dragon').getAttribute('data-head')).x-900)).toBeLessThan(5);
