@@ -699,8 +699,11 @@ test('small phones and tablets retain complete content without horizontal overfl
   await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:{...track,title:'Supercalifragilisticexpialidocious (live)'}}));
   await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-spotify-state','track');
   for(const [width,height] of [[320,600],[390,844],[768,900],[1512,698]]) {
     await page.setViewportSize({width,height});
+    // Check the resized paint, rather than the previous viewport's complete-content flag.
+    await page.evaluate(async()=>{await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);});
     await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-bio-complete','true');
     const section=await page.locator('#manuscript-scene').boundingBox();
     expect(section.height).toBe(height);
