@@ -235,6 +235,54 @@ test('music stays readable when artwork or artist metadata is missing',async({pa
   expect(group.artistY).toBeNull();expect(group.detailsX).toBe(group.x);
 });
 
+test('the entire intro and song remain painted while the dragon crosses the lower text',async({page},info)=>{
+  if(info.project.name==='desktop') await page.setViewportSize({width:1512,height:698});
+  const song={...track,title:'Set Me Free - Franky Rizardo Remix',artist:'Nic Fanciulli, Franky Rizardo, Robert Courtois'};
+  await page.route('**/api/spotify/now-playing',route=>route.fulfill({json:song}));
+  await page.addInitScript(()=>{
+    const prototype=CanvasRenderingContext2D.prototype,draw=prototype.fillText,clear=prototype.clearRect;
+    window.introInk=[];
+    prototype.clearRect=function(...args) {
+      if(this.canvas.id==='manuscript') {window.introInk=[];window.introBounds={left:Infinity,right:-Infinity,bottom:-Infinity};}
+      return clear.apply(this,args);
+    };
+    prototype.fillText=function(text,...args) {
+      if(this.canvas.id==='manuscript') {
+        window.introInk.push(String(text));
+        const m=this.getTransform(),dpr=this.canvas.width/this.canvas.clientWidth;
+        const x=(m.e+args[0]*m.a)/dpr,y=(m.f+args[1]*m.d)/dpr;
+        window.introBounds.left=Math.min(window.introBounds.left,x);
+        window.introBounds.right=Math.max(window.introBounds.right,x+this.measureText(text).width*m.a/dpr);
+        window.introBounds.bottom=Math.max(window.introBounds.bottom,y+parseFloat(this.font));
+      }
+      return draw.call(this,text,...args);
+    };
+  });
+  await page.clock.install();await page.goto('/');
+  const surface=page.locator('#manuscript-scene'),canvas=page.locator('#manuscript');
+  await expect(surface).toHaveAttribute('data-ready','true');
+  await expect(page.locator('.bio-music')).toContainText(song.title);
+  await canvas.scrollIntoViewIfNeeded();await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  const expected=await page.locator('.manuscript-fallback').evaluate(node=>node.textContent.replace(/\s/g,'').slice(1));
+  const box=await canvas.boundingBox();
+  const xs=info.project.name==='desktop' ? [.32,.45,.55,.65,.75,.5] : [.2,.4,.7,.85,.5];
+  for(const x of xs) {
+    await page.mouse.move(box.x+box.width*x,box.y+box.height*.73);
+    for(let step=0;step<12;step++) {
+      await page.clock.runFor(64);
+      await expect(surface).toHaveAttribute('data-bio-complete','true');
+      expect(await page.evaluate(()=>window.introInk.join('').replace(/\s/g,''))).toBe(expected);
+      const ink=await page.evaluate(()=>window.introBounds),column=Math.min(760,box.width-16),side=(box.width-column)/2;
+      expect(ink.left).toBeGreaterThanOrEqual(side-1);
+      expect(ink.right).toBeLessThanOrEqual(side+column+1);
+      expect(ink.bottom).toBeLessThan(box.height-48);
+      expect(JSON.parse(await canvas.getAttribute('data-music-group'))).not.toBeNull();
+    }
+  }
+  await page.clock.runFor(1200);
+  await page.screenshot({path:info.outputPath('complete-flowing-intro.png')});
+});
+
 test('live playback bars animate and disappear when listening stops',async({page})=>{
   await page.clock.install();await page.goto('/');
   const canvas=page.locator('#manuscript');

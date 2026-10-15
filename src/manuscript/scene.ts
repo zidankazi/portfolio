@@ -4,12 +4,13 @@ import {prepareRichInline,layoutNextRichInlineLineRange,materializeRichInlineLin
 import {biographyBlocks,biographyInline,biographyMarkup,type BioTrack,type BioImage} from './bio.ts';
 import {playbackBars} from './playing.ts';
 import {mountMarginDragon} from './margin-dragon.ts';
+import {createTextMotion} from './text-motion.ts';
 import {TEXT_COLOR, getResponsiveLayout, getPageOffset, getPageScale} from './reference/config.js';
 import {loadDragonSprites, createDragon, updateDragonScale, updateDragon, getDragonBottom, getDragonExclusions, getFireExclusions, getFireInfluence, spawnFire, hasActiveFire, updateFire} from './reference/dragon.js';
 
 type Range = {left:number; right:number};
 type Picture = {image:BioImage; x:number; y:number; size:number; textX:number; textY:number};
-type Line = {text:string; x:number; y:number; font:string; fontSize:number; color:string};
+type Line = {id:string; text:string; x:number; y:number; font:string; fontSize:number; color:string};
 
 export function subtractRanges(ranges:Range[], exclusion:Range):Range[] {
   return ranges.flatMap(range => {
@@ -51,6 +52,10 @@ export async function mountScene():Promise<void> {
   const mediaRequests=new Set<string>();
   let prepared=fitBio();
   let lines:Line[]=[];
+  const textMotion=createTextMotion();
+  let exclusionStrength=1;
+  let flowSpacing=1;
+  let exclusionAnchor:number[]=[];
   let pictures:Picture[]=[];
   let initial:{x:number;y:number;width:number;height:number;clearance:number} | null=null;
   let musicGroup:{x:number;y:number;width:number;height:number;detailsX:number;statusY:number;titleY:number;artistY:number | null;iconY:number} | null=null;
@@ -63,7 +68,7 @@ export async function mountScene():Promise<void> {
   refreshText=()=>{
     const active=new Set(biographyBlocks(track).flatMap(block=>block.image ? [block.image.src] : []));
     for (const src of media.keys()) if (!active.has(src)) {media.delete(src);mediaRequests.delete(src);}
-    prepared=fitBio();glyphWidths.clear();dirty=true;schedule();
+    prepared=fitBio();glyphWidths.clear();exclusionAnchor=[];dirty=true;schedule();
   };
 
   function sceneLayout() {
@@ -128,14 +133,15 @@ export async function mountScene():Promise<void> {
     return {rows,textWidth,textHeight,height:Math.max(block.imageSize,textHeight),coverWidth};
   }
   function contentBottom() {return Math.min(layout.pageHeight-layout.margin,height-offset.y-72);}
-  function flowRanges(y:number,lineHeight:number):Range[] {
+  function flowRanges(y:number,lineHeight:number,strength:number):Range[] {
     let ranges:Range[]=[{left:layout.margin,right:layout.pageWidth-layout.margin}];
     if(initial && y<initial.y+initial.height && y+lineHeight>initial.y) {
       ranges=subtractRanges(ranges,{left:initial.x,right:initial.x+initial.clearance});
     }
     const top=y+offset.y,bottom=top+lineHeight;
-    for (const exclusion of [...getDragonExclusions(dragon,top,bottom,10),...getFireExclusions(dragon,top,bottom,6)]) {
-      ranges=subtractRanges(ranges,{left:exclusion.left-offset.x,right:exclusion.right-offset.x});
+    if(strength>0) for (const exclusion of [...getDragonExclusions(dragon,top,bottom,10),...getFireExclusions(dragon,top,bottom,6)]) {
+      const center=(exclusion.left+exclusion.right)/2-offset.x,half=(exclusion.right-exclusion.left)*strength/2;
+      ranges=subtractRanges(ranges,{left:center-half,right:center+half});
     }
     return ranges;
   }
@@ -181,6 +187,7 @@ export async function mountScene():Promise<void> {
   }
   function resize() {
     margin?.restore();
+    textMotion.clear();exclusionAnchor=[];
     const nextWidth=surface!.clientWidth, nextHeight=surface!.clientHeight;
     const changed=nextWidth!==width;
     width=nextWidth; height=nextHeight; bounds=surface!.getBoundingClientRect();
@@ -194,23 +201,24 @@ export async function mountScene():Promise<void> {
     if (changed && !hasPointer) placeDragon();
     dirty=true; schedule();
   }
-  function layoutText() {
+  function planText(strength:number,spacing:number):boolean {
     lines=[];pictures=[];musicGroup=null;initial=null;
     let cursor={itemIndex:0,segmentIndex:0,graphemeIndex:0},paragraphIndex=0;
     let y=layout.margin;
     while (paragraphIndex<prepared.length) {
       const block=prepared[paragraphIndex];
-      const {fontSize,font,color,gap}=block;
+      const {fontSize,font,color}=block;
+      const gap=block.gap*(1-(1-spacing)*4);
       if (block.music) {
         const idealWidth=Math.min(360,layout.pageWidth-2*layout.margin);
         const ideal=musicGeometry(block,idealWidth);
         let placed=false;
-        for (const range of flowRanges(y,ideal.height)) {
+        for (const range of flowRanges(y,ideal.height,strength).sort((a,b)=>(b.right-b.left)-(a.right-a.left))) {
           const cardWidth=Math.min(idealWidth,Math.floor(range.right-range.left));
           if (cardWidth<Math.min(210,idealWidth)) continue;
           const geometry=musicGeometry(block,cardWidth);
           if (y+geometry.height>contentBottom()) continue;
-          if (!flowRanges(y,geometry.height).some(space=>space.left<=range.left && space.right>=range.left+cardWidth)) continue;
+          if (!flowRanges(y,geometry.height,strength).some(space=>space.left<=range.left && space.right>=range.left+cardWidth)) continue;
           const x=range.left,detailsX=x+geometry.coverWidth;
           let rowY=y+(geometry.height-geometry.textHeight)/2;
           const rowYs:number[]=[];
@@ -221,7 +229,7 @@ export async function mountScene():Promise<void> {
               const next=layoutNextRichInlineLineRange(row.prepared,geometry.textWidth-row.indent,rowCursor);
               if (!next) break;
               const materialized=materializeRichInlineLineRange(row.prepared,next);
-              lines.push({text:materialized.fragments.map(fragment=>fragment.text).join(''),x:detailsX+row.indent,y:rowY+(row.lineHeight-row.fontSize*.857)/2,font:row.font,fontSize:row.fontSize,color:row.color});
+              lines.push({id:`${paragraphIndex}:music:${index}`,text:materialized.fragments.map(fragment=>fragment.text).join(''),x:detailsX+row.indent,y:rowY+(row.lineHeight-row.fontSize*.857)/2,font:row.font,fontSize:row.fontSize,color:row.color});
               rowCursor=next.end;rowY+=row.lineHeight;
             }
             if(index<2) rowY+=2;
@@ -233,14 +241,15 @@ export async function mountScene():Promise<void> {
           musicGroup={x,y,width:cardWidth,height:geometry.height,detailsX,statusY:rowYs[0],titleY:rowYs[1],artistY:rowYs[2] ?? null,iconY:rowYs[0]};
           y+=geometry.height+gap;paragraphIndex++;cursor={itemIndex:0,segmentIndex:0,graphemeIndex:0};placed=true;break;
         }
-        if(!placed) {if(y+ideal.height>contentBottom()) break;y+=block.lineHeight;}
+        if(!placed) {if(y+ideal.height>contentBottom()) break;y+=block.lineHeight*spacing;}
         continue;
       }
       const imageSize=block.imageSize;
-      const lineHeight=block.image && cursor.itemIndex<=block.imageIndex ? Math.max(block.lineHeight,imageSize) : block.lineHeight;
+      const textHeight=Math.max(fontSize*1.08,block.lineHeight*spacing);
+      const lineHeight=block.image && cursor.itemIndex<=block.imageIndex ? Math.max(textHeight,imageSize) : textHeight;
       if (y+lineHeight>contentBottom()) break;
       const baselineOffset=(lineHeight-fontSize*.857)/2;
-      const ranges=flowRanges(y,lineHeight);
+      const ranges=flowRanges(y,lineHeight,strength);
       for (const range of ranges.filter(range=>range.right-range.left>=Math.max(40,fontSize*3))) {
         const geometry=layoutNextRichInlineLineRange(block.prepared,range.right-range.left,cursor);
         if (!geometry) {paragraphIndex++;cursor={itemIndex:0,segmentIndex:0,graphemeIndex:0};y+=gap;break;}
@@ -259,7 +268,7 @@ export async function mountScene():Promise<void> {
             loadPicture(block.image);textX+=imageSize+8;
             pictures.push({image:block.image,x,y:y+(lineHeight-imageSize)/2,size:imageSize,textX,textY:y+baselineOffset});
           }
-          lines.push({text:fragment.text,x:textX,y:y+baselineOffset,font,fontSize,color:block.parts[fragment.itemIndex]?.accent ? '#64382e' : color});
+          lines.push({id:`${paragraphIndex}:${fragment.itemIndex}`,text:fragment.text,x:textX,y:y+baselineOffset,font,fontSize,color:block.parts[fragment.itemIndex]?.accent ? '#64382e' : color});
           x+=fragment.occupiedWidth;
         }
         cursor=line.end;
@@ -269,27 +278,58 @@ export async function mountScene():Promise<void> {
       }
       y+=lineHeight;
     }
-    surface!.dataset.bioComplete=String(paragraphIndex>=prepared.length);
+    return paragraphIndex>=prepared.length;
+  }
+  function layoutText() {
+    // Collision is decorative; it must never evict the last paragraphs or song.
+    // Revisit the budget when the rig moves; don't repeatedly squeeze and expand
+    // the same stationary text on idle frames.
+    const anchor=[dragon.segments[0],dragon.segments[5],dragon.segments[19]].flatMap(segment=>[segment.x,segment.y]);
+    if(!exclusionAnchor.length || anchor.some((value,index)=>Math.abs(value-exclusionAnchor[index])>12)) {
+      exclusionStrength=1;flowSpacing=1;exclusionAnchor=anchor;
+    }
+    let complete=planText(exclusionStrength,flowSpacing);
+    while(!complete && flowSpacing>.85) {
+      flowSpacing=Math.max(.85,flowSpacing-.05);
+      complete=planText(exclusionStrength,flowSpacing);
+    }
+    while(!complete && exclusionStrength>0) {
+      exclusionStrength=Math.max(0,exclusionStrength-.2);
+      complete=planText(exclusionStrength,flowSpacing);
+    }
+    surface!.dataset.bioComplete=String(complete);
+    surface!.dataset.flowSpacing=String(flowSpacing);
+    surface!.dataset.flowStrength=String(exclusionStrength);
     dirty=false;
   }
   function drawText(time:number) {
+    textMotion.begin(time,!motion.matches);
+    const musicPoint=musicGroup ? textMotion.point('music',musicGroup.x,musicGroup.y) : null;
+    if(musicPoint && musicGroup) {
+      musicPoint.x=Math.max(layout.margin,Math.min(layout.pageWidth-layout.margin-musicGroup.width,musicPoint.x));
+      musicPoint.y=Math.max(layout.margin,Math.min(contentBottom()-musicGroup.height,musicPoint.y));
+    }
+    const musicShift=musicGroup && musicPoint ? {x:musicPoint.x-musicGroup.x,y:musicPoint.y-musicGroup.y} : {x:0,y:0};
     ctx!.save(); ctx!.translate(offset.x,offset.y); ctx!.textBaseline='top';
     if(initial) ctx!.drawImage(dropCap,initial.x,initial.y,initial.width,initial.height);
     for (const picture of pictures) {
-      const {x,y,size,image}=picture;
+      const {size,image}=picture;
+      const x=picture.x+(image.kind==='album' ? musicShift.x : 0),y=picture.y+(image.kind==='album' ? musicShift.y : 0);
       const bitmap=media.get(image.src);
       if (bitmap) ctx!.drawImage(bitmap,x,y,size,size);
       if (image.kind!=='league') {ctx!.strokeStyle='rgba(0,0,0,.1)';ctx!.strokeRect(x+.5,y+.5,size-1,size-1);}
     }
-    if (musicGroup) ctx!.drawImage(spotifyIcon,musicGroup.detailsX,musicGroup.iconY,14,14*spotifyIcon.naturalHeight/spotifyIcon.naturalWidth);
+    if (musicGroup) ctx!.drawImage(spotifyIcon,musicGroup.detailsX+musicShift.x,musicGroup.iconY+musicShift.y,14,14*spotifyIcon.naturalHeight/spotifyIcon.naturalWidth);
     if (musicGroup && track?.isPlaying) {
       ctx!.fillStyle='#64382e';
       playbackBars(motion.matches ? 0 : time).forEach((bar,index)=>{
         const height=12*bar;
-        ctx!.fillRect(musicGroup!.detailsX+20+index*4,musicGroup!.iconY+12-height,2,height);
+        ctx!.fillRect(musicGroup!.detailsX+musicShift.x+20+index*4,musicGroup!.iconY+musicShift.y+12-height,2,height);
       });
     }
-    for (const line of lines) {
+    for (const target of lines) {
+      const music=target.id.includes(':music:');
+      const line=music ? {...target,x:target.x+musicShift.x,y:target.y+musicShift.y} : target;
       ctx!.font=line.font;
       if (!hasActiveFire(dragon)) {ctx!.fillStyle=line.color;ctx!.fillText(line.text,Math.round(line.x),Math.round(line.y));continue;}
       let x=line.x;
@@ -312,6 +352,7 @@ export async function mountScene():Promise<void> {
         x+=charWidth;
       }
     }
+    textMotion.end();
     ctx!.restore();
   }
   function render(time:number) {
