@@ -5,7 +5,7 @@ import {biographyBlocks,biographyInline,biographyMarkup,type BioTrack,type BioIm
 import {playbackBars} from './playing.ts';
 import {mountMarginDragon} from './margin-dragon.ts';
 import {TEXT_COLOR, getResponsiveLayout, getPageOffset, getPageScale} from './reference/config.js';
-import {loadDragonSprites, createDragon, updateDragonScale, updateDragon, getDragonBottom, getDragonExclusions, getFireExclusions, getFireInfluence, spawnFire, hasActiveFire, updateFire, drawFire} from './reference/dragon.js';
+import {loadDragonSprites, createDragon, updateDragonScale, updateDragon, getDragonBottom, getDragonExclusions, getFireExclusions, getFireInfluence, spawnFire, hasActiveFire, updateFire} from './reference/dragon.js';
 
 type Range = {left:number; right:number};
 type Picture = {image:BioImage; x:number; y:number; size:number; textX:number; textY:number};
@@ -340,7 +340,7 @@ export async function mountScene():Promise<void> {
     if (visible && (dirty || moved || transferred || fire)) layoutText();
     if (visible) {
       ctx!.clearRect(0,0,width,height);
-      drawText(time);drawFire(ctx,dragon);
+      drawText(time);
     }
     margin?.draw(animated);
     surface!.dataset.ready='true';
@@ -377,7 +377,7 @@ export async function mountScene():Promise<void> {
     if(!event.target.closest('#portfolio')) event.preventDefault();
     breathe(event);
   });
-  canvas.addEventListener('pointerleave',release);
+  canvas.addEventListener('pointerleave',()=>{if(!margin?.active) release();});
   canvas.addEventListener('pointercancel',release);
   canvas.addEventListener('lostpointercapture',release);
   window.addEventListener('pointerup',release);
