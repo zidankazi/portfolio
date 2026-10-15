@@ -27,7 +27,8 @@ export function mountTicker():void {
     link.addEventListener('click',event=>{
       if(event.button!==0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       event.preventDefault();history.replaceState(null,'','#'+node.id);
-      const top=node===hero ? 0 : node.getBoundingClientRect().top+scrollY-48;
+      const offset=node===projects && matchMedia('(min-width:1100px) and (min-height:400px)').matches ? innerHeight*.66 : 48;
+      const top=node===hero ? 0 : node.getBoundingClientRect().top+scrollY-offset;
       window.scrollTo({top,behavior:reduced.matches ? 'instant' : 'smooth'});
     });
     rail.append(link);return link;

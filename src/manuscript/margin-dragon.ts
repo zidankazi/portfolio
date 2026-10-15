@@ -23,6 +23,7 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
   let pointer:{x:number;y:number} | null=null;
 
   function restore() {
+    dragon.perch=0;
     if(snapshot) {
       updateDragonScale(dragon,snapshot.scale);
       dragon.segments.forEach((segment,index)=>Object.assign(segment,snapshot!.original[index]));
@@ -40,11 +41,12 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
       ctx.setTransform(dpr,0,0,dpr,0,0);
     }
     const sheet=document.querySelector<HTMLElement>('.portfolio-glass')!.getBoundingClientRect();
-    target=width>=1100 && height>=400 ? {x:sheet.left+sheet.width*.68,y:headingTop-190*dragon.scale} : null;
+    target=width>=1100 && height>=400 ? {x:sheet.right-150*dragon.scale,y:headingTop-346*dragon.scale} : null;
     const heroBox=hero.getBoundingClientRect(),projectBox=projects.getBoundingClientRect();
     heroTop=heroBox.top;heroBottom=heroBox.bottom;
     // Start settling only as the projects enter, while the original bio remains free to flow.
     goal=target ? Math.max(0,Math.min(1,(height*.98-headingTop)/(height*.3))) : 0;
+    if(goal>.9995) goal=1;else if(goal<.0005) goal=0;
     visible=heroBox.bottom>0 || (!!target && headingTop>-120 && projectBox.bottom>0);
     canvas.dataset.visible=String(visible);
     canvas.dataset.progress=String(goal);
@@ -61,6 +63,7 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
       snapshot={scale:dragon.scale,original,anchor:{x:original[0].x,y:original[0].y}};
     }
     const travel=progress*progress*progress*(progress*(progress*6-15)+10);
+    dragon.perch=travel;
     const positionAlpha=animated ? 1-Math.exp(-dt/(100+travel*100)) : 1;
     const angleAlpha=animated ? 1-Math.exp(-dt/140) : 1;
     const head=dragon.segments[0];

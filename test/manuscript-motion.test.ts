@@ -18,8 +18,9 @@ test('a full-size perched dragon rests its body while its head watches the curso
     }
   }
   assert.equal(dragon.scale,1);
-  assert.ok(dragon.segments.at(-1)!.y>dragon.segments[0].y+100,'the tail hangs below the ledge');
-  assert.ok(dragon.segments.at(-1)!.x<dragon.segments[0].x-450,'the body spans the glass');
+  const xs=dragon.segments.map(segment=>segment.x),ys=dragon.segments.map(segment=>segment.y);
+  assert.ok(Math.max(...ys)>dragon.segments[0].y+180,'the head stays raised above the resting chest');
+  assert.ok(Math.max(...xs)-Math.min(...xs)<300,'the body coils compactly instead of stretching along the ledge');
   const wing={...dragon.segments[5]};dragon.segments[0].angle=2.3;
   for(let frame=0;frame<60;frame++) perchDragonBody(dragon,1,1-Math.exp(-16/140),.096);
   assert.ok(Math.hypot(dragon.segments[5].x-wing.x,dragon.segments[5].y-wing.y)<.1,'watching the cursor must not drag the resting wings around');

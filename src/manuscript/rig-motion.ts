@@ -22,17 +22,17 @@ export function followDragonBody(dragon:Dragon,idle:boolean,alpha:number,maxTurn
   return movement;
 }
 
-// Settle the same articulated chain onto a ledge, with a tail hanging over its corner.
+// Curl the same articulated chain upright, with its chest resting on the ledge.
 // The neck gradually stops steering the whole body as the head looks around.
 export function perchDragonBody(dragon:Dragon,amount:number,alpha:number,maxTurn:number):number {
   let movement=0;
   for(let index=1;index<dragon.segments.length;index++) {
     const segment=dragon.segments[index],previous=dragon.segments[index-1];
     const following=Math.atan2(previous.y-segment.y,previous.x-segment.x);
-    const resting=-Math.max(0,index-9)*.095;
+    const resting=-.9-(index-1)*.25;
     const wanted=following+angleDifference(resting,following)*amount;
     segment.angle+=Math.max(-maxTurn,Math.min(maxTurn,angleDifference(wanted,segment.angle)*alpha));
-    const neck=index===1 ? previous.angle+angleDifference(0,previous.angle)*amount : previous.angle;
+    const neck=index===1 ? previous.angle+angleDifference(-.9,previous.angle)*amount : previous.angle;
     segment.angle=neck+Math.max(-.25,Math.min(.25,angleDifference(segment.angle,neck)));
     const x=previous.x-Math.cos(segment.angle)*30*dragon.scale;
     const y=previous.y-Math.sin(segment.angle)*30*dragon.scale;

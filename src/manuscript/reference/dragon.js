@@ -88,6 +88,7 @@ export function createDragon(startX, startY, scale = 1) {
     stepInterval: 80,
     fire: /** @type {FireParticle[]} */ ([]),
     fireLastStep: 0,
+    perch: 0,
     scale
   };
 }
@@ -172,6 +173,12 @@ export function updateDragon(dragon, time, mouseX, mouseY, idle = false, restX =
   return true;
 }
 
+function wingAngle(dragon) {
+  const angle=dragon.segments[WING_SEGMENT_INDEX].angle;
+  const upright=Math.atan2(Math.sin(-angle),Math.cos(-angle));
+  return angle+upright*dragon.perch;
+}
+
 // Include the full sprites and wing sweep when meeting the lower page boundary.
 export function getDragonBounds(dragon, verticalOnly = false) {
   const bounds = {left: Infinity, right: -Infinity, top: Infinity, bottom: -Infinity};
@@ -212,8 +219,9 @@ export function getDragonBounds(dragon, verticalOnly = false) {
       sprite(seg, dim, -dim.w / 2, -dim.h / 2);
     }
     if (i === WING_SEGMENT_INDEX) {
-      sprite(seg, wingBackDim, -wingBackDim.w, -wingBackDim.h, .42);
-      sprite(seg, wingFrontDim, -wingFrontDim.w, -wingFrontDim.h, .42);
+      const wing={...seg,angle:wingAngle(dragon)};
+      sprite(wing, wingBackDim, -wingBackDim.w, -wingBackDim.h, .42);
+      sprite(wing, wingFrontDim, -wingFrontDim.w, -wingFrontDim.h, .42);
     }
   });
   return bounds;
@@ -363,7 +371,7 @@ export function drawDragon(ctx, dragon, animate = true) {
     let wingFlap = animate ? Math.sin(time * 3) * 0.4 : 0;
     ctx.save();
     ctx.translate(seg.x + jx, seg.y + jy);
-    ctx.rotate(seg.angle + jr + wingFlap);
+    ctx.rotate(wingAngle(dragon) + jr + wingFlap);
     ctx.scale(scale, scale);
     let { w, h } = wingBackDim;
     ctx.drawImage(wingBackCanvas, -w, -h, w, h);
@@ -406,7 +414,7 @@ export function drawDragon(ctx, dragon, animate = true) {
         let wingFlap = animate ? Math.sin(time * 3 + 0.5) * 0.4 : 0;
         ctx.save();
         let { w, h } = wingFrontDim;
-        ctx.rotate(-wingFlap);
+        ctx.rotate(wingAngle(dragon)-seg.angle-wingFlap);
         ctx.drawImage(wingFrontCanvas, -w, -h, w, h);
         ctx.restore();
       }
