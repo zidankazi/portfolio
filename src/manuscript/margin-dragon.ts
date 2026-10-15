@@ -1,6 +1,6 @@
 import {updateDragonScale,getDragonBounds,drawDragon,drawFire} from './reference/dragon.js';
 import type {createDragon} from './reference/dragon.js';
-import {angleDifference,followDragonBody,perchDragonBody} from './rig-motion.ts';
+import {angleDifference,followDragonBody,perchDragonBody,perchLookAngle,perchFootOffset,PERCH_FOOT} from './rig-motion.ts';
 
 type Pose={x:number;y:number;angle:number};
 type Dragon=ReturnType<typeof createDragon>;
@@ -41,7 +41,7 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
       ctx.setTransform(dpr,0,0,dpr,0,0);
     }
     const sheet=document.querySelector<HTMLElement>('.portfolio-glass')!.getBoundingClientRect();
-    target=width>=1100 && height>=400 ? {x:sheet.right-150*dragon.scale,y:headingTop-346*dragon.scale} : null;
+    target=width>=1100 && height>=400 ? {x:sheet.right-50*dragon.scale,y:sheet.top-18*dragon.scale} : null;
     const heroBox=hero.getBoundingClientRect(),projectBox=projects.getBoundingClientRect();
     heroTop=heroBox.top;heroBottom=heroBox.bottom;
     // Start settling only as the projects enter, while the original bio remains free to flow.
@@ -67,17 +67,19 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     const angleAlpha=animated ? 1-Math.exp(-dt/140) : 1;
     const head=dragon.segments[0];
     const previousTop=paintedHeroTop ?? heroTop;
-    const scrollShift=heroTop-previousTop;
-    const headX=head.x,headY=head.y+previousTop+scrollShift;
     // The perch belongs to the document, so it scrolls with the glass, in both directions.
-    for(const segment of dragon.segments) segment.y+=previousTop+scrollShift;
+    for(const segment of dragon.segments) segment.y+=heroTop;
     const cursor=pointer ?? {x:snapshot.anchor.x,y:snapshot.anchor.y+heroTop};
     const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
-    const perchX=target.x+(pointer ? clamp((cursor.x-target.x)*.025,-10,10) : 0);
-    const perchY=target.y+(pointer ? clamp((cursor.y-target.y)*.015,-5,7) : 0);
+    const restOffset=perchFootOffset(dragon.scale),foot=dragon.segments[PERCH_FOOT];
+    // Land the belly on the rim. Once resting, let the neck move around that
+    // support instead of pinning the head and twisting the body underneath it.
+    const offsetX=restOffset.x+(foot.x-head.x-restOffset.x)*poseProgress;
+    const offsetY=restOffset.y+(foot.y-head.y-restOffset.y)*poseProgress;
+    const perchX=target.x-offsetX,perchY=target.y-offsetY;
     // Approach first, then slowly fold into the resting pose as the head reaches the rim.
     const arrival=clamp(1-Math.hypot(perchX-head.x,perchY-head.y)/220,0,1);
-    const poseGoal=travel*arrival;
+    const poseGoal=travel*Math.max(arrival,poseProgress);
     const poseAlpha=animated ? 1-Math.exp(-dt/(poseGoal<poseProgress ? 380 : 750)) : 1;
     poseProgress+=(poseGoal-poseProgress)*poseAlpha;
     if(Math.abs(poseGoal-poseProgress)<.0001) poseProgress=poseGoal;
@@ -86,39 +88,24 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     let y=cursor.y+(perchY-cursor.y)*travel;
     const current=getDragonBounds(dragon);
     if(!progress) y=Math.min(y,height-16-current.bottom+head.y);
+    else if(current.right>columnLeft-24) y=Math.min(y,headingTop-24-current.bottom+head.y);
     const aim=pointer && Math.hypot(cursor.x-head.x,cursor.y-head.y)>4 ? Math.atan2(cursor.y-head.y,cursor.x-head.x) : head.angle;
-    const glance=pointer ? clamp(aim,-.65,2.3) : .35;
-    const wantedAngle=aim+angleDifference(glance,aim)*travel;
-    const turn=angleDifference(wantedAngle,head.angle),maxTurn=animated ? dt*.006 : Infinity;
+    const glance=pointer ? perchLookAngle(aim) : -.65;
+    const turn=angleDifference(aim,head.angle)*(1-travel)+angleDifference(glance,head.angle)*travel;
+    const maxTurn=animated ? dt*(.006-.003*poseProgress) : Infinity;
     head.angle+=clamp(turn*angleAlpha,-maxTurn,maxTurn);
     const distance=Math.hypot(x-head.x,y-head.y);
     const headAlpha=distance ? Math.min(positionAlpha,(animated ? dt*1.5 : Infinity)/distance) : 0;
     head.x+=(x-head.x)*headAlpha;head.y+=(y-head.y)*headAlpha;
-    const bodyTurn=animated ? dt*(.006-.003*poseProgress) : Infinity;
-    const bodyMovement=poseProgress ? perchDragonBody(dragon,poseProgress,angleAlpha,bodyTurn)
+    const bodyMovement=poseProgress ? perchDragonBody(dragon,poseProgress,angleAlpha,maxTurn)
       : followDragonBody(dragon,!pointer,angleAlpha,maxTurn);
-    const actual=getDragonBounds(dragon);
-    let shiftY=0;
-    if(progress && actual.right>columnLeft-24 && actual.bottom>headingTop-24) {
-      shiftY=-Math.min(actual.bottom-headingTop+24,animated ? dt*.6 : Infinity);
-    }
-    // Cursor following and boundary contact share one travel budget.
-    let shiftX=0;
-    if(animated) {
-      const dx=head.x-headX,dy=head.y-headY+shiftY;
-      const movement=Math.hypot(dx,dy),limit=dt*1.5;
-      if(movement>limit) {
-        shiftX=dx*limit/movement-(head.x-headX);
-        shiftY=dy*limit/movement-(head.y-headY);
-      }
-    }
-    for(const segment of dragon.segments) {segment.x+=shiftX;segment.y+=shiftY-heroTop;}
+    for(const segment of dragon.segments) segment.y-=heroTop;
     const settled=progress===goal && Math.hypot(x-head.x,y-head.y-heroTop)<.5
       && Math.abs(turn)<.002 && bodyMovement<.05;
     if(animated && time-dragon.lastStepTime>=dragon.stepInterval) {dragon.lastStepTime=time;dragon.jitterSeed=Math.random()*1000;}
     canvas.dataset.settled=String(settled);
     return Math.abs(heroTop-previousTop)>.01 || distance*headAlpha>.01
-      || Math.abs(turn*angleAlpha)>.0001 || bodyMovement>.01 || Math.abs(shiftX)+Math.abs(shiftY)>.01;
+      || Math.abs(turn*angleAlpha)>.0001 || bodyMovement>.01;
   }
   function draw(animated:boolean) {
     const local=getDragonBounds(dragon);
