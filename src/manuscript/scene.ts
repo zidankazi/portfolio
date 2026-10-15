@@ -357,7 +357,8 @@ export async function mountScene():Promise<void> {
   function release() {held=false;}
   function point(event:PointerEvent) {
     if (motion.matches) return;
-    mouse={x:Math.max(0,Math.min(width,event.clientX-bounds.left)),y:Math.max(0,Math.min(height,event.clientY-(margin?.active ? 0 : bounds.top)))};
+    const top=margin?.active ? 0 : surface!.getBoundingClientRect().top;
+    mouse={x:Math.max(0,Math.min(width,event.clientX-bounds.left)),y:Math.max(0,Math.min(height,event.clientY-top))};
     hasPointer=true;schedule();
   }
   canvas.addEventListener('pointermove',point);
