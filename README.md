@@ -1,5 +1,12 @@
 [zidankazi.com](https://www.zidankazi.com/)
 
+The reading column is warm frosted glass over Botticelli's *The Story of Nastagio
+degli Onesti, panel II* (public domain; source in `public/manuscript/NOTICE.txt`).
+The native TypeScript section ticker is inspired by
+[Rare UI's proximity sidebar](https://www.rareui.com/components/proximitysidebar).
+It follows real content anchors, supports keyboard navigation and reduced motion,
+and stays out of the narrow-screen layout. No React or animation dependency is needed.
+
 The portfolio is TypeScript, bundled with esbuild. The top section adapts the
 canvas renderer from [Illustrated Manuscript](https://github.com/dengshu2/illustrated-manuscript):
 its illuminated initial, articulated dragon, idle wings, sustained fire,
