@@ -184,6 +184,26 @@ test('the entire dragon stops above the lower manuscript edge while scrolling',a
   expect(darkPixels).toBe(0);
 });
 
+test('the dragon stays whole when the bottom of the about card enters the viewport',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','Separate desktop glass cards have a visible lower edge');
+  await page.clock.install();await page.goto('/');
+  const surface=page.locator('#manuscript-scene'),dragon=page.locator('#project-dragon');
+  await expect(surface).toHaveAttribute('data-ready','true');
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  const hero=await surface.boundingBox();
+  await page.evaluate(bottom=>window.scrollTo(0,bottom-innerHeight*.85),hero.y+hero.height);
+  const edge=(await surface.boundingBox()).y+hero.height;
+  for(const x of [.8,.5,.2]) {
+    await page.mouse.move(hero.width*x,edge-2);
+    for(let frame=0;frame<60;frame++) {
+      await page.clock.runFor(16);
+      expect(await dragon.getAttribute('data-mode')).toBe('hero');
+      expect(JSON.parse(await dragon.getAttribute('data-bounds')).bottom).toBeLessThanOrEqual(edge-15.9);
+    }
+  }
+  await page.screenshot({path:info.outputPath('dragon-about-card-edge.png')});
+});
+
 test('real game logos and album artwork flow together with their text',async({page})=>{
   await page.clock.install();await page.goto('/');
   const canvas=page.locator('#manuscript');

@@ -90,7 +90,7 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     const x=cursor.x+(perchX-cursor.x)*travel;
     let y=cursor.y+(perchY-cursor.y)*travel;
     const current=getDragonBounds(dragon);
-    if(!progress) y=Math.min(y,height-16-current.bottom+head.y);
+    if(!progress) y=Math.min(y,Math.min(height,heroBottom)-16-current.bottom+head.y);
     else if(current.right>columnLeft-24) y=Math.min(y,headingTop-24-current.bottom+head.y);
     const aim=pointer && Math.hypot(cursor.x-head.x,cursor.y-head.y)>4 ? Math.atan2(cursor.y-head.y,cursor.x-head.x) : head.angle;
     const glance=pointer ? perchLookAngle(aim) : -.65;
@@ -104,6 +104,12 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     const bodyAlpha=1-Math.pow(1-angleAlpha,1+3*unwind);
     const bodyMovement=poseProgress ? perchDragonBody(dragon,poseProgress,bodyAlpha,maxTurn,unwind)
       : followDragonBody(dragon,!pointer,bodyAlpha,maxTurn,unwind);
+    // Body turns and wing sweeps can extend past the head's target clearance.
+    // Keep the whole rig above the manuscript edge as it scrolls into view.
+    if(!progress) {
+      const overflow=Math.max(0,getDragonBounds(dragon).bottom-Math.min(height,heroBottom)+16);
+      for(const segment of dragon.segments) segment.y-=overflow;
+    }
     for(const segment of dragon.segments) segment.y-=heroTop;
     const settled=progress===goal && Math.hypot(x-head.x,y-head.y-heroTop)<.5
       && Math.abs(turn)<.002 && bodyMovement<.05;
@@ -133,7 +139,6 @@ export function mountMarginDragon(dragon:Dragon,onChange:()=>void) {
     // Fire shares the dragon's viewport layer, including across the glass boundary.
     ctx.save();ctx.translate(0,heroTop);drawFire(ctx,dragon);ctx.restore();
     ctx.save();
-    if(!progress) {ctx.beginPath();ctx.rect(0,0,width,Math.max(0,heroBottom));ctx.clip();}
     ctx.translate(0,heroTop);drawDragon(ctx,dragon,animated);ctx.restore();
     canvas.dataset.bounds=JSON.stringify(bounds);
     canvas.dataset.scale=String(dragon.scale);canvas.dataset.frame=String(++frames);
