@@ -57,6 +57,12 @@ and Vercel Build Output. `npm run check`, `npm run lint`, and `npm test` check t
 active app. For browser tests, start `npm run dev -- --port 3001`, then run
 `npm run test:e2e` (Google Chrome).
 
+The first HTML response includes the biography, project descriptions, semantic
+headings, and ProfilePage structured data. `/robots.txt` allows crawling and
+points to `/sitemap.xml`. A head alternate link advertises `/profile`, a plain
+HTML version generated from the same biography and projects for readers that
+skip canvas or visually hidden text. It uses the homepage as its canonical URL.
+
 Spotify uses `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, and
 `SPOTIFY_REFRESH_TOKEN` server environment variables. GitHub contributions use
 the existing public endpoint. Credentials never enter the browser bundle.

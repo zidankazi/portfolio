@@ -1,5 +1,33 @@
 import {projects,type Project} from './data.js';
-import {biographyMarkup} from './bio.js';
+import {biographyBlocks,biographyMarkup} from './bio.js';
+
+export const siteUrl='https://www.zidankazi.com/';
+
+function structuredData():string {
+  const profile={
+    '@context':'https://schema.org',
+    '@type':'ProfilePage',
+    '@id':siteUrl+'#profile',
+    url:siteUrl,
+    name:'Zidan Kazi',
+    mainEntity:{
+      '@type':'Person',
+      '@id':siteUrl+'#person',
+      name:'Zidan Kazi',
+      url:siteUrl,
+      description:biographyBlocks().filter(block=>block.kind==='body').map(block=>block.text).join('\n\n'),
+      sameAs:['https://github.com/zidankazi','https://twitter.com/zidaaaaaaaannnn'],
+    },
+    hasPart:projects.map((project,index)=>({
+      '@type':'CreativeWork',
+      '@id':siteUrl+'#project-'+(index+1),
+      name:project.title,
+      description:project.description,
+      url:project.links[0].href,
+    })),
+  };
+  return `<script type="application/ld+json">${JSON.stringify(profile).replace(/</g,'\\u003c')}</script>`;
+}
 
 export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, char => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[char]!));
@@ -16,7 +44,7 @@ function description(project:Project):string {
 }
 
 function home(): string {
-  return `<section id="projects" aria-labelledby="projects-heading"><h2 id="projects-heading" class="projects-label">a few things i've built</h2><div class="project-list">${projects.map((project, index) => `<article id="project-${index+1}" class="project-row" data-project="${index}"><div class="project-heading">${external(project.links[0].href, project.title, 'project-title')}<span class="project-links">${project.links.filter(link=>link.label==='github' || (project.title==='relic' && link.label==='site')).map(link => external(link.href, link.label, 'project-link')).join(' / ')}</span></div><p class="project-description">${description(project)}</p></article>`).join('\n')}</div></section>
+  return `<section id="projects" aria-labelledby="projects-heading"><h2 id="projects-heading" class="projects-label">a few things i've built</h2><div class="project-list">${projects.map((project, index) => `<article id="project-${index+1}" class="project-row" data-project="${index}"><h3 class="project-heading">${external(project.links[0].href, project.title, 'project-title')}<span class="project-links">${project.links.filter(link=>link.label==='github' || (project.title==='relic' && link.label==='site')).map(link => external(link.href, link.label, 'project-link')).join(' / ')}</span></h3><p class="project-description">${description(project)}</p></article>`).join('\n')}</div></section>
     <p id="contact" class="contact-copy">${external('https://github.com/zidankazi', 'github')} / ${external('https://twitter.com/zidaaaaaaaannnn', 'twitter')} / <a href="mailto:hi@zidankazi.com">email</a></p>`;
 }
 
@@ -25,7 +53,17 @@ function calendarSkeleton():string {
 }
 
 export function document(script: string, stylesheet: string): string {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f4eee0"><title>zidan kazi</title><meta name="description" content="Zidan Kazi. Computer Science & Math at Stevens. Projects and websites."><link rel="canonical" href="https://www.zidankazi.com/"><meta property="og:title" content="Zidan Kazi"><meta property="og:description" content="Projects and websites."><meta property="og:type" content="website"><link rel="icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest"><link rel="preload" href="/fonts/furia-iii.ttf" as="font" type="font/ttf" crossorigin><link rel="preload" href="/manuscript/nastagio.webp" as="image"><link rel="stylesheet" href="${stylesheet}"><script type="module" src="${script}"></script></head><body><div class="painting" aria-hidden="true"></div><div class="reading-glass" aria-hidden="true"></div><section id="manuscript-scene" class="manuscript-surface" aria-label="About Zidan Kazi"><canvas id="manuscript" aria-hidden="true"></canvas><div class="manuscript-fallback">${biographyMarkup()}</div><div id="github-activity" data-slot="github-activity" aria-label="GitHub contribution chart" aria-busy="true">${calendarSkeleton()}</div><div class="scroll-hint" aria-hidden="true"><span class="scroll-hint-arrow">↓</span></div></section><noscript><style>.manuscript-surface{height:auto;min-height:100svh}</style></noscript><main id="portfolio"><div class="portfolio-glass" aria-hidden="true"></div>${home()}</main></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f4eee0"><title>zidan kazi</title><meta name="description" content="Zidan Kazi. Computer Science & Math at Stevens. Projects and websites."><link rel="canonical" href="${siteUrl}"><link rel="alternate" type="text/html" href="${siteUrl}profile" title="Text portfolio">${structuredData()}<meta property="og:title" content="Zidan Kazi"><meta property="og:description" content="Projects and websites."><meta property="og:type" content="website"><link rel="icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest"><link rel="preload" href="/fonts/furia-iii.ttf" as="font" type="font/ttf" crossorigin><link rel="preload" href="/manuscript/nastagio.webp" as="image"><link rel="stylesheet" href="${stylesheet}"><script type="module" src="${script}"></script></head><body><div class="painting" aria-hidden="true"></div><div class="reading-glass" aria-hidden="true"></div><section id="manuscript-scene" class="manuscript-surface" aria-label="About Zidan Kazi"><canvas id="manuscript" aria-hidden="true"></canvas><div class="manuscript-fallback">${biographyMarkup()}</div><div id="github-activity" data-slot="github-activity" aria-label="GitHub contribution chart" aria-busy="true">${calendarSkeleton()}</div><div class="scroll-hint" aria-hidden="true"><span class="scroll-hint-arrow">↓</span></div></section><noscript><style>.manuscript-surface{height:auto;min-height:100svh}</style></noscript><main id="portfolio"><div class="portfolio-glass" aria-hidden="true"></div>${home()}</main></body></html>`;
+}
+
+// A visible HTML alternative for readers that discard canvas or clipped text.
+// Keep its canonical URL on the main portfolio to avoid competing copies in search.
+export function profileDocument():string {
+  const biography=biographyBlocks().map(block=>{
+    const tag=block.kind==='name' ? 'h1' : 'p';
+    return `<${tag}>${escapeHtml(block.text)}</${tag}>`;
+  }).join('\n');
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Zidan Kazi · text portfolio</title><meta name="description" content="Zidan Kazi. Computer Science &amp; Math at Stevens. Projects and websites."><link rel="canonical" href="${siteUrl}">${structuredData()}</head><body><main><section aria-label="About Zidan Kazi">${biography}</section>${home()}<p><a href="/">Animated portfolio</a></p></main></body></html>`;
 }
 
 export const manifest = {

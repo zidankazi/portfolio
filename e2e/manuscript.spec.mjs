@@ -53,7 +53,9 @@ test('manuscript sits above a normal portfolio with live widgets and project lin
   await expect(page.locator('#portfolio')).not.toContainText('I design and build');
   await expect(page.locator('.text-fragment')).toHaveCount(0);
   await expect(page.locator('nav.page-ticker')).toHaveCount(1);
-  await expect(page.locator('h1,h3,header,footer,details')).toHaveCount(0);
+  await expect(page.getByRole('heading',{level:1})).toHaveText("I'm Zidan Kazi");
+  await expect(page.getByRole('heading',{level:3})).toHaveCount(7);
+  await expect(page.locator('header,footer,details')).toHaveCount(0);
   await expect(page.locator('h2')).toHaveCount(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await expect(page.getByRole('link',{name:'studio',exact:true})).toHaveCount(0);
@@ -839,9 +841,38 @@ test('Spotify updates and recovers without moving or rewriting projects',async({
   expect(await page.locator('.project-row').allTextContents()).toEqual(projects);
 });
 
-test('manuscript fallback and portfolio links work without JavaScript',async({browser,request})=>{
+test('crawler discovery and structured profile are available in the first response',async({request})=>{
+  const response=await request.get('/');
+  expect(response.status()).toBe(200);
+  const html=await response.text();
+  expect(html).not.toMatch(/<meta[^>]+(?:noindex|nofollow)/i);
+  expect(html).toContain('<link rel="alternate" type="text/html" href="https://www.zidankazi.com/profile"');
+  const profile=JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)[1]);
+  expect(profile['@type']).toBe('ProfilePage');
+  expect(profile.mainEntity.name).toBe('Zidan Kazi');
+  for(const text of ['Stevens Institute of Technology','Mavri','Relic','Trenchant Analytics']) {
+    expect(profile.mainEntity.description).toContain(text);
+    expect(html).toContain(text);
+  }
+  expect(profile.hasPart).toHaveLength(7);
+  const robots=await request.get('/robots.txt');
+  expect(robots.status()).toBe(200);
+  expect(robots.headers()['content-type']).toContain('text/plain');
+  expect(await robots.text()).toBe('User-agent: *\nAllow: /\n\nSitemap: https://www.zidankazi.com/sitemap.xml\n');
+  const sitemap=await request.get('/sitemap.xml');
+  expect(sitemap.status()).toBe(200);
+  expect(sitemap.headers()['content-type']).toContain('application/xml');
+  expect(await sitemap.text()).toContain('<loc>https://www.zidankazi.com/</loc>');
+  for(const path of ['/robots.txt','/sitemap.xml','/profile']) {
+    const head=await request.head(path);
+    expect(head.status()).toBe(200);
+    expect(await head.body()).toHaveLength(0);
+  }
+});
+
+test('manuscript fallback and portfolio links work without JavaScript',async({browser,request,baseURL})=>{
   const context=await browser.newContext({javaScriptEnabled:false});const page=await context.newPage();
-  await page.goto('http://localhost:3001/');
+  await page.goto(baseURL+'/');
   await expect(page.locator('.manuscript-fallback')).toBeVisible();
   await expect(page.getByRole('link',{name:'email',exact:true})).toBeVisible();
   await expect(page.getByRole('link',{name:'relic',exact:true})).toHaveAttribute('href','https://tryrelic.io');
@@ -849,5 +880,13 @@ test('manuscript fallback and portfolio links work without JavaScript',async({br
   expect((await request.get('/studio')).status()).toBe(404);
   expect((await (await request.get('/manifest.webmanifest')).json()).name).toBe('Zidan Kazi');
   const video=await request.get('/projects/relic-loop.mp4',{headers:{Range:'bytes=0-100'}});expect(video.status()).toBe(206);
+  await page.goto(baseURL+'/profile');
+  await expect(page.getByRole('heading',{level:1})).toBeVisible();
+  await expect(page.getByText(/I'm a junior at Stevens/)).toBeVisible();
+  await expect(page.getByText(/Before that, I interned at/)).toBeVisible();
+  await expect(page.locator('.project-row')).toHaveCount(7);
+  await expect(page.getByRole('link',{name:'relic',exact:true})).toHaveAttribute('href','https://tryrelic.io');
+  await expect(page.locator('canvas,script[src],link[rel="stylesheet"]')).toHaveCount(0);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href','https://www.zidankazi.com/');
   await context.close();
 });

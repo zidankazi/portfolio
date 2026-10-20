@@ -60,6 +60,7 @@ export function biographyMarkup(track:BioTrack | null=null):string {
         return `<span class="${part.noBreak ? 'bio-inline ' : ''}${part.accent ? 'bio-word-accent' : ''}">${part.image ? `<img class="bio-media bio-media-${part.image.kind}" src="${escape(part.image.src)}" alt="${escape(part.image.alt)}">` : ''}${text}</span>`;
       }).join('');
     }
-    return `<p class="bio-${block.kind}${block.accent ? ' bio-accent' : ''}" style="margin-bottom:${block.gap}px">${content}</p>`;
+    const tag=block.kind==='name' ? 'h1' : 'p';
+    return `<${tag} class="bio-${block.kind}${block.accent ? ' bio-accent' : ''}" style="margin-bottom:${block.gap}px">${content}</${tag}>`;
   }).join('');
 }
