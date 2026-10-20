@@ -4,7 +4,8 @@ The reading column is warm frosted glass over Botticelli's *The Story of Nastagi
 degli Onesti, panel II* (public domain; source in `public/manuscript/NOTICE.txt`).
 The native TypeScript section ticker is inspired by
 [Rare UI's proximity sidebar](https://www.rareui.com/components/proximitysidebar).
-It follows real content anchors, supports keyboard navigation and reduced motion,
+Its 25 ticks map equal portions of the page, with labels for content landmarks.
+It supports keyboard navigation and reduced motion,
 and stays out of the narrow-screen layout. No React or animation dependency is needed.
 
 The portfolio is TypeScript, bundled with esbuild. The top section adapts the
@@ -20,29 +21,29 @@ leaves the viewport. Hold the pointer to breathe fire; touch can still scroll
 the page. After interaction it settles at the last pointer position, including
 after tab switches. Reduced motion keeps the illustration static.
 
-Projects, the GitHub contribution chart, and contact links sit below the
-manuscript in ordinary server-rendered HTML. Project hover and keyboard focus
+The live GitHub contribution chart sits directly beneath the song inside the
+intro glass, with native tooltips, keyboard navigation, and horizontal scrolling
+on phones. A saved graph appears immediately on return visits while fresh data
+loads; first visits use a static grid skeleton. Failed refreshes retain the saved
+data, and unchanged responses keep the existing grid. Nearby dots yield a few
+pixels to the dragon and spring back; flame hits warm only those dots into flat,
+flickering ember colors that quickly cool back to their original greens. Hover,
+focus, and touch keep the grid still, and reduced motion disables both effects.
+The card grows when needed to keep it visible without shrinking the
+intro text. Projects and contact links sit below in ordinary server-rendered HTML. Project hover and keyboard focus
 show the original screenshots and demo clips beside the list when there is
 room. Clips pause when dismissed; reduced motion uses the still posters.
 Phone links keep their ordinary tap behavior. No canvas or preview covers
-their hit areas. One persistent dragon follows the scroll from the manuscript,
-shrinking and moving its existing pose into the left margin beside projects.
-It stays full-size through the early scroll and starts shrinking when projects
-reach the lower screen. Position, rotation, and size ease toward the scroll
-target together. One live chain follows its previous joints instead of blending
-two poses. The same motion runs at the top and in the margin; each joint keeps
-its spacing and has a bounded turn speed while growing or shrinking. The larger
-dragon travels with the page and eases away from the visible projects heading
-until its whole body fits in the gutter. Boundary corrections during the handoff
-are rate limited, including abrupt scroll reversals. Reverse scrolling grows it
-from its current position and shape. In the margin it still looks and follows at a constant size chosen
-to accommodate turns. Its bounds are independent of the heading, so circling
-the cursor cannot push it back into the intro. Its whole body stays in the left
-gutter, clear of the list and right-side previews; narrow screens keep it in the hero.
-Reduced motion keeps the wings still; hidden scenes do not run animation frames.
-Clicks and holds also breathe fire beside projects, using the same particles
-and natural fade as the intro. Flames can cross the text, while project layout,
-selection, GitHub links, and hover previews remain native.
+their hit areas. The opening dragon keeps its full-size cursor following, idle wings, and fire.
+On wide screens, the same dragon keeps roaming and following the cursor as
+projects arrive. The parts behind the rounded project glass appear blurred
+and faint; parts outside it stay sharp. There is no landing, scripted dive,
+or fade away. Fire shares the same glass treatment. Scrolling back retains the
+same live chain, scale, and joint spacing. Project text, links, selection, and
+hover previews remain native and keep their positions. Narrow screens let the
+dragon scroll away with the intro. Reduced motion keeps the illustration static
+and disables cursor following and fire.
+
 
 The manuscript uses Furia III from the live reference, with IM Fell English
 for capital I only to distinguish it from J. The local font file comes from the demo’s `/furia-iii.ttf` asset. Furia is a commercial font

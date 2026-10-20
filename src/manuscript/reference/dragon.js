@@ -88,7 +88,6 @@ export function createDragon(startX, startY, scale = 1) {
     stepInterval: 80,
     fire: /** @type {FireParticle[]} */ ([]),
     fireLastStep: 0,
-    perch: 0,
     scale
   };
 }
@@ -174,9 +173,7 @@ export function updateDragon(dragon, time, mouseX, mouseY, idle = false, restX =
 }
 
 function wingAngle(dragon) {
-  const angle=dragon.segments[WING_SEGMENT_INDEX].angle;
-  // Unfold relative to the shoulder, without a shortest-angle branch at +/- pi.
-  return angle+1.9*dragon.perch;
+  return dragon.segments[WING_SEGMENT_INDEX].angle;
 }
 
 // Include the full sprites and wing sweep when meeting the lower page boundary.

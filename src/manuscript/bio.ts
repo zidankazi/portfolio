@@ -15,7 +15,7 @@ export function biographyBlocks(track:BioTrack | null=null):BioBlock[] {
     {kind:'body',text:"Before that, I interned at Trenchant Analytics, where I built military drone software that brought real-time computer vision, tactical maps, and augmented reality into HoloLens headsets.",gap:24},
     {kind:'label',text:'Outside of coding',gap:8},
     {kind:'hobby',text:'I like trying new foods.',gap:12},
-    {kind:'hobby',text:'I play League of Legends. I used to be Challenger (top 300 out of 3,000,000).',gap:12,accent:true,image:{src:'/manuscript/league.png',alt:'League of Legends logo',kind:'league'}},
+    {kind:'hobby',text:'I play League of Legends. I used to be Challenger (top 300 out of 3,000,000).',gap:12,image:{src:'/manuscript/league.png',alt:'League of Legends logo',kind:'league'}},
     {kind:'hobby',text:'I also collect CS2 skins. Right now I have a FN Damascus Steel Karambit and MW Snow Leopards.',gap:24,image:{src:'/manuscript/cs2.jpg',alt:'Counter-Strike 2 logo',kind:'cs2'}},
     ...(track?.title ? [{
       kind:'music' as const,
@@ -33,12 +33,12 @@ export type BioInline = {text:string;image?:BioImage;accent?:boolean;noBreak?:bo
 export function biographyInline(block:BioBlock):BioInline[] {
   const parts:BioInline[]=[];
   let cursor=0;
-  for (const match of block.text.matchAll(/Mavri|Relic|Trenchant Analytics|MW Snow Leopards\.?|League of Legends|CS2 skins/g)) {
+  for (const match of block.text.matchAll(/Mavri|Relic|Trenchant Analytics|FN Damascus Steel Karambit|MW Snow Leopards\.?|League of Legends|Challenger|CS2 skins/g)) {
     const start=match.index!;
     if (start>cursor) parts.push({text:block.text.slice(cursor,start)});
     const text=match[0];
     const image=(text==='League of Legends' && block.image?.kind==='league') || (text==='CS2 skins' && block.image?.kind==='cs2') ? block.image : undefined;
-    parts.push({text,noBreak:true,...(image ? {image} : {}),...(['Mavri','Relic','Trenchant Analytics'].includes(text) ? {accent:true} : {})});
+    parts.push({text,noBreak:true,...(image ? {image} : {}),...(['Mavri','Relic','Trenchant Analytics','League of Legends','Challenger','CS2 skins','FN Damascus Steel Karambit','MW Snow Leopards'].includes(text.replace(/\.$/,'')) ? {accent:true} : {})});
     cursor=start+text.length;
   }
   if (cursor<block.text.length) parts.push({text:block.text.slice(cursor)});

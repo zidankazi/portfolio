@@ -4,13 +4,14 @@
 @font-face{font-family:"IM Fell English";src:url('/fonts/im-fell-english-italic.ttf') format('truetype');font-weight:400;font-style:italic;font-display:swap}
 :root{--paper:#f4eee0;--ink:#2b2822;--muted:#352e25;--link:#64382e;--reading-start:clamp(320px,78svh,880px);color-scheme:light}
 *{box-sizing:border-box}
-html{overflow-anchor:none}
+html{overflow-anchor:none;scrollbar-width:none}
+html::-webkit-scrollbar,body::-webkit-scrollbar{display:none}
 body{position:relative;isolation:isolate;display:flow-root;margin:0;padding-top:var(--reading-start);background:#5d6650;color:var(--ink);font-family:"IM Fell English",Georgia,serif;font-size:20px;line-height:32px;-webkit-font-smoothing:antialiased}
 .painting{position:fixed;inset:0;z-index:-2;pointer-events:none;background:linear-gradient(#241f1712,#241f1729),url('/manuscript/nastagio.webp') center/cover no-repeat}
 .reading-glass,.portfolio-glass{position:absolute;top:calc(var(--reading-start) + 20px);bottom:24px;left:50%;width:min(844px,calc(100% - 32px));transform:translateX(-50%);z-index:-1;pointer-events:none;border-radius:20px;background:linear-gradient(130deg,rgba(255,255,248,.2),rgba(252,248,232,.1) 55%,rgba(255,255,255,.22));backdrop-filter:blur(5px) saturate(1.15) contrast(.3) brightness(1.65);-webkit-backdrop-filter:blur(5px) saturate(1.15) contrast(.3) brightness(1.65);border:1px solid rgba(255,255,255,.58);box-shadow:inset 0 1px 0 rgba(255,255,255,.8),inset 1px 0 0 rgba(255,255,255,.25),inset 0 -1px 0 rgba(255,255,255,.2),0 12px 60px rgba(24,24,14,.13),0 1px 4px rgba(24,24,14,.08)}
 @supports not (backdrop-filter:blur(1px)){.reading-glass,.portfolio-glass{background:rgba(249,244,230,.95)}}
 .page-ticker{position:fixed;left:24px;top:50%;transform:translateY(-50%);z-index:4;display:flex;flex-direction:column;width:84px;padding:12px 0;color:#f9f3e5}
-.ticker-link{--near:0;position:relative;display:flex;align-items:center;width:84px;height:20px;text-decoration:none;color:inherit;outline-offset:2px}
+.ticker-link{--near:0;position:relative;display:flex;align-items:center;width:84px;height:14px;text-decoration:none;color:inherit;outline-offset:2px}
 .ticker-dash{display:block;width:16px;height:1px;flex:none;background:currentColor;opacity:.42;transform:scaleX(calc(1 + var(--near)*2));transform-origin:left;transition:transform 150ms cubic-bezier(.2,0,0,1),opacity 150ms ease-out;box-shadow:0 1px 2px #0008}
 .ticker-link[data-major="true"] .ticker-dash{width:26px;opacity:.66}
 .ticker-link[aria-current] .ticker-dash{opacity:1}
@@ -47,6 +48,7 @@ a:hover{color:var(--link);text-decoration-color:currentColor}
 .project-preview-motion[data-ready="true"]{opacity:1}
 .margin-dragon{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;opacity:0;visibility:hidden}
 .margin-dragon[data-visible="true"]{opacity:1;visibility:visible}
+#portfolio > :not(.portfolio-glass){position:relative;z-index:2}
 @media(prefers-reduced-motion:reduce){.margin-dragon{transition:none}}
 @media print{.margin-dragon,.project-hover-preview{display:none}}
 @media(prefers-reduced-motion:reduce){.project-hover-preview,.project-preview-motion{transition:none}}
@@ -55,12 +57,12 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--link);outline-offse
 .contact-copy{font-size:17px;line-height:27px;color:var(--muted)}
 .contact-copy a{color:var(--ink)}
 .contact-copy{margin-bottom:0}
-.manuscript-surface{position:relative;height:100svh;overflow:hidden;isolation:isolate;user-select:none;-webkit-user-select:none}
-#manuscript{display:block;position:absolute;inset:0;width:100%;height:100%;touch-action:pan-y}
+.manuscript-surface{position:relative;height:100svh;overflow:hidden;user-select:none;-webkit-user-select:none}
+#manuscript{display:block;position:absolute;inset:0;width:100%;height:100svh;touch-action:pan-y}
 .manuscript-fallback{font:21px/1.5 "Manuscript Initial","Furia",serif;max-width:760px;margin:36px auto;padding:0 24px;color:#2a1a0a}
 .manuscript-fallback p{margin-top:0;display:flow-root}
 .bio-inline{white-space:nowrap}
-.bio-media{width:32px;height:32px;object-fit:cover;vertical-align:middle;margin-right:8px;outline:1px solid rgba(0,0,0,.1)}
+.bio-media{width:32px;height:32px;object-fit:cover;vertical-align:middle;margin-right:4px;outline:1px solid rgba(0,0,0,.1)}
 .bio-media-league{object-fit:contain;outline:0}
 .bio-media-album{width:64px;height:64px}
 .manuscript-fallback .bio-name{font-size:max(26px,1.7em)}
@@ -92,15 +94,24 @@ a:focus-visible,button:focus-visible{outline:1px solid var(--link);outline-offse
 .scroll-hint[data-hidden="true"] .scroll-hint-arrow{animation-play-state:paused}
 @keyframes scroll-nudge{0%,65%,100%{transform:translateY(0)}80%{transform:translateY(4px)}}
 @media(prefers-reduced-motion:reduce){.scroll-hint{transition:none}.scroll-hint-arrow{animation:none}}
-#github-activity{padding-top:10px;margin:0 0 28px;font-size:13px;line-height:20px}
-.calendar-status{margin:0;color:var(--muted);min-height:130px;display:flex;align-items:center}
-.calendar-scroll{overflow-x:auto;scrollbar-width:thin;scrollbar-color:#c6baa1 transparent;padding:0 2px 8px;overscroll-behavior-x:contain}
+#github-activity{width:min(712px,calc(100% - 48px));padding-top:0;margin:24px auto 28px;font-size:13px;line-height:20px}
+.manuscript-surface[data-ready="true"] #github-activity{position:absolute;left:0;top:0;margin:0;user-select:text;-webkit-user-select:text}
+.calendar-skeleton-months{display:flex;justify-content:space-between;align-items:center;min-width:520px;height:23px;padding-right:14px}
+.calendar-skeleton-months span{width:19px;height:8px;background:#362b1d18;border-radius:1px}
+.calendar-skeleton-grid{grid-template-columns:repeat(53,1fr)}
+.calendar-skeleton-grid span{aspect-ratio:1;background:#362b1d14;border-radius:1px}
+.calendar-skeleton-caption{width:260px;max-width:80%;height:17px;margin-top:16px;margin-bottom:5px;background:#362b1d18;border-radius:1px}
+.calendar-scroll{position:relative;z-index:0;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#c6baa1 transparent;padding:0 2px 8px;overscroll-behavior-x:contain}
 .calendar-months{display:grid;min-width:520px;font-size:11px;line-height:16px;color:var(--muted);padding-bottom:7px;gap:3px}
-.calendar-grid{display:grid;grid-template-rows:repeat(7,1fr);grid-auto-flow:column;gap:3px;min-width:520px}
-.calendar-day{aspect-ratio:1;width:100%;padding:0;min-width:0;background:#e3dccd;border:0;border-radius:1px;cursor:pointer;outline-offset:2px!important}
+.calendar-grid{position:relative;display:grid;grid-template-rows:repeat(7,1fr);grid-auto-flow:column;gap:3px;min-width:520px}
+.calendar-day{--day-color:#ebedf0;position:relative;aspect-ratio:1;width:100%;padding:0;min-width:0;background:transparent;border:0;border-radius:1px;cursor:pointer;outline-offset:2px!important}
+.calendar-day::before,.calendar-day::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;transform:translate3d(var(--dot-x,0px),var(--dot-y,0px),0)}
+.calendar-day::before{background:var(--day-color)}
+.calendar-day::after{background:var(--ember-color,#973a19);opacity:min(1,calc(var(--ember,0)*2))}
 .calendar-day:hover{outline:1px solid var(--ink)}
-[data-level="1"]{background:#ccbea1}[data-level="2"]{background:#aa9875}[data-level="3"]{background:#7a684b}[data-level="4"]{background:#4c402e}
-.calendar-caption{font-size:12px;color:var(--muted);margin-top:4px}
+.calendar-day[data-level="1"]{--day-color:#9be9a8}.calendar-day[data-level="2"]{--day-color:#40c463}.calendar-day[data-level="3"]{--day-color:#30a14e}.calendar-day[data-level="4"]{--day-color:#216e39}
+@media(prefers-reduced-motion:reduce){.calendar-day::before,.calendar-day::after{transform:none}.calendar-day::after{opacity:0}}
+.calendar-caption{position:relative;z-index:2;width:fit-content;max-width:100%;margin:12px 0 0;font:17px/26px Georgia,"Times New Roman",serif;font-variant-numeric:lining-nums;letter-spacing:.01em;color:var(--ink)}
 .calendar-tooltip{position:fixed;max-width:calc(100vw - 16px);padding:6px 9px;background:var(--ink);color:var(--paper);font-size:12px;line-height:18px;z-index:3;pointer-events:none}
 .calendar-error{min-height:130px;display:flex;align-items:center;justify-content:space-between;gap:15px}
 .calendar-error p{margin:0;color:var(--muted)}

@@ -8,48 +8,69 @@ export function mountTicker():void {
   const rows=[...projects.querySelectorAll<HTMLElement>('.project-row')];
   const sections=[
     {node:hero,label:'about',major:true},
+    {node:activity,label:'github',major:true},
     {node:projects,label:'projects',major:true},
     ...rows.map(node=>{
       return {node,label:node.querySelector('.project-title')!.textContent!,major:false};
     }),
-    {node:activity,label:'github',major:true},
     {node:contact,label:'say hello',major:true},
   ];
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const rail=document.createElement('nav');rail.className='page-ticker';
   rail.setAttribute('aria-label','Page sections');
-  const links=sections.map(({node,label,major})=>{
-    const link=document.createElement('a');link.className='ticker-link';link.href='#'+node.id;
-    link.setAttribute('aria-label','Go to '+label);link.dataset.major=String(major);
+  const tickCount=25;
+  let maximumScroll=0;
+  const links=Array.from({length:tickCount},(_,index)=>{
+    const link=document.createElement('a');link.className='ticker-link';
+    link.dataset.progress=String(index/(tickCount-1));
     const dash=document.createElement('span');dash.className='ticker-dash';dash.setAttribute('aria-hidden','true');
-    const caption=document.createElement('span');caption.className='ticker-label';caption.textContent=label;caption.setAttribute('aria-hidden','true');
+    const caption=document.createElement('span');caption.className='ticker-label';caption.setAttribute('aria-hidden','true');
     link.append(dash,caption);
     link.addEventListener('click',event=>{
       if(event.button!==0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      event.preventDefault();history.replaceState(null,'','#'+node.id);
-      const offset=node===projects && matchMedia('(min-width:1100px) and (min-height:400px)').matches ? innerHeight*.66 : 48;
-      const top=node===hero ? 0 : node.getBoundingClientRect().top+scrollY-offset;
+      event.preventDefault();history.replaceState(null,'',link.getAttribute('href')!);
+      const top=maximumScroll*index/(tickCount-1);
       window.scrollTo({top,behavior:reduced.matches ? 'instant' : 'smooth'});
     });
     rail.append(link);return link;
   });
   document.body.append(rail);
-  let offsets:number[]=[];
   let active=-1,frame=0,proximityFrame=0,pointerY:number | null=null;
   let railTop=0,railHeight=0,idle:ReturnType<typeof setTimeout> | undefined;
   function update() {
     frame=0;
-    const anchor=scrollY+Math.min(180,innerHeight*.24);
-    let next=0;
-    offsets.forEach((top,index)=>{if(top<=anchor) next=index;});
-    if(scrollY+innerHeight>=document.documentElement.scrollHeight-4) next=links.length-1;
+    const next=maximumScroll>0 ? Math.max(0,Math.min(tickCount-1,Math.round(scrollY/maximumScroll*(tickCount-1)))) : 0;
     if(next===active) return;
     links[active]?.removeAttribute('aria-current');active=next;
     links[active].setAttribute('aria-current','location');
   }
   function schedule() {if(!frame) frame=requestAnimationFrame(update);}
   function measure() {
-    offsets=sections.map(({node})=>node===hero ? 0 : node.getBoundingClientRect().top+scrollY);
+    const documentHeight=document.documentElement.scrollHeight;
+    maximumScroll=Math.max(0,documentHeight-innerHeight);
+    const offsets=sections.map(({node})=>node===hero ? 0 : node.getBoundingClientRect().top+scrollY);
+    // Equal intervals represent the whole page. Named landmarks occupy their
+    // nearest tick, with room reserved for the remaining landmarks below them.
+    const landmarks=new Map<number,typeof sections[number]>();
+    let previous=-1;
+    sections.forEach((section,index)=>{
+      const desired=index===sections.length-1 ? tickCount-1 : Math.round(offsets[index]/documentHeight*(tickCount-1));
+      const slot=Math.max(previous+1,Math.min(tickCount-(sections.length-index),desired));
+      landmarks.set(slot,section);previous=slot;
+    });
+    links.forEach((link,index)=>{
+      const progress=index/(tickCount-1),landmark=landmarks.get(index);
+      const position=progress*documentHeight;
+      let context=sections[0];
+      sections.forEach((section,sectionIndex)=>{if(offsets[sectionIndex]<=position) context=section;});
+      const label=landmark?.label ?? context.label+' · '+Math.round(progress*100)+'%';
+      const href='#'+(landmark ?? context).node.id,major=String(landmark?.major ?? false);
+      if(link.getAttribute('href')!==href) link.href=href;
+      if(link.getAttribute('aria-label')!=='Go to '+label) link.setAttribute('aria-label','Go to '+label);
+      if(link.dataset.major!==major) link.dataset.major=major;
+      const caption=link.querySelector('.ticker-label')!;
+      if(caption.textContent!==label) caption.textContent=label;
+    });
     const box=rail.getBoundingClientRect();railTop=box.top;railHeight=box.height;schedule();
   }
   function proximity() {

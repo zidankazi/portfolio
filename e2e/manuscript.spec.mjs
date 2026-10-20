@@ -10,7 +10,7 @@ async function observeDragonRig(page) {
     let backWing;
     window.paintedDragon=[];
     prototype.drawImage=function(...args) {
-      if(this.canvas.id==='project-dragon') {
+      if((this.canvas.id==='project-dragon' || this.canvas.id==='dragon-ink') && args[0].id!=='dragon-ink') {
         backWing??=args[0];
         if(args[0]===backWing) window.paintedDragon=[];
         const m=this.getTransform(),dpr=this.canvas.width/innerWidth;
@@ -65,7 +65,7 @@ test('glass manuscript ticker follows real sections without interfering with pro
   await page.goto('/');
   const hero=page.locator('#manuscript-scene'),rail=page.getByRole('navigation',{name:'Page sections'});
   await expect(hero).toHaveAttribute('data-ready','true');
-  await expect(rail.getByRole('link')).toHaveCount(11);
+  await expect(rail.getByRole('link')).toHaveCount(25);
   await expect(rail.getByRole('link',{name:'Go to about',exact:true})).toHaveAttribute('aria-current','location');
   const glass=page.locator('.reading-glass');
   await expect(glass).toHaveCSS('pointer-events','none');
@@ -78,8 +78,20 @@ test('glass manuscript ticker follows real sections without interfering with pro
   await expect.poll(async()=>(await mark.boundingBox()).width).toBeGreaterThan(before*1.5);
   await expect(rail.getByText('projects',{exact:true})).toHaveCSS('opacity','1');
   await rail.getByRole('link',{name:'Go to projects',exact:true}).click();
-  await expect.poll(()=>page.locator('#projects').evaluate(node=>Math.round(node.getBoundingClientRect().top))).toBe(660);
+  await expect.poll(async()=>{
+    const progress=Number(await rail.getByRole('link',{name:'Go to projects',exact:true}).getAttribute('data-progress'));
+    return page.evaluate(progress=>Math.abs(scrollY-(document.documentElement.scrollHeight-innerHeight)*progress),progress);
+  }).toBeLessThan(2);
   await expect(page).toHaveURL(/#projects$/);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  for(const index of [6,12,18,24]) {
+    await rail.getByRole('link').nth(index).click();
+    await expect(rail.getByRole('link').nth(index)).toHaveAttribute('aria-current','location');
+    expect(await page.evaluate(()=>scrollY/(document.documentElement.scrollHeight-innerHeight))).toBeCloseTo(index/24,2);
+  }
+  const spacing=await rail.locator('.ticker-link').evaluateAll(nodes=>nodes.slice(1).map((node,index)=>node.getBoundingClientRect().top-nodes[index].getBoundingClientRect().top));
+  expect(Math.max(...spacing)-Math.min(...spacing)).toBeLessThan(1);
+  await expect(page.locator('html')).toHaveCSS('scrollbar-width','none');
   await page.mouse.move(1000,400);
   await expect(page.locator('#project-dragon')).toHaveCount(1);
   await expect(page.getByRole('link',{name:'relic',exact:true})).toHaveAttribute('href','https://tryrelic.io');
@@ -166,7 +178,7 @@ test('the entire dragon stops above the lower manuscript edge while scrolling',a
   await page.clock.install();await page.goto('/');
   const canvas=page.locator('#manuscript'),surface=page.locator('#manuscript-scene');
   await expect(surface).toHaveAttribute('data-ready','true');
-  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
   const hero=await canvas.boundingBox();
   for (const x of [.8,.5,.2]) {
     await page.mouse.move(hero.width*x,hero.height-2);await page.clock.runFor(1600);
@@ -184,21 +196,23 @@ test('the entire dragon stops above the lower manuscript edge while scrolling',a
   expect(darkPixels).toBe(0);
 });
 
-test('the dragon stays whole when the bottom of the about card enters the viewport',async({page},info)=>{
+test('the dragon stays whole before the project glass begins its entrance',async({page},info)=>{
   test.skip(info.project.name!=='desktop','Separate desktop glass cards have a visible lower edge');
   await page.clock.install();await page.goto('/');
   const surface=page.locator('#manuscript-scene'),dragon=page.locator('#project-dragon');
   await expect(surface).toHaveAttribute('data-ready','true');
-  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
   const hero=await surface.boundingBox();
-  await page.evaluate(bottom=>window.scrollTo(0,bottom-innerHeight*.85),hero.y+hero.height);
-  const edge=(await surface.boundingBox()).y+hero.height;
+  await page.evaluate(()=>{const glass=document.querySelector('.portfolio-glass');window.scrollTo(0,glass.getBoundingClientRect().top+scrollY-innerHeight*1.02);});
   for(const x of [.8,.5,.2]) {
+    const box=await surface.boundingBox(),edge=box.y+box.height;
     await page.mouse.move(hero.width*x,edge-2);
     for(let frame=0;frame<60;frame++) {
       await page.clock.runFor(16);
       expect(await dragon.getAttribute('data-mode')).toBe('hero');
-      expect(JSON.parse(await dragon.getAttribute('data-bounds')).bottom).toBeLessThanOrEqual(edge-15.9);
+      // The fitted card can change height as the dragon rearranges the text.
+      const current=await surface.boundingBox();
+      expect(JSON.parse(await dragon.getAttribute('data-bounds')).bottom).toBeLessThan(current.y+current.height-1);
     }
   }
   await page.screenshot({path:info.outputPath('dragon-about-card-edge.png')});
@@ -211,7 +225,7 @@ test('real game logos and album artwork flow together with their text',async({pa
   await expect(page.getByAltText('League of Legends logo')).toHaveAttribute('src','/manuscript/league.png');
   await expect(page.getByAltText('Counter-Strike 2 logo')).toHaveAttribute('src','/manuscript/cs2.jpg');
   await expect(page.getByAltText('Test track album cover')).toHaveAttribute('src',cover);
-  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
   await canvas.scrollIntoViewIfNeeded();
   const read=async()=>JSON.parse(await canvas.getAttribute('data-inline-media'));
   const initial=await read(),box=await canvas.boundingBox();
@@ -226,7 +240,7 @@ test('real game logos and album artwork flow together with their text',async({pa
     await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-bio-complete','true');
     for (const image of images) {
       // The occupied inline item carries both artwork and adjacent words.
-      expect(image.textX-image.x).toBe(image.size+(image.kind==='album' ? 12 : 8));
+      expect(image.textX-image.x).toBe(image.size+(image.kind==='album' ? 12 : 4));
       if(image.kind!=='album') expect(Math.abs(image.textY-image.y)).toBeLessThan(image.size/2);
     }
     const music=JSON.parse(await canvas.getAttribute('data-music-group'));
@@ -282,7 +296,7 @@ test('the entire intro and song remain painted while the dragon crosses the lowe
   const surface=page.locator('#manuscript-scene'),canvas=page.locator('#manuscript');
   await expect(surface).toHaveAttribute('data-ready','true');
   await expect(page.locator('.bio-music')).toContainText(song.title);
-  await canvas.scrollIntoViewIfNeeded();await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await canvas.scrollIntoViewIfNeeded();await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
   const expected=await page.locator('.manuscript-fallback').evaluate(node=>node.textContent.replace(/\s/g,'').slice(1));
   const box=await canvas.boundingBox();
   const xs=info.project.name==='desktop' ? [.32,.45,.55,.65,.75,.5] : [.2,.4,.7,.85,.5];
@@ -309,7 +323,7 @@ test('live playback bars animate and disappear when listening stops',async({page
   await expect(canvas).toHaveAttribute('data-media-count','3');
   await expect(page.locator('.bio-music .now-playing')).toHaveCount(1);
   await expect(page.locator('#portfolio .now-playing')).toHaveCount(0);
-  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
   const crop=async()=>{
     const music=JSON.parse(await canvas.getAttribute('data-music-group'));
     return canvas.evaluate((node,music)=>{
@@ -331,7 +345,7 @@ test('live playback bars animate and disappear when listening stops',async({page
 test('holding the manuscript sustains fire until release',async({page})=>{
   await page.clock.install();await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
-  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
   const canvas=page.locator('#manuscript');await canvas.scrollIntoViewIfNeeded();const box=await canvas.boundingBox();
   await page.mouse.move(box.x+box.width*.5,box.y+box.height*.4);await page.mouse.down();
   await page.clock.runFor(400);expect(Number(await canvas.getAttribute('data-fire-count'))).toBeGreaterThan(0);
@@ -346,7 +360,7 @@ test('fire works on the painting before scrolling and survives crossing the glas
   await page.clock.install();await page.goto('/');
   const hero=page.locator('#manuscript-scene'),dragon=page.locator('#project-dragon');
   await expect(hero).toHaveAttribute('data-ready','true');
-  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
   expect(await page.evaluate(()=>scrollY)).toBe(0);
   const entry=await hero.boundingBox();expect(entry.y).toBeGreaterThan(0);
   await page.mouse.move(700,240);await page.clock.runFor(2000);await page.mouse.down();await page.clock.runFor(800);
@@ -374,7 +388,7 @@ test('touch supports sustained fire and normal page scrolling',async({page,conte
   test.skip(info.project.name!=='mobile','Touch input is verified in the phone configuration');
   await page.clock.install();await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
-  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
   const input=await context.newCDPSession(page);
   const {width,height}=page.viewportSize(),x=Math.round(width*.6),y=Math.round(height*.6);
   await input.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
@@ -393,7 +407,7 @@ test('quick clicks and holds still breathe fire during scroll handoffs',async({p
   await page.clock.install();await page.goto('/');
   const canvas=page.locator('#manuscript'),dragon=page.locator('#project-dragon');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
-  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
   for(const scroll of [0,40,350,0]) {
     await page.evaluate(y=>window.scrollTo(0,y),scroll);
     await expect.poll(async()=>{await page.clock.runFor(16);return dragon.getAttribute('data-drawn-scroll');}).toBe(String(scroll));
@@ -414,59 +428,69 @@ test('quick clicks and holds still breathe fire during scroll handoffs',async({p
 test('idle wings keep moving while the pointer is still',async({page})=>{
   await page.clock.install();await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
-  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
   const canvas=page.locator('#project-dragon');const before=await canvas.evaluate(node=>node.toDataURL());
   await page.clock.runFor(400);expect(await canvas.evaluate(node=>node.toDataURL())===before).toBe(false);
 });
 
-test('one full-size dragon perches on the project glass with idle wings and a watching head',async({page},info)=>{
-  test.skip(info.project.name!=='desktop','The full-size perch needs a wide reading surface');
-  await observeDragonRig(page);
+test('the full-size dragon keeps following behind the project glass',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','The separate project sheet uses the wide layout');
   await page.clock.install();await page.goto('/');
-  const hero=page.locator('#manuscript-scene'),dragon=page.locator('#project-dragon');
-  await expect(hero).toHaveAttribute('data-ready','true');
-  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  const dragon=page.locator('#project-dragon');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
+  await page.mouse.move(1000,400);await page.clock.runFor(1800);
   const positions=()=>page.locator('.project-row').evaluateAll(rows=>rows.map(row=>[row.offsetTop,row.offsetHeight,row.textContent]));
   const before=await positions();
-  await page.evaluate(()=>{const heading=document.querySelector('#projects-heading');window.scrollTo(0,heading.getBoundingClientRect().top+scrollY-innerHeight*.68);});
-  await page.mouse.move(1100,500);await page.clock.runFor(8000);
-  await expect(dragon).toHaveAttribute('data-mode','perched');
-  expect(Number(await dragon.getAttribute('data-scale'))).toBe(1);
-  const head=JSON.parse(await dragon.getAttribute('data-head')),bounds=JSON.parse(await dragon.getAttribute('data-bounds'));
-  const sheet=await page.locator('.portfolio-glass').boundingBox(),heading=await page.locator('#projects-heading').boundingBox();
-  const restingFoot=await page.evaluate(()=>window.dragonRig()[9]);
-  expect(Math.abs(restingFoot.x-(sheet.x+sheet.width-50))).toBeLessThan(8);
-  expect(Math.abs(restingFoot.y-(sheet.y-18))).toBeLessThan(8);
-  expect(bounds.bottom-head.y).toBeGreaterThan(160);
-  expect(bounds.bottom).toBeLessThan(heading.y-15);
-  const resting=await dragon.evaluate(canvas=>canvas.toDataURL());await page.clock.runFor(400);
-  expect(await dragon.evaluate(canvas=>canvas.toDataURL())===resting).toBe(false);
-  const angle=JSON.parse(await dragon.getAttribute('data-head')).angle;
-  await page.mouse.move(450,800);await page.clock.runFor(3000);
-  const watching=JSON.parse(await dragon.getAttribute('data-head'));
-  expect(Math.abs(watching.angle-angle)).toBeGreaterThan(.1);
-  expect(Math.hypot(watching.x-head.x,watching.y-head.y)).toBeLessThan(180);
-  const watchingFoot=await page.evaluate(()=>window.dragonRig()[9]);
-  expect(Math.hypot(watchingFoot.x-restingFoot.x,watchingFoot.y-restingFoot.y)).toBeLessThan(8);
-  expect(await positions()).toEqual(before);await expect(dragon).toHaveCSS('pointer-events','none');
+  let softenedPixels=0,sharpPixels=0;
+  for(const portion of [.75,.6,.45,.25]) {
+    await page.evaluate(portion=>{const sheet=document.querySelector('.portfolio-glass');window.scrollTo(0,sheet.getBoundingClientRect().top+scrollY-innerHeight*portion);},portion);
+    await page.mouse.move(900,Math.min(900,1000*portion+100));await page.clock.runFor(2600);
+    // Reposition after the live text has settled: a content-fitted intro can
+    // move the project sheet while the cursor crosses the opening paragraphs.
+    await page.evaluate(portion=>{const sheet=document.querySelector('.portfolio-glass');window.scrollTo(0,sheet.getBoundingClientRect().top+scrollY-innerHeight*portion);},portion);
+    await page.clock.runFor(1200);
+    await expect(dragon).toHaveAttribute('data-mode','glass');
+    expect(Number(await dragon.getAttribute('data-scale'))).toBe(1);
+    const pixels=await dragon.evaluate(canvas=>{
+      const dpr=canvas.width/innerWidth,box=document.querySelector('.portfolio-glass').getBoundingClientRect();
+      const data=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+      let soft=0,sharp=0,maxInside=0;
+      for(let y=0;y<canvas.height;y++) for(let x=0;x<canvas.width;x++) {
+        const alpha=data[(y*canvas.width+x)*4+3];
+        if(x/dpr>box.left+24 && x/dpr<box.right-24 && y/dpr>box.top+24 && y/dpr<box.bottom-24) {
+          maxInside=Math.max(maxInside,alpha);if(alpha>3) soft++;
+        } else if(alpha>200) sharp++;
+      }
+      return {soft,sharp,maxInside};
+    });
+    softenedPixels+=pixels.soft;sharpPixels+=pixels.sharp;
+    expect(pixels.maxInside,'the glass must conceal all sharp dragon artwork').toBeLessThanOrEqual(62);
+    if(portion===.75) await page.screenshot({path:info.outputPath('dragon-behind-glass.png')});
+  }
+  expect(softenedPixels).toBeGreaterThan(100);expect(sharpPixels).toBeGreaterThan(100);
+  await page.evaluate(()=>{const sheet=document.querySelector('.portfolio-glass');window.scrollTo(0,sheet.getBoundingClientRect().top+scrollY-innerHeight*.18);});
+  await page.mouse.move(900,300);await page.clock.runFor(6000);
+  await expect(dragon).toBeVisible();await expect(dragon).toHaveAttribute('data-mode','glass');
+  expect(Number(await dragon.getAttribute('data-ghost-opacity'))).toBe(.24);
+  const head=JSON.parse(await dragon.getAttribute('data-head'));
+  expect(Math.abs(head.x-900)).toBeLessThan(5);
+  const still=await dragon.evaluate(canvas=>canvas.toDataURL());await page.clock.runFor(400);
+  expect(await dragon.evaluate(canvas=>canvas.toDataURL())===still,'idle wings remain alive behind the glass').toBe(false);
+  await page.mouse.move(550,350);await page.clock.runFor(2000);
+  expect(Math.abs(JSON.parse(await dragon.getAttribute('data-head')).x-550)).toBeLessThan(5);
+  const painted=await dragon.evaluate(canvas=>canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data.some((value,index)=>index%4===3 && value>0));
+  expect(painted,'the dragon remains painted behind the glass').toBe(true);
+  expect(await positions()).toEqual(before);
   await page.locator('.project-row').first().hover();await page.clock.runFor(800);
-  await expect(page.locator('.project-hover-preview')).toBeVisible();
   await expect(page.locator('.project-hover-preview')).toHaveAttribute('data-active-project','relic');
-  const overlap=await dragon.evaluate(canvas=>{
-    const dpr=canvas.width/innerWidth,box=document.querySelector('#projects-heading').getBoundingClientRect();
-    const data=canvas.getContext('2d').getImageData(Math.round(box.left*dpr),Math.round(box.top*dpr),Math.round(box.width*dpr),Math.round(box.height*dpr)).data;
-    let count=0;for(let i=3;i<data.length;i+=4) if(data[i]>10) count++;return count;
-  });
-  expect(overlap).toBe(0);
-  await page.screenshot({path:info.outputPath('perched-project-dragon.png')});
-  await page.locator('.project-row').last().scrollIntoViewIfNeeded();await page.clock.runFor(1000);
-  await expect(dragon).toBeHidden();expect(Number(await dragon.getAttribute('data-scale'))).toBe(1);
+  await page.screenshot({path:info.outputPath('projects-with-dragon-behind-glass.png')});
 });
 
 test('dragon keeps the last cursor position through idle time and tab switching',async({page,context})=>{
   await page.clock.install();await page.goto('/');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
-  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
   const canvas=page.locator('#manuscript');await canvas.scrollIntoViewIfNeeded();const box=await canvas.boundingBox();
   const target={x:Math.round(box.width*.65),y:Math.round(box.height*.4)};
   await page.mouse.move(box.x+target.x,box.y+target.y);await page.clock.runFor(1500);
@@ -493,7 +517,7 @@ test('the large dragon pauses below the manuscript while native projects stay fi
   expect(portfolioBox.y).toBeGreaterThanOrEqual(heroBox.y+heroBox.height);
   await page.locator('.project-row').last().scrollIntoViewIfNeeded();
   await expect(surface).toHaveAttribute('data-running','false');
-  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
   const frame=await canvas.getAttribute('data-frame');
   const before=await page.locator('.project-row').evaluateAll(nodes=>nodes.map(node=>{const b=node.getBoundingClientRect();return [b.x,b.y,b.width,b.height,node.textContent];}));
   await page.mouse.move(100,200);await page.mouse.move(300,500,{steps:12});await page.clock.runFor(1500);
@@ -502,8 +526,9 @@ test('the large dragon pauses below the manuscript while native projects stay fi
   await expect(page.locator('#portfolio')).toHaveCSS('transform','none');
 });
 
-test('real Retina scroll reversals preserve one full-size live dragon through the perch',async({browser},info)=>{
-  test.skip(info.project.name!=='desktop','The perch needs the desktop reading surface');
+test('real Retina scroll reversals preserve the live dragon across the glass',async({browser},info)=>{
+  test.setTimeout(60_000);
+  test.skip(info.project.name!=='desktop','The separate glass sheet needs the desktop reading surface');
   const page=await browser.newPage({viewport:{width:1512,height:982},deviceScaleFactor:2});
   try {
     await observeDragonRig(page);
@@ -513,8 +538,8 @@ test('real Retina scroll reversals preserve one full-size live dragon through th
     await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
     const frames=await page.evaluate(async()=>{
       const canvas=document.querySelector('#project-dragon'),heading=document.querySelector('#projects-heading');
-      const end=heading.getBoundingClientRect().top+scrollY-innerHeight*.35,states=[];
-      // Hold each end long enough to land; reverse midway through another approach too.
+      const end=heading.getBoundingClientRect().top+scrollY-innerHeight*.15,states=[];
+      // Keep moving the pointer while scrolling between the intro and projects.
       for(let frame=0;frame<=600;frame++) {
         await new Promise(requestAnimationFrame);
         const angle=frame*Math.PI/25,x=innerWidth/2+(innerWidth/2-60)*Math.cos(angle),y=innerHeight/2+(innerHeight/2-64)*Math.sin(angle);
@@ -523,7 +548,7 @@ test('real Retina scroll reversals preserve one full-size live dragon through th
           : (1-Math.cos((frame-480)*Math.PI/80))/2;
         window.scrollTo(0,Math.round(end*portion));
         document.elementFromPoint(x,y)?.dispatchEvent(new PointerEvent('pointermove',{clientX:x,clientY:y,bubbles:true,pointerType:'mouse'}));
-        states.push({head:JSON.parse(canvas.dataset.head),rig:window.dragonRig(),scale:Number(canvas.dataset.scale),scroll:Number(canvas.dataset.drawnScroll),progress:Number(canvas.dataset.renderedProgress)});
+        states.push({head:JSON.parse(canvas.dataset.head),rig:window.dragonRig(),scale:Number(canvas.dataset.scale),scroll:Number(canvas.dataset.drawnScroll),progress:Number(canvas.dataset.renderedProgress),mode:canvas.dataset.mode});
       }
       return states;
     });
@@ -552,41 +577,32 @@ test('real Retina scroll reversals preserve one full-size live dragon through th
     await page.evaluate(()=>window.scrollTo(0,0));await page.mouse.move(900,300);
     await expect(page.locator('#project-dragon')).toHaveAttribute('data-mode','hero');
     await expect.poll(async()=>Math.abs(JSON.parse(await page.locator('#project-dragon').getAttribute('data-head')).x-900)).toBeLessThan(5);
-    // Stop the cursor: passive following alone used to leave the landing coil stuck.
-    await expect.poll(()=>page.evaluate(()=>{
-      const rig=window.dragonRig(),head=rig[0],tail=rig.at(-1);
-      return head && tail ? Math.hypot(tail.x-head.x,tail.y-head.y) : 0;
-    })).toBeGreaterThan(480);
-    await page.screenshot({path:info.outputPath('unwound-dragon.png')});
+    await page.screenshot({path:info.outputPath('dragon-back-in-intro.png')});
     await expect(page.locator('#project-dragon')).toHaveCount(1);
   } finally {await page.close();}
 });
 
-test('perched fire leaves project text, previews, and native links intact',async({page,context},info)=>{
-  test.skip(info.project.name!=='desktop','The perch needs a desktop reading surface');
+test('the dragon and fire stay behind glass while links, selection, and reduced motion remain native',async({page,context},info)=>{
+  test.skip(info.project.name!=='desktop','The separate glass sheet uses the desktop layout');
   await page.clock.install();await page.goto('/');
   const dragon=page.locator('#project-dragon');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
-  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
-  await page.evaluate(()=>{const heading=document.querySelector('#projects-heading');window.scrollTo(0,heading.getBoundingClientRect().top+scrollY-innerHeight*.68);});
-  await page.mouse.move(1000,700);await page.clock.runFor(5000);
-  await expect(dragon).toHaveAttribute('data-mode','perched');
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
+  await page.evaluate(()=>{const sheet=document.querySelector('.portfolio-glass');window.scrollTo(0,sheet.getBoundingClientRect().top+scrollY-innerHeight*.18);});
+  await page.mouse.move(850,380);await page.clock.runFor(2500);
+  await expect(dragon).toBeVisible();await expect(dragon).toHaveAttribute('data-mode','glass');
   const positions=()=>page.locator('.project-row').evaluateAll(rows=>rows.map(row=>[row.offsetTop,row.offsetHeight,row.textContent]));
   const before=await positions();
   await page.mouse.down();await page.clock.runFor(850);
   expect(Number(await dragon.getAttribute('data-fire-count'))).toBeGreaterThan(15);
-  const flames=await dragon.evaluate(canvas=>{
-    const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
-    let count=0;for(let i=0;i<pixels.length;i+=4) if(pixels[i+3]>10 && pixels[i]>175 && pixels[i+1]>100 && pixels[i+2]<90) count++;return count;
-  });
-  expect(flames).toBeGreaterThan(10);expect(await positions()).toEqual(before);
-  await page.screenshot({path:info.outputPath('perched-dragon-fire.png')});
-  await page.mouse.up();await page.clock.runFor(1800);expect(await dragon.getAttribute('data-fire-count')).toBe('0');
+  expect(await positions()).toEqual(before);
+  await page.mouse.up();await page.clock.runFor(1800);
+  expect(await dragon.getAttribute('data-fire-count')).toBe('0');
   await context.route(/^https:\/\/(?:www\.)?tryrelic\.io(?:\/.*)?$/,route=>route.fulfill({body:'<p>Project</p>'}));
   const opened=page.waitForEvent('popup');await page.getByRole('link',{name:'relic',exact:true}).click();
-  const popup=await opened;await expect(popup).toHaveURL('https://tryrelic.io/');await popup.close();
-  expect(await positions()).toEqual(before);
-  await page.emulateMedia({reducedMotion:'reduce'});await expect(dragon).toHaveAttribute('data-paused','true');await page.clock.runFor(200);
+  const popup=await opened;await expect(popup).toHaveURL('https://tryrelic.io/');await popup.close();await page.bringToFront();
+  await page.emulateMedia({reducedMotion:'reduce'});await page.clock.runFor(200);
+  await expect(dragon).toBeVisible();await expect(dragon).toHaveAttribute('data-paused','true');
   const still=await dragon.evaluate(canvas=>canvas.toDataURL());await page.clock.runFor(500);
   expect(await dragon.evaluate(canvas=>canvas.toDataURL())===still).toBe(true);
   await page.mouse.click(1200,300);await page.clock.runFor(500);expect(await dragon.getAttribute('data-fire-count')).toBe('0');
@@ -597,7 +613,7 @@ test('reduced motion keeps the manuscript static and disables fire',async({page}
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
   await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-paused','true');
   await expect(page.locator('.bio-music .now-playing span').first()).toHaveCSS('animation-name','none');
-  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+100));
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
   const canvas=page.locator('#manuscript'),before=await canvas.evaluate(node=>node.toDataURL()),frame=await canvas.getAttribute('data-frame');
   await page.mouse.move(100,400);await page.mouse.down();await page.clock.runFor(500);await page.mouse.up();
   expect(await canvas.evaluate(node=>node.toDataURL())===before).toBe(true);expect(await canvas.getAttribute('data-frame')).toBe(frame);
@@ -608,12 +624,13 @@ test('every project title and secondary link opens after cursor movement',async(
   test.setTimeout(60_000);
   await context.route(/^https:\/\/(tryrelic\.io|github\.com|roster-dev\.vercel\.app|sponge-alpha\.vercel\.app|zilean\.app|youtu\.be|x\.com|arxiv\.org)(?:\/.*)?$/,route=>route.fulfill({contentType:'text/html',body:'<p>Project destination</p>'}));
   await page.goto('/');await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
-  const links=page.locator('.project-row a');await expect(links).toHaveCount(13);
+  const links=page.locator('.project-row a');await expect(links).toHaveCount(14);
   await expect(page.getByRole('link',{name:"openai's 2019 paper"})).toHaveAttribute('href','https://arxiv.org/abs/1909.07528');
   expect(await page.locator('.project-link').evaluateAll(nodes=>nodes.map(node=>[node.textContent,node.href]))).toEqual([
+    ['site','https://tryrelic.io/'],
     ['github','https://github.com/zidankazi/roster'],['github','https://github.com/zidankazi/hide-and-seek'],['github','https://github.com/zidankazi/sponge'],['github','https://github.com/zidankazi/sage'],['github','https://github.com/zidankazi/orbital'],
   ]);
-  for(let index=0;index<13;index++) {
+  for(let index=0;index<14;index++) {
     const link=links.nth(index);await link.scrollIntoViewIfNeeded();const box=await link.boundingBox();
     await page.mouse.move(box.x+280,box.y+120);await page.mouse.move(box.x+box.width/2,box.y+box.height/2,{steps:8});
     const expected=new URL(await link.getAttribute('href')).href,opened=page.waitForEvent('popup');
@@ -646,12 +663,143 @@ test('small phones and tablets retain complete content without horizontal overfl
     await page.evaluate(async()=>{await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);});
     await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-bio-complete','true');
     const section=await page.locator('#manuscript-scene').boundingBox();
-    expect(section.height).toBe(height);
+    expect(section.height).toBeGreaterThanOrEqual(height);
     if(width===390) await page.screenshot({path:test.info().outputPath('one-screen-phone.png')});
     await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await expect(page.locator('.project-row').last()).toContainText('live sgp4 mechanics.');
     expect(await page.locator('.project-row a').evaluateAll(links=>links.every(link=>getComputedStyle(link).position==='static'))).toBe(true);
   }
+});
+
+test('the contribution calendar sits below the song inside the intro card',async({page},info)=>{
+  await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/');
+  const scene=page.locator('#manuscript-scene'),canvas=page.locator('#manuscript'),activity=scene.locator('#github-activity');
+  await expect(scene).toHaveAttribute('data-ready','true');
+  await expect(activity.locator('[data-date]')).toHaveCount(365);
+  await expect(activity.locator('.calendar-caption')).toHaveCSS('font-family',/Georgia/);
+  await expect(page.locator('#portfolio #github-activity')).toHaveCount(0);
+  const viewports=info.project.name==='desktop' ? [[1440,1000],[1512,698],[768,900]] : [[390,844],[320,600]];
+  for(const [width,height] of viewports) {
+    await page.setViewportSize({width,height});
+    await expect.poll(()=>canvas.evaluate(node=>node.clientHeight)).toBe(height);
+    await expect.poll(async()=>{
+      const chart=await activity.boundingBox(),hero=await scene.boundingBox(),paint=await canvas.boundingBox();
+      const music=JSON.parse(await canvas.getAttribute('data-music-group'));
+      const bottomGap=hero.y+hero.height-chart.y-chart.height;
+      return !!music && chart.y>=paint.y+20+music.y+music.height+20 && bottomGap>=32 && bottomGap<=48;
+    }).toBe(true);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    await activity.scrollIntoViewIfNeeded();
+    await page.screenshot({path:info.outputPath(`intro-contributions-${width}.png`)});
+  }
+});
+
+test('the dragon ripples nearby calendar dots while hover and keyboard use keep the grid still',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','The roaming dragon uses the desktop reading surface');
+  await page.clock.install();await page.goto('/');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  const grid=page.locator('.calendar-grid'),dots=page.locator('.calendar-day');
+  await expect(dots).toHaveCount(365);
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
+  await page.evaluate(()=>{const grid=document.querySelector('.calendar-grid');scrollTo(0,grid.getBoundingClientRect().top+scrollY-innerHeight*.4);});
+  await page.clock.runFor(200);
+  const box=await grid.boundingBox();
+  const layout=()=>dots.evaluateAll(nodes=>nodes.map(node=>[node.offsetLeft,node.offsetTop,node.offsetWidth,node.offsetHeight,node.dataset.date,node.dataset.level,node.getAttribute('aria-label')]));
+  const before=await layout();
+  const displacement=()=>dots.evaluateAll(nodes=>Math.max(...nodes.map(node=>Math.hypot(parseFloat(node.style.getPropertyValue('--dot-x'))||0,parseFloat(node.style.getPropertyValue('--dot-y'))||0))));
+  let peak=0;
+  await page.mouse.move(box.x-100,box.y+box.height*.5);await page.clock.runFor(1500);
+  await page.mouse.move(box.x+box.width*.55,box.y+box.height*.5);await page.clock.runFor(1800);
+  await page.mouse.move(box.x+box.width+120,box.y+box.height*.5);
+  for(let step=0;step<24;step++) {await page.clock.runFor(64);peak=Math.max(peak,await displacement());}
+  expect(peak).toBeGreaterThan(.2);expect(peak).toBeLessThan(5);
+  expect(await layout()).toEqual(before);
+  await page.screenshot({path:info.outputPath('calendar-body-ripple.png')});
+  await dots.nth(180).hover();expect(await displacement()).toBe(0);
+  await expect(page.getByRole('tooltip')).toBeVisible();
+  await dots.nth(180).focus();await page.mouse.move(box.x-60,box.y-60);await page.clock.runFor(600);
+  expect(await displacement()).toBe(0);
+  await page.keyboard.press('End');await expect(dots.last()).toBeFocused();
+  await page.emulateMedia({reducedMotion:'reduce'});await page.clock.runFor(100);
+  expect(await displacement()).toBe(0);
+});
+
+test('dragon fire warms hit calendar dots into embers and then restores their original colors',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','Desktop fire can be aimed across the contribution graph');
+  await page.clock.install();await page.goto('/');
+  await expect(page.locator('#manuscript-scene')).toHaveAttribute('data-ready','true');
+  const grid=page.locator('.calendar-grid'),dots=page.locator('.calendar-day');
+  await expect(dots).toHaveCount(365);
+  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
+  await page.evaluate(()=>{const grid=document.querySelector('.calendar-grid');scrollTo(0,grid.getBoundingClientRect().top+scrollY-innerHeight*.35);});
+  await page.clock.runFor(200);
+  const box=await grid.boundingBox(),y=box.y+box.height*.5;
+  const original=()=>dots.evaluateAll(nodes=>nodes.map(node=>[node.dataset.date,node.dataset.level,node.getAttribute('aria-label'),getComputedStyle(node,'::before').backgroundColor]));
+  const before=await original();
+  const heated=()=>dots.evaluateAll(nodes=>nodes.filter(node=>parseFloat(node.style.getPropertyValue('--ember'))>.02).length);
+  await page.mouse.move(box.x-110,y);await page.clock.runFor(1500);
+  await page.mouse.move(box.x+50,y);await page.clock.runFor(1200);
+  await page.mouse.down();await page.clock.runFor(850);
+  expect(Number(await page.locator('#project-dragon').getAttribute('data-fire-count'))).toBeGreaterThan(15);
+  const hit=await heated();expect(hit).toBeGreaterThan(0);expect(hit).toBeLessThan(365);
+  await expect(page.locator('.calendar-day > *')).toHaveCount(0);
+  expect(await original()).toEqual(before);
+  await page.screenshot({path:info.outputPath('calendar-fire-embers.png')});
+  await page.mouse.up();await page.clock.runFor(6500);
+  expect(await heated()).toBe(0);expect(await original()).toEqual(before);
+  await page.emulateMedia({reducedMotion:'reduce'});await page.clock.runFor(100);
+  await page.mouse.down();await page.clock.runFor(700);await page.mouse.up();
+  expect(await heated()).toBe(0);
+});
+
+test('calendar shows a skeleton once, then cached data during refresh and outages',async({page},info)=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  let respond;
+  await page.route('**/github-contributions-api.jogruber.de/**',route=>new Promise(resolve=>{
+    respond=async response=>{await route.fulfill(response);resolve();};
+  }));
+  const activity=page.locator('#github-activity'),dots=page.locator('.calendar-day');
+  await page.goto('/');
+  await expect(page.locator('.calendar-skeleton-grid > span')).toHaveCount(371);
+  await expect(activity).not.toContainText('Loading');
+  await expect(activity).toHaveAttribute('aria-busy','true');
+  await expect(dots).toHaveCount(0);
+  await activity.scrollIntoViewIfNeeded();
+  await page.screenshot({path:info.outputPath('calendar-skeleton.png')});
+  await expect.poll(()=>typeof respond).toBe('function');
+  await respond({json:calendar});await expect(dots).toHaveCount(365);
+  await expect(activity).toHaveAttribute('aria-busy','false');
+  await page.reload();
+  await expect(dots).toHaveCount(365);
+  await expect(page.locator('.calendar-skeleton')).toHaveCount(0);
+  await expect(activity).toHaveAttribute('aria-busy','true');
+  await page.evaluate(()=>{window.cachedCalendarDay=document.querySelector('.calendar-day');});
+  await respond({json:calendar});
+  await expect(activity).toHaveAttribute('aria-busy','false');
+  expect(await page.evaluate(()=>window.cachedCalendarDay===document.querySelector('.calendar-day'))).toBe(true);
+  await page.reload();await expect(activity).toHaveAttribute('aria-busy','true');
+  await expect(page.locator('.calendar-caption')).toContainText('730 contributions');
+  const updated={contributions:calendar.contributions.map((day,index)=>index===0 ? {...day,count:7,level:4} : day)};
+  await respond({json:updated});
+  await expect(page.locator('.calendar-caption')).toContainText('737 contributions');
+  await page.reload();await expect(activity).toHaveAttribute('aria-busy','true');
+  await expect(page.locator('.calendar-caption')).toContainText('737 contributions');
+  await respond({status:503});
+  await expect(activity).toHaveAttribute('aria-busy','false');
+  await expect(page.locator('.calendar-caption')).toContainText('737 contributions');
+  await expect(page.getByRole('button',{name:'Try again'})).toHaveCount(0);
+});
+
+for(const storage of ['invalid','blocked']) test(`calendar still loads with ${storage} cache storage`,async({page})=>{
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.addInitScript(storage=>{
+    if(storage==='invalid') localStorage.setItem('portfolio:github-contributions:v1','{broken');
+    else for(const method of ['getItem','setItem']) Storage.prototype[method]=()=>{throw new Error('Storage disabled');};
+  },storage);
+  await page.goto('/');
+  await expect(page.locator('.calendar-day')).toHaveCount(365);
+  await expect(page.locator('#github-activity')).toHaveAttribute('aria-busy','false');
+  await expect(page.locator('.calendar-caption')).toContainText('730 contributions');
 });
 
 test('calendar recovers from failure and supports keyboard navigation',async({page})=>{

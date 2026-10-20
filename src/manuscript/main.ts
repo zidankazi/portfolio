@@ -60,6 +60,9 @@ function validDays(body: unknown): Day[] {
 function mountCalendar() {
   const container=document.querySelector<HTMLElement>('#github-activity');
   if (!container) return;
+  const cacheKey='portfolio:github-contributions:v1';
+  const placeholder=[...container.childNodes].map(node=>node.cloneNode(true));
+  let renderedDays='',loading=false;
   let tooltip: HTMLElement | null=null;
   function hideTooltip() {tooltip?.remove(); tooltip=null;}
   function showTooltip(button: HTMLButtonElement) {
@@ -71,60 +74,77 @@ function mountCalendar() {
     tooltip.style.left=Math.max(8, Math.min(innerWidth-tip.width-8, bounds.left+bounds.width/2-tip.width/2))+'px';
     tooltip.style.top=Math.max(8, bounds.top-tip.height-9)+'px';
   }
+  function render(days:Day[]) {
+    const signature=JSON.stringify(days);
+    if(signature===renderedDays) return;
+    const previousScroll=container!.querySelector('.calendar-scroll')?.scrollLeft;
+    const focusedDate=container!.contains(document.activeElement) ? (document.activeElement as HTMLElement).dataset.date : undefined;
+    hideTooltip();
+    const firstDay=new Date(days[0].date+'T00:00:00Z').getUTCDay();
+    const weeks=Math.ceil((firstDay+days.length)/7);
+    const scroll=element('div', 'calendar-scroll');
+    const months=element('div', 'calendar-months'); months.style.gridTemplateColumns=`repeat(${weeks}, 1fr)`;
+    let previousMonth=-1;
+    for (let week=0; week<weeks; week++) {
+      const date=new Date(days[Math.min(days.length-1, Math.max(0, week*7-firstDay))].date+'T00:00:00Z');
+      const label=element('span');
+      if (date.getUTCMonth() !== previousMonth) {label.textContent=date.toLocaleDateString('en-US', {month:'short', timeZone:'UTC'}); previousMonth=date.getUTCMonth();}
+      months.append(label);
+    }
+    const grid=element('div', 'calendar-grid'); grid.setAttribute('role','group'); grid.setAttribute('aria-label','Daily GitHub contributions');
+    grid.style.gridTemplateColumns=`repeat(${weeks}, 1fr)`;
+    for (let i=0; i<firstDay; i++) {const spacer=element('span', 'day-spacer'); spacer.setAttribute('aria-hidden','true'); grid.append(spacer);}
+    const buttons=days.map((day,i) => {
+      const button=element('button', 'calendar-day'); button.type='button'; button.dataset.date=day.date; button.dataset.level=String(day.level);
+      button.tabIndex=i===days.length-1 ? 0 : -1;
+      const date=new Date(day.date+'T00:00:00Z').toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric', timeZone:'UTC'});
+      button.setAttribute('aria-label', `${day.count} ${day.count===1 ? 'contribution' : 'contributions'} on ${date}`);
+      button.addEventListener('pointerenter', () => showTooltip(button));
+      button.addEventListener('pointerleave', hideTooltip);
+      button.addEventListener('focus', () => {buttons.forEach(item => {item.tabIndex=item===button ? 0 : -1;}); showTooltip(button);});
+      button.addEventListener('blur', () => {button.removeAttribute('aria-describedby'); hideTooltip();});
+      button.addEventListener('keydown', event => {
+        if (event.key==='Escape') {hideTooltip(); return;}
+        const movement: Record<string,number>={ArrowLeft:-7, ArrowRight:7, ArrowUp:-1, ArrowDown:1};
+        let index=i;
+        if (event.key==='Home') index=0;
+        else if (event.key==='End') index=buttons.length-1;
+        else if (event.key in movement) index=Math.max(0, Math.min(buttons.length-1, i+movement[event.key]));
+        else return;
+        event.preventDefault(); buttons[index].focus();
+      });
+      return button;
+    });
+    grid.append(...buttons); scroll.append(months, grid);
+    const caption=element('div','calendar-caption');
+    caption.append(element('span','', `${days.reduce((total,day) => total+day.count,0).toLocaleString()} contributions in the last year`));
+    container!.replaceChildren(scroll, caption);
+    scroll.scrollLeft=previousScroll ?? scroll.scrollWidth;
+    if(focusedDate) buttons.find(button=>button.dataset.date===focusedDate)?.focus({preventScroll:true});
+    renderedDays=signature;
+  }
   async function load() {
-    hideTooltip(); container!.setAttribute('aria-busy', 'true');
-    container!.replaceChildren(element('p', 'calendar-status', 'Loading GitHub contributions…'));
+    if(loading) return;
+    loading=true;container!.setAttribute('aria-busy','true');
+    if(!renderedDays) container!.replaceChildren(...placeholder.map(node=>node.cloneNode(true)));
     try {
       const response=await fetch('https://github-contributions-api.jogruber.de/v4/zidankazi?y=last', {signal:AbortSignal.timeout(12_000)});
       if (!response.ok) throw new Error('Unavailable');
       const days=validDays(await response.json());
-      const firstDay=new Date(days[0].date+'T00:00:00Z').getUTCDay();
-      const weeks=Math.ceil((firstDay+days.length)/7);
-      const scroll=element('div', 'calendar-scroll');
-      const months=element('div', 'calendar-months'); months.style.gridTemplateColumns=`repeat(${weeks}, 1fr)`;
-      let previousMonth=-1;
-      for (let week=0; week<weeks; week++) {
-        const date=new Date(days[Math.min(days.length-1, Math.max(0, week*7-firstDay))].date+'T00:00:00Z');
-        const label=element('span');
-        if (date.getUTCMonth() !== previousMonth) {label.textContent=date.toLocaleDateString('en-US', {month:'short', timeZone:'UTC'}); previousMonth=date.getUTCMonth();}
-        months.append(label);
-      }
-      const grid=element('div', 'calendar-grid'); grid.setAttribute('role','group'); grid.setAttribute('aria-label','Daily GitHub contributions');
-      grid.style.gridTemplateColumns=`repeat(${weeks}, 1fr)`;
-      for (let i=0; i<firstDay; i++) {const spacer=element('span', 'day-spacer'); spacer.setAttribute('aria-hidden','true'); grid.append(spacer);}
-      const buttons=days.map((day,i) => {
-        const button=element('button', 'calendar-day'); button.type='button'; button.dataset.date=day.date; button.dataset.level=String(day.level);
-        button.tabIndex=i===days.length-1 ? 0 : -1;
-        const date=new Date(day.date+'T00:00:00Z').toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric', timeZone:'UTC'});
-        button.setAttribute('aria-label', `${day.count} ${day.count===1 ? 'contribution' : 'contributions'} on ${date}`);
-        button.addEventListener('pointerenter', () => showTooltip(button));
-        button.addEventListener('pointerleave', hideTooltip);
-        button.addEventListener('focus', () => {buttons.forEach(item => {item.tabIndex=item===button ? 0 : -1;}); showTooltip(button);});
-        button.addEventListener('blur', () => {button.removeAttribute('aria-describedby'); hideTooltip();});
-        button.addEventListener('keydown', event => {
-          if (event.key==='Escape') {hideTooltip(); return;}
-          const movement: Record<string,number>={ArrowLeft:-7, ArrowRight:7, ArrowUp:-1, ArrowDown:1};
-          let index=i;
-          if (event.key==='Home') index=0;
-          else if (event.key==='End') index=buttons.length-1;
-          else if (event.key in movement) index=Math.max(0, Math.min(buttons.length-1, i+movement[event.key]));
-          else return;
-          event.preventDefault(); buttons[index].focus();
-        });
-        return button;
-      });
-      grid.append(...buttons); scroll.append(months, grid);
-      const caption=element('div','calendar-caption');
-      caption.append(element('span','', `${days.reduce((total,day) => total+day.count,0).toLocaleString()} contributions in the last year`));
-      container!.replaceChildren(scroll, caption);
-      scroll.scrollLeft=scroll.scrollWidth;
+      render(days);
+      try {localStorage.setItem(cacheKey,JSON.stringify({contributions:days}));} catch { /* Storage can be disabled or full. */ }
     } catch {
+      if(renderedDays) return;
       const error=element('div','calendar-error'); error.append(element('p','',"Couldn't load GitHub contributions."));
       const retry=element('button','','Try again'); retry.type='button'; retry.addEventListener('click', () => {void load();}); error.append(retry); container!.replaceChildren(error);
-    } finally {container!.setAttribute('aria-busy','false');}
+    } finally {loading=false;container!.setAttribute('aria-busy','false');}
   }
   window.addEventListener('scroll',hideTooltip,{passive:true});
   window.addEventListener('resize',hideTooltip);
+  try {
+    const cached=localStorage.getItem(cacheKey);
+    if(cached) render(validDays(JSON.parse(cached)));
+  } catch { /* Invalid or unavailable storage falls back to the skeleton. */ }
   void load();
 }
 

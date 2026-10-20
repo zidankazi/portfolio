@@ -3,8 +3,9 @@
 import {prepareRichInline,layoutNextRichInlineLineRange,materializeRichInlineLineRange,measureRichInlineStats} from '@chenglou/pretext/rich-inline';
 import {biographyBlocks,biographyInline,biographyMarkup,type BioTrack,type BioImage} from './bio.ts';
 import {playbackBars} from './playing.ts';
-import {mountMarginDragon} from './margin-dragon.ts';
+import {mountDragonLayer} from './dragon-layer.ts';
 import {createTextMotion} from './text-motion.ts';
+import {mountCalendarEffects} from './calendar-effects.ts';
 import {TEXT_COLOR, getResponsiveLayout, getPageOffset, getPageScale} from './reference/config.js';
 import {loadDragonSprites, createDragon, updateDragonScale, updateDragon, getDragonBottom, getDragonExclusions, getFireExclusions, getFireInfluence, spawnFire, hasActiveFire, updateFire} from './reference/dragon.js';
 
@@ -28,6 +29,8 @@ export async function mountScene():Promise<void> {
   const ctx=canvas?.getContext('2d');
   if (!surface || !canvas || !ctx) return;
   const fallback=surface.querySelector<HTMLElement>('.manuscript-fallback');
+  const activity=surface.querySelector<HTMLElement>('#github-activity');
+  const readingGlass=document.querySelector<HTMLElement>('.reading-glass');
   let track:BioTrack | null=null;
   let bio=JSON.stringify(biographyBlocks());
   let refreshText:(()=>void) | null=null;
@@ -44,7 +47,8 @@ export async function mountScene():Promise<void> {
   dropCap.src='/manuscript/dropcap.webp';
   await Promise.all([document.fonts.load('21px "Furia"'), document.fonts.load('21px "Manuscript Initial"','I'), loadDragonSprites(), dropCap.decode(), spotifyIcon.decode()]);
   const motion=matchMedia('(prefers-reduced-motion: reduce)');
-  let width=surface.clientWidth, height=surface.clientHeight;
+  let width=canvas.clientWidth, height=canvas.clientHeight;
+  let activityHeight=activity?.offsetHeight ?? 0;
   let layout=sceneLayout();
   let offset=getPageOffset(layout,width,height);
   let scale=sceneDragonScale();
@@ -64,7 +68,8 @@ export async function mountScene():Promise<void> {
   let bounds=surface.getBoundingClientRect();
   const glyphWidths=new Map<string,number>();
   const dragon=createDragon(0,0,scale);
-  let margin:ReturnType<typeof mountMarginDragon> | null=null;
+  const calendarEffects=mountCalendarEffects(dragon);
+  let margin:ReturnType<typeof mountDragonLayer> | null=null;
   refreshText=()=>{
     const active=new Set(biographyBlocks(track).flatMap(block=>block.image ? [block.image.src] : []));
     for (const src of media.keys()) if (!active.has(src)) {media.delete(src);mediaRequests.delete(src);}
@@ -112,7 +117,7 @@ export async function mountScene():Promise<void> {
       const imageSize=block.image ? (block.music ? (width<=600 ? 48 : 64) : pictureSize(block.image,bodySize)) : 0;
       const parts=biographyInline(index===0 ? {...block,text:block.text.slice(1)} : block);
       const initial=block.kind==='name' ? dropCapSize(fontSize,bodySize) : null;
-      const items=parts.map(part=>({text:part.text,font,...(part.noBreak || initial ? {break:'never' as const} : {}),...(initial ? {extraWidth:initial.width} : part.image ? {extraWidth:imageSize+8} : {})}));
+      const items=parts.map(part=>({text:part.text,font,...(part.noBreak || initial ? {break:'never' as const} : {}),...(initial ? {extraWidth:initial.width} : part.image ? {extraWidth:imageSize+4} : {})}));
       const music=block.music ? [
         {text:block.music.status,fontSize:Math.max(12,bodySize*.78),color:'#352e25',indent:block.music.isPlaying ? 40 : 20},
         {text:block.music.title,fontSize:Math.max(18,bodySize*1.25),color:TEXT_COLOR,indent:0},
@@ -188,7 +193,7 @@ export async function mountScene():Promise<void> {
   function resize() {
     margin?.restore();
     textMotion.clear();exclusionAnchor=[];
-    const nextWidth=surface!.clientWidth, nextHeight=surface!.clientHeight;
+    const nextWidth=canvas!.clientWidth, nextHeight=canvas!.clientHeight;
     const changed=nextWidth!==width;
     width=nextWidth; height=nextHeight; bounds=surface!.getBoundingClientRect();
     const dpr=Math.min(devicePixelRatio || 1,2);
@@ -265,7 +270,7 @@ export async function mountScene():Promise<void> {
             initial={x,y:y+baselineOffset-fontSize*.035-block.initial.height*.12,width:block.initial.drawWidth,height:block.initial.height,clearance:block.initial.width};
             textX+=block.initial.width;
           } else if (block.image && fragment.itemIndex===block.imageIndex) {
-            loadPicture(block.image);textX+=imageSize+8;
+            loadPicture(block.image);textX+=imageSize+4;
             pictures.push({image:block.image,x,y:y+(lineHeight-imageSize)/2,size:imageSize,textX,textY:y+baselineOffset});
           }
           lines.push({id:`${paragraphIndex}:${fragment.itemIndex}`,text:fragment.text,x:textX,y:y+baselineOffset,font,fontSize,color:block.parts[fragment.itemIndex]?.accent ? '#64382e' : color});
@@ -354,6 +359,24 @@ export async function mountScene():Promise<void> {
     }
     textMotion.end();
     ctx!.restore();
+    if(activity) {
+      const textBottom=Math.max(layout.margin,...lines.map(line=>line.y+line.fontSize),...pictures.map(picture=>picture.y+picture.size));
+      const bottom=musicGroup && musicPoint ? musicPoint.y+musicGroup.height : textBottom;
+      const top=Math.ceil(offset.y+bottom+24)+'px',left=offset.x+layout.margin+'px';
+      const activityWidth=layout.pageWidth-2*layout.margin+'px';
+      // Keep the grid below the dragon without trapping its readable caption
+      // in a transformed stacking context.
+      if(activity.style.left!==left) activity.style.left=left;
+      if(activity.style.top!==top) activity.style.top=top;
+      if(activity.style.width!==activityWidth) activity.style.width=activityWidth;
+      // Fit the card to the current content rather than retaining empty space
+      // from the viewport height or a previous, taller text arrangement.
+      const introHeight=parseFloat(top)+activityHeight+40;
+      if(surface!.style.height!==introHeight+'px') surface!.style.height=introHeight+'px';
+      if(width>=1100 && height>=400) {
+        if(readingGlass && readingGlass.style.height!==introHeight-20+'px') readingGlass.style.height=introHeight-20+'px';
+      } else readingGlass?.style.removeProperty('height');
+    }
   }
   function render(time:number) {
     frame=0;
@@ -374,7 +397,7 @@ export async function mountScene():Promise<void> {
       }
     }
     // Keep the reference's sustained breath without unbounded particle work.
-    if(!visible && !margin?.fireAllowed) {release();dragon.fire=[];}
+    if((!visible || transferring) && !margin?.fireAllowed) {release();dragon.fire=[];}
     if (animated && held && dragon.fire.length<180) spawnFire(dragon);
     const fire=hasActiveFire(dragon);
     if (fire) updateFire(dragon,time);
@@ -384,6 +407,7 @@ export async function mountScene():Promise<void> {
       drawText(time);
     }
     margin?.draw(animated);
+    calendarEffects.update(time,animated,bounds.top);
     surface!.dataset.ready='true';
     if(visible) canvas!.dataset.frame=String(++frames);
     canvas!.dataset.headX=String(Math.round(dragon.segments[0].x));
@@ -405,7 +429,7 @@ export async function mountScene():Promise<void> {
   canvas.addEventListener('pointermove',point);
   window.addEventListener('pointermove',event=>{if(margin?.active) point(event);},{passive:true});
   function breathe(event:PointerEvent) {
-    if (event.button!==0 || motion.matches) return;
+    if (event.button!==0 || motion.matches || (margin?.active && !margin.fireAllowed)) return;
     point(event);held=true;
     // A short click can finish before the next frame; start its burst on pointer-down.
     if(dragon.fire.length<180) spawnFire(dragon);
@@ -414,9 +438,10 @@ export async function mountScene():Promise<void> {
   canvas.addEventListener('pointerdown',breathe);
   window.addEventListener('pointerdown',event=>{
     if(event.button!==0 || motion.matches || !margin?.fireAllowed || !(event.target instanceof Element) || canvas.contains(event.target)) return;
-    // Keep project links and text selection native; only empty margins suppress selection.
-    if(event.target.closest('a,button,input,textarea,select,[contenteditable="true"]')) return;
-    if(!event.target.closest('#portfolio')) event.preventDefault();
+    // Calendar cells can breathe fire while retaining native focus and tooltips.
+    // Keep links and text selection native; only empty margins suppress selection.
+    if(event.target.closest('a,button,input,textarea,select,[contenteditable="true"]') && !event.target.closest('.calendar-day')) return;
+    if(!event.target.closest('#portfolio,#github-activity')) event.preventDefault();
     breathe(event);
   });
   canvas.addEventListener('pointerleave',()=>{if(!margin?.active) release();});
@@ -436,9 +461,10 @@ export async function mountScene():Promise<void> {
     if (visible) schedule();
     else {release();dragon.fire=[];canvas.dataset.fireCount='0';if(!margin?.visible) {if (frame) cancelAnimationFrame(frame);frame=0;}}
   }).observe(surface);
-  new ResizeObserver(resize).observe(surface);
+  new ResizeObserver(resize).observe(canvas);
+  if(activity) new ResizeObserver(()=>{activityHeight=activity.offsetHeight;dirty=true;schedule();}).observe(activity);
   surface.dataset.paused=String(motion.matches);
   placeDragon();
-  margin=mountMarginDragon(dragon,()=>{dirty=true;schedule();});
+  margin=mountDragonLayer(dragon,()=>{dirty=true;schedule();});
   resize();
 }
