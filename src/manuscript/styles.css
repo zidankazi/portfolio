@@ -12,10 +12,10 @@ body{position:relative;isolation:isolate;display:flow-root;margin:0;padding-top:
 @supports not (backdrop-filter:blur(1px)){.reading-glass,.portfolio-glass{background:rgba(249,244,230,.95)}}
 .page-ticker{position:fixed;left:24px;top:50%;transform:translateY(-50%);z-index:4;display:flex;flex-direction:column;width:84px;padding:12px 0;color:#f9f3e5}
 .ticker-link{--near:0;position:relative;display:flex;align-items:center;width:84px;height:14px;text-decoration:none;color:inherit;outline-offset:2px}
-.ticker-dash{display:block;width:16px;height:1px;flex:none;background:currentColor;opacity:.42;transform:scaleX(calc(1 + var(--near)*2));transform-origin:left;transition:transform 150ms cubic-bezier(.2,0,0,1),opacity 150ms ease-out;box-shadow:0 1px 2px #0008}
-.ticker-link[data-major="true"] .ticker-dash{width:26px;opacity:.66}
-.ticker-link[aria-current] .ticker-dash{opacity:1}
-.page-ticker[data-scrolling="true"] .ticker-link[aria-current] .ticker-dash{transform:scaleX(1.55)}
+.ticker-dash{display:block;width:22px;height:2px;border-radius:2px;flex:none;background:currentColor;opacity:.8;transform:scaleX(calc(1 + var(--near)*1.5));transform-origin:left;transition:transform 150ms cubic-bezier(.2,0,0,1),opacity 150ms ease-out;box-shadow:0 1px 3px #000c,0 0 1px #0008}
+.ticker-link[data-major="true"] .ticker-dash{width:32px;opacity:.95}
+.ticker-link[aria-current] .ticker-dash{width:36px;height:3px;color:#ffe2a8;opacity:1}
+.page-ticker[data-scrolling="true"] .ticker-link[aria-current] .ticker-dash{transform:scaleX(1.3)}
 .ticker-label{position:absolute;left:92px;white-space:nowrap;max-width:210px;padding:2px 9px;border-radius:4px;background:#27271edb;color:#f9f3e5;font:15px/24px "Manuscript Initial","Furia",serif;opacity:0;pointer-events:none;transition:opacity 150ms ease-out}
 .ticker-link:hover,.ticker-link:focus-visible{color:#fff9ec}
 .ticker-link:hover .ticker-label,.ticker-link:focus-visible .ticker-label{opacity:1}
