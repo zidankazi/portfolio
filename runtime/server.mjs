@@ -40,7 +40,7 @@ export async function handler(req,res) {
     if(req.method!=='GET'&&req.method!=='HEAD') {res.writeHead(405,{'Allow':'GET, HEAD'});res.end();return;}
     if(await serveFile(req,res,path)) return;
     const result=await response(path,client,assets.script,assets.stylesheet);
-    res.writeHead(result.status,{'Content-Type':result.content_type,'Cache-Control':result.cache_control,'X-Content-Type-Options':'nosniff'});
+    res.writeHead(result.status,{'Content-Type':result.content_type,'Cache-Control':result.cache_control,'X-Content-Type-Options':'nosniff',...result.headers});
     res.end(req.method==='HEAD'?undefined:result.body);
   } catch(error) {
     console.error('Request failed:',error.message);

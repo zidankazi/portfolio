@@ -847,6 +847,8 @@ test('crawler discovery and structured profile are available in the first respon
   const html=await response.text();
   expect(html).not.toMatch(/<meta[^>]+(?:noindex|nofollow)/i);
   expect(html).toContain('<link rel="alternate" type="text/html" href="https://www.zidankazi.com/profile"');
+  expect(html).toContain('<link rel="describedby" type="text/plain" href="https://www.zidankazi.com/llms.txt"');
+  expect(html).toContain('<link rel="alternate" type="text/markdown" href="https://www.zidankazi.com/profile.md"');
   const profile=JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)[1]);
   expect(profile['@type']).toBe('ProfilePage');
   expect(profile.mainEntity.name).toBe('Zidan Kazi');
@@ -863,11 +865,49 @@ test('crawler discovery and structured profile are available in the first respon
   expect(sitemap.status()).toBe(200);
   expect(sitemap.headers()['content-type']).toContain('application/xml');
   expect(await sitemap.text()).toContain('<loc>https://www.zidankazi.com/</loc>');
-  for(const path of ['/robots.txt','/sitemap.xml','/profile']) {
+  const llms=await request.get('/llms.txt');
+  expect(llms.status()).toBe(200);
+  expect(llms.headers()['content-type']).toContain('text/plain');
+  expect(await llms.text()).toMatch(/^# Zidan Kazi\n\n> /);
+  expect(await llms.text()).toContain('[Profile and projects](https://www.zidankazi.com/profile.md)');
+  const markdown=await request.get('/profile.md');
+  expect(markdown.status()).toBe(200);
+  expect(markdown.headers()['content-type']).toContain('text/markdown');
+  const text=await markdown.text();
+  expect(text).not.toContain('<script');
+  for(const paragraph of profile.mainEntity.description.split('\n\n')) expect(text).toContain(paragraph);
+  for(const project of profile.hasPart) {
+    expect(text).toContain('### '+project.name);
+    expect(text).toContain(project.description);
+    expect(text).toContain(project.url);
+  }
+  for(const path of ['/robots.txt','/sitemap.xml','/profile','/llms.txt','/profile.md']) {
     const head=await request.head(path);
     expect(head.status()).toBe(200);
     expect(await head.body()).toHaveLength(0);
   }
+});
+
+test('unknown pages redirect home while missing resources stay errors',async({page,request,baseURL})=>{
+  for(const path of ['/missing-page','/studio','/old/path','/old-page.html','/missing-page?from=application']) {
+    const response=await request.get(path,{maxRedirects:0});
+    expect(response.status()).toBe(302);
+    expect(response.headers().location).toBe('/');
+    expect(response.headers()['cache-control']).toBe('no-store');
+  }
+  await page.goto('/missing-page');
+  await expect(page).toHaveURL(new URL('/',baseURL).href);
+  await expect(page.getByRole('heading',{level:1})).toHaveText("I'm Zidan Kazi");
+  for(const path of ['/missing.js','/assets/missing','/missing.png','/missing.txt','/api/missing']) {
+    const response=await request.get(path,{maxRedirects:0});
+    expect(response.status()).toBe(404);
+    expect(response.headers().location).toBeUndefined();
+    expect(await response.text()).toBe('Not found.\n');
+  }
+  const head=await request.head('/missing-page',{maxRedirects:0});
+  expect(head.status()).toBe(302);
+  expect(head.headers().location).toBe('/');
+  expect(await head.body()).toHaveLength(0);
 });
 
 test('manuscript fallback and portfolio links work without JavaScript',async({browser,request,baseURL})=>{
@@ -876,8 +916,8 @@ test('manuscript fallback and portfolio links work without JavaScript',async({br
   await expect(page.locator('.manuscript-fallback')).toBeVisible();
   await expect(page.getByRole('link',{name:'email',exact:true})).toBeVisible();
   await expect(page.getByRole('link',{name:'relic',exact:true})).toHaveAttribute('href','https://tryrelic.io');
-  expect((await request.get('/missing-page')).status()).toBe(404);
-  expect((await request.get('/studio')).status()).toBe(404);
+  expect((await request.get('/missing-page',{maxRedirects:0})).status()).toBe(302);
+  expect((await request.get('/studio',{maxRedirects:0})).status()).toBe(302);
   expect((await (await request.get('/manifest.webmanifest')).json()).name).toBe('Zidan Kazi');
   const video=await request.get('/projects/relic-loop.mp4',{headers:{Range:'bytes=0-100'}});expect(video.status()).toBe(206);
   await page.goto(baseURL+'/profile');

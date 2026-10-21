@@ -62,6 +62,9 @@ headings, and ProfilePage structured data. `/robots.txt` allows crawling and
 points to `/sitemap.xml`. A head alternate link advertises `/profile`, a plain
 HTML version generated from the same biography and projects for readers that
 skip canvas or visually hidden text. It uses the homepage as its canonical URL.
+`/llms.txt` links to `/profile.md`, a Markdown version generated from the same
+content. Both HTML portfolio versions advertise these files in their head links.
+Unknown page URLs redirect home. Missing files and API routes retain a 404 response.
 
 Spotify uses `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, and
 `SPOTIFY_REFRESH_TOKEN` server environment variables. GitHub contributions use
