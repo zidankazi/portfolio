@@ -27,7 +27,7 @@ export function profileMarkdown():string {
     if(project.descriptionLink) links.push(`[${project.descriptionLink.text}](${project.descriptionLink.href})`);
     return `### ${project.title}\n\n${project.description}\n\n${links.join(' / ')}`;
   }).join('\n\n');
-  return `# Zidan Kazi\n\n${biography}\n\n## Projects\n\n${work}\n\n## Contact\n\n[Email](mailto:hi@zidankazi.com) / [GitHub](https://github.com/zidankazi) / [Twitter](https://twitter.com/zidaaaaaaaannnn)\n`;
+  return `# Zidan Kazi\n\n${biography}\n\n## Projects\n\n${work}\n\n## Contact\n\n[Email](mailto:hi@zidankazi.com) / [GitHub](https://github.com/zidankazi)\n`;
 }
 
 function readerLinks():string {
@@ -47,7 +47,7 @@ function structuredData():string {
       name:'Zidan Kazi',
       url:siteUrl,
       description:biographyBlocks().filter(block=>block.kind==='body').map(block=>block.text).join('\n\n'),
-      sameAs:['https://github.com/zidankazi','https://twitter.com/zidaaaaaaaannnn'],
+      sameAs:['https://github.com/zidankazi'],
     },
     hasPart:projects.map((project,index)=>({
       '@type':'CreativeWork',
@@ -76,7 +76,7 @@ function description(project:Project):string {
 
 function home(): string {
   return `<section id="projects" aria-labelledby="projects-heading"><h2 id="projects-heading" class="projects-label">a few things i've built</h2><div class="project-list">${projects.map((project, index) => `<article id="project-${index+1}" class="project-row" data-project="${index}"><h3 class="project-heading">${external(project.links[0].href, project.title, 'project-title')}<span class="project-links">${project.links.filter(link=>link.label==='github' || (project.title==='relic' && link.label==='site')).map(link => external(link.href, link.label, 'project-link')).join(' / ')}</span></h3><p class="project-description">${description(project)}</p></article>`).join('\n')}</div></section>
-    <p id="contact" class="contact-copy">${external('https://github.com/zidankazi', 'github')} / ${external('https://twitter.com/zidaaaaaaaannnn', 'twitter')} / <a href="mailto:hi@zidankazi.com">email</a></p>`;
+    <p id="contact" class="contact-copy">${external('https://github.com/zidankazi', 'github')} / <a href="mailto:hi@zidankazi.com">email</a></p>`;
 }
 
 function calendarSkeleton():string {

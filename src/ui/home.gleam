@@ -105,11 +105,6 @@ pub fn view(
                     "I'm @zidankazi on GitHub",
                     "github",
                   ),
-                  c.pill(
-                    "https://twitter.com/zidaaaaaaaannnn",
-                    "I'm @zidaaaaaaaannnn on Twitter/X",
-                    "twitter",
-                  ),
                 ]),
                 c.div("flex items-end gap-2 sm:gap-3", [
                   c.image(
