@@ -2,6 +2,7 @@ import {mountScene} from './scene.js';
 import type {Track} from './spotify.js';
 import {mountProjectPreviews} from './projects.js';
 import {mountTicker} from './ticker.js';
+import {mountPaintingGallery} from './painting-gallery.js';
 
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text = ''): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag); node.className=className; node.textContent=text; return node;
@@ -153,7 +154,7 @@ if (scrollHint) {
   const updateHint=()=>{scrollHint.dataset.hidden=String(window.scrollY>12);};
   updateHint();window.addEventListener('scroll',updateHint,{passive:true});
 }
-mountSpotify(); mountCalendar(); mountProjectPreviews(); mountTicker();
+mountPaintingGallery(); mountSpotify(); mountCalendar(); mountProjectPreviews(); mountTicker();
 void mountScene().catch(() => {
   document.querySelector('#manuscript-scene')?.setAttribute('data-ready','false');
 });

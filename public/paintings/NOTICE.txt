@@ -1,0 +1,40 @@
+Portfolio painting gallery
+
+The default painting and nastagio-thumb.webp use the original Botticelli
+reproduction credited in ../manuscript/NOTICE.txt.
+
+The following public-domain reproductions were resized and converted to WebP.
+National Gallery of Art Open Access policy: https://www.nga.gov/open-access-policy
+The Met Open Access policy: https://www.metmuseum.org/policies/image-resources
+Commons sources identify their images as public-domain reproductions (PD-Art).
+
+Palazzo da Mula, Venice, Claude Monet, 1908
+National Gallery of Art, Washington. Chester Dale Collection, 1963.10.182.
+https://www.nga.gov/artworks/46657-palazzo-da-mula-venice
+https://api.nga.gov/iiif/f339a180-c87a-446b-8605-060f7b53f1a3/full/full/0/default.jpg
+
+Green Wheat Fields, Auvers, Vincent van Gogh, 1890
+National Gallery of Art, Washington. Collection of Mr. and Mrs. Paul Mellon,
+2013.122.1.
+https://www.nga.gov/artworks/163323-green-wheat-fields-auvers
+https://api.nga.gov/iiif/b479275a-4f8a-4702-83c2-9dcc4cbe60ce/full/full/0/default.jpg
+
+A Philosopher Lecturing on the Orrery, Joseph Wright of Derby, 1766
+Derby Museum and Art Gallery. Reproduction via Wikimedia Commons, sourced from
+Europeana; photograph credited to Richard Tailby in the source metadata.
+https://derbymuseums.org/collection/joseph-wright-of-derby/
+https://commons.wikimedia.org/wiki/File:Wright_of_Derby,_The_Orrery.jpg
+https://upload.wikimedia.org/wikipedia/commons/d/d3/Wright_of_Derby%2C_The_Orrery.jpg
+
+The Course of Empire: The Arcadian or Pastoral State, Thomas Cole, c. 1834
+The New York Historical. Reproduction via Wikimedia Commons (PD-Art).
+The date follows the museum record rather than the source image filename.
+https://emuseum.nyhistory.org/objects/56323/the-course-of-empire-the-arcadian-or-pastoral-state
+https://commons.wikimedia.org/wiki/File:Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg
+https://upload.wikimedia.org/wikipedia/commons/8/8c/Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg
+
+Two Men Contemplating the Moon, Caspar David Friedrich, c. 1825-30
+The Metropolitan Museum of Art, New York. Wrightsman Fund, 2000, 2000.51.
+Met Collection API identifies the image as public domain.
+https://www.metmuseum.org/art/collection/search/438417
+https://images.metmuseum.org/CRDImages/ep/original/DP-31997-001-NEW.jpg

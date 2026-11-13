@@ -1,4 +1,5 @@
-Background painting: The Story of Nastagio degli Onesti, panel II, Sandro Botticelli.
+Default background painting (nastagio.webp):
+The Story of Nastagio degli Onesti, panel II, Sandro Botticelli.
 Public-domain reproduction from Wikimedia Commons, optimized as WebP:
 https://commons.wikimedia.org/wiki/File:Nastagio_Degli_Onesti_II.jpg
 

@@ -1,7 +1,13 @@
 [zidankazi.com](https://www.zidankazi.com/)
 
 The reading column is warm frosted glass over Botticelli's *The Story of Nastagio
-degli Onesti, panel II* (public domain; source in `public/manuscript/NOTICE.txt`).
+degli Onesti, panel II*. The original painting stays the default and the first
+choice in the six-painting side gallery, alongside works by Monet, van Gogh,
+Joseph Wright of Derby, Thomas Cole, and Caspar David Friedrich, with titles,
+artists, dates, and links to the collection records.
+It remembers the selected painting on this device; image failures keep the last
+painting visible. The gallery stays expanded at the top right on desktop and is hidden on mobile.
+Sources and image credits are in `public/manuscript/NOTICE.txt` and `public/paintings/NOTICE.txt`.
 The native TypeScript section ticker is inspired by
 [Rare UI's proximity sidebar](https://www.rareui.com/components/proximitysidebar).
 Its 25 ticks map equal portions of the page, with labels for content landmarks.

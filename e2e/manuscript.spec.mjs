@@ -3,6 +3,88 @@ const calendar={contributions:Array.from({length:365},(_,index)=>({date:new Date
 const cover='https://i.scdn.co/image/portfolio-test-cover';
 const track={title:'Test track',artist:'Test artist',url:'https://open.spotify.com/track/test',albumArt:cover,isPlaying:true,progressMs:30000,durationMs:120000};
 
+test('painting gallery switches the view and credit, remembers it, and works with a keyboard',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','Painting controls are desktop only');
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.goto('/');
+  const gallery=page.getByRole('complementary',{name:'Painting gallery'});
+  const choices=gallery.getByRole('group',{name:'Choose a painting'});
+  await expect(choices).toBeVisible();
+  await expect(gallery).toHaveCSS('top','24px');
+  await expect(gallery).toHaveCSS('right','24px');
+  await expect(choices.getByRole('button')).toHaveCount(6);
+  await expect(page.locator('.painting-image')).toHaveAttribute('src','/manuscript/nastagio.webp');
+  const titles=['The Story of Nastagio degli Onesti, II','Palazzo da Mula, Venice','Green Wheat Fields, Auvers','A Philosopher Lecturing on the Orrery','The Course of Empire: The Arcadian or Pastoral State','Two Men Contemplating the Moon'];
+  for(const title of titles) {
+    await choices.getByRole('button',{name:new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')} by`)}).click();
+    await expect(gallery.locator('.painting-title')).toHaveText(title);
+    await expect(choices.locator('[aria-pressed="true"]')).toHaveCount(1);
+    expect(await page.locator('.painting-image').evaluate(image=>image.complete&&image.naturalWidth>=2000)).toBe(true);
+    expect(await page.evaluate(()=>scrollY)).toBe(0);
+  }
+  await page.mouse.click(100,100);
+  await expect(choices).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(choices).toBeVisible();
+  await choices.getByRole('button').first().focus();await page.keyboard.press('Enter');
+  await expect(gallery.locator('.painting-title')).toHaveText(titles[0]);
+  await choices.getByRole('button').last().focus();await page.keyboard.press('Enter');
+  await expect(gallery.locator('.painting-title')).toHaveText(titles.at(-1));
+  await page.setViewportSize({width:1100,height:800});
+  await expect(choices).toBeVisible();
+  await page.evaluate(()=>scrollTo(0,500));
+  expect((await gallery.boundingBox()).y).toBe(24);
+  await page.screenshot({path:info.outputPath('painting-gallery.png')});
+  await page.reload();
+  await expect(gallery.locator('.painting-title')).toHaveText(titles.at(-1));
+  await expect(gallery.locator('.painting-credit')).toHaveText('Caspar David Friedrich, c. 1825–30');
+  await expect(gallery.locator('.painting-title')).toHaveAttribute('href','https://www.metmuseum.org/art/collection/search/438417');
+  await page.emulateMedia({reducedMotion:'reduce'});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('failed painting requests retain the view and rapid choices keep the latest selection',async({page},info)=>{
+  test.skip(info.project.name!=='desktop','Painting controls are desktop only');
+  await page.goto('/');
+  const gallery=page.getByRole('complementary',{name:'Painting gallery'});
+  const original=await page.locator('.painting-image').getAttribute('src');
+  await page.route('**/paintings/palazzo-da-mula.webp',route=>route.abort());
+  await gallery.getByRole('button',{name:/^Palazzo da Mula/}).click();
+  await expect(gallery.getByRole('status')).toContainText("Couldn't load");
+  await expect(page.locator('.painting-image')).toHaveAttribute('src',original);
+  await expect(gallery.locator('.painting-title')).toHaveText('The Story of Nastagio degli Onesti, II');
+  await page.unroute('**/paintings/palazzo-da-mula.webp');
+  await page.route('**/paintings/palazzo-da-mula.webp',async route=>{
+    await new Promise(resolve=>setTimeout(resolve,350));
+    await route.continue();
+  });
+  await gallery.getByRole('button',{name:/^Palazzo da Mula/}).click();
+  await gallery.getByRole('button',{name:/^Green Wheat Fields/}).click();
+  await expect(gallery.locator('.painting-title')).toHaveText('Green Wheat Fields, Auvers');
+  await expect(gallery).not.toHaveAttribute('aria-busy');
+  await expect(gallery.locator('.painting-option[aria-pressed="true"]')).toHaveAttribute('data-painting','green-wheat-fields');
+  await page.reload();
+  await expect(gallery.locator('.painting-title')).toHaveText('Green Wheat Fields, Auvers');
+});
+
+test('painting controls stay out of the way on mobile, including landscape',async({page},info)=>{
+  await page.goto('/');
+  const gallery=page.locator('.painting-gallery');
+  if(info.project.name==='desktop') {
+    await expect(gallery).toBeVisible();
+    await page.setViewportSize({width:390,height:844});
+  }
+  await expect(gallery).toBeHidden();
+  await expect(page.getByRole('button',{name:/Change painting/})).toHaveCount(0);
+  await expect(page.locator('.painting-image')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  if(info.project.name==='mobile') {
+    await page.setViewportSize({width:844,height:390});
+    await expect(gallery).toBeHidden();
+  }
+});
+
 async function observeDragonRig(page) {
   // Observe actual sprite transforms rather than adding production telemetry.
   await page.addInitScript(()=>{
